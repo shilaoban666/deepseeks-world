@@ -2,7 +2,7 @@
 // 画法沿用原作：平涂两阶色 + 倒壳墨线 + shader 里长的瓦行和墙渍。
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { paintMaterial, outlineMaterial, signMaterial, signTexture } from './paint.js';
+import { paintMaterial, outlineMaterial, signMaterial, signTexture, getAlbedo } from './paint.js';
 import { heightAt } from './plan.js';
 
 // 吉卜力的配色：奶油墙、赭红瓦、青灰石板、木头的暖褐。
@@ -133,7 +133,11 @@ export class Builder {
       const geo = mergeGeometries(b.geos, false);
       if (!geo) continue;
       geo.computeBoundingSphere();
-      const mat = paintMaterial(this.shared, { lit: b.lit, shade: b.shade, kind: b.kind, rows: b.rows, stain: b.stain });
+      // 按"类别+调色板序号"挑贴图变体：wall#3 用红砖，roof#1 用青瓦……
+      // 这样 54 组建筑不会全长一样。没有对应变体就退回该类别的默认（墙0/瓦0/木0/石0）。
+      const [family, index] = key.split('#');
+      const albedo = getAlbedo(`${family}${index ?? '0'}`) ?? undefined;
+      const mat = paintMaterial(this.shared, { lit: b.lit, shade: b.shade, kind: b.kind, rows: b.rows, stain: b.stain, albedo });
       const mesh = new THREE.Mesh(geo, mat);
       mesh.matrixAutoUpdate = false;
       group.add(mesh);

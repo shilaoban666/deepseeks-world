@@ -130,7 +130,7 @@ void main() {
     d = (d - 1.0) * uAlbedoGain + 1.0;
     float lum = dot(d, vec3(0.299, 0.587, 0.114));
     vec3 detail = mix(vec3(lum), d, 0.35);         // 65% 明暗变化 + 35% 色相变化
-    detail = clamp(detail, vec3(0.5), vec3(1.8));  // 别把 cel 色压坏
+    detail = clamp(detail, vec3(0.45), vec3(1.9));  // 别把 cel 色压坏
     col *= mix(vec3(1.0), detail, uAlbedoMix);
   }
 
@@ -188,11 +188,20 @@ export function configureAlbedo(map = {}, { scales = {}, mix = 0.85 } = {}) {
       mean: entry.mean ?? new THREE.Vector3(0.5, 0.5, 0.5),
       scale: scales[kind] ?? defaults[kind] ?? 0.3,
       mix,
-      // 贴图越平（标准差越小），放大越多，让每种材质看起来同样"有笔触"
-      gain: Math.min(9, Math.max(1, 0.16 / Math.max(entry.std ?? 0.05, 0.012))),
+      // 贴图越平（标准差越小），放大越多，让每种材质看起来同样"有笔触"（目标对比度 0.26）
+      gain: Math.min(12, Math.max(1, 0.26 / Math.max(entry.std ?? 0.05, 0.012))),
     };
   }
+  // 每一类的第 0 号当默认（室内、道具这类没指定变体的地方就用它）
+  for (const family of ['wall', 'roof', 'wood', 'stone']) {
+    if (!ALBEDO[family] && ALBEDO[`${family}0`]) ALBEDO[family] = ALBEDO[`${family}0`];
+  }
   return Object.keys(ALBEDO);
+}
+
+/** 取一个变体的贴图登记（没有就返回 null）。供 Builder 按调色板序号挑。 */
+export function getAlbedo(key) {
+  return ALBEDO_ENABLED ? (ALBEDO[key] ?? null) : null;
 }
 
 /** 关掉所有贴图（调试用） */

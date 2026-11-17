@@ -131,7 +131,18 @@ await setProgress(0.46, '正在铺贴图…');
 // ?tex=0 可以关掉，退回纯 shader 的版本。
 if (params.get('tex') !== '0') {
   const base = './textures/albedo/';
-  const names = { wall: 'wall_plaster', roof: 'roof_tile', wood: 'floor_oak', stone: 'paving_stone', snow: 'snow', paddy: 'paddy' };
+  const names = {
+    // 墙 8 种：奶油石灰 / 白灰 / 木构架 / 红砖 / 石砌 / 夯土 / 冷灰泥 / 煤渣砖
+    wall0: 'wall0', wall1: 'wall1', wall2: 'wall2', wall3: 'wall3', wall4: 'wall4', wall5: 'wall5', wall6: 'wall6', wall7: 'wall7',
+    // 屋顶 6 种：赤陶瓦 / 青瓦 / 木瓦 / 茅草 / 瓦楞铁 / 谷仓板
+    roof0: 'roof0', roof1: 'roof1', roof2: 'roof2', roof3: 'roof3', roof4: 'roof4', roof5: 'roof5',
+    // 木 6 种：橡木地板 / 风蚀板 / 旧椽 / 门板 / 窗框 / 竖板
+    wood0: 'wood0', wood1: 'wood1', wood2: 'wood2', wood3: 'wood3', wood4: 'wood4', wood5: 'wood5',
+    // 石/地 4 种：石板路 / 毛石 / 石阶 / 石板桥
+    stone0: 'stone0', stone1: 'stone1', stone2: 'stone2', stone3: 'stone3',
+    // 其它
+    fabric: 'fabric', snow: 'snow', paddy: 'paddy',
+  };
   const loaded = {};
   await Promise.all(
     Object.entries(names).map(async ([kind, file]) => {

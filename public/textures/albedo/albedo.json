@@ -1,82 +1,623 @@
 {
- "wall_plaster": {
+ "wall0": {
   "cn": "奶油石灰墙",
   "mean": [
-   0.9578,
-   0.9367,
-   0.8638
+   0.9561,
+   0.9348,
+   0.8627
   ],
-  "bakedLight": 0.009,
-  "range": 8.0
+  "std": 0.0037,
+  "seam": "mirror",
+  "seamBefore": [
+   1.35,
+   1.88
+  ],
+  "seamAfter": [
+   0.0,
+   0.0
+  ],
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ],
+  "bakedLight": 0.001
  },
- "roof_tile": {
+ "wall1": {
+  "cn": "白色石灰墙",
+  "mean": [
+   0.9497,
+   0.9473,
+   0.9367
+  ],
+  "std": 0.0037,
+  "seam": "mirror",
+  "seamBefore": [
+   1.66,
+   1.12
+  ],
+  "seamAfter": [
+   0.0,
+   0.0
+  ],
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ],
+  "bakedLight": 0.001
+ },
+ "wall2": {
+  "cn": "木构架墙",
+  "mean": [
+   0.6887,
+   0.6185,
+   0.4826
+  ],
+  "std": 0.2913,
+  "seam": "mirror",
+  "seamBefore": [
+   6.43,
+   4.22
+  ],
+  "seamAfter": [
+   0.0,
+   0.0
+  ],
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ],
+  "bakedLight": 0.266
+ },
+ "wall3": {
+  "cn": "红砖墙",
+  "mean": [
+   0.5952,
+   0.346,
+   0.284
+  ],
+  "std": 0.0697,
+  "seam": "mirror",
+  "seamBefore": [
+   3.74,
+   2.37
+  ],
+  "seamAfter": [
+   0.0,
+   0.0
+  ],
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ],
+  "bakedLight": 0.038
+ },
+ "wall4": {
+  "cn": "石砌墙",
+  "mean": [
+   0.5434,
+   0.5512,
+   0.5478
+  ],
+  "std": 0.0809,
+  "seam": "mirror",
+  "seamBefore": [
+   2.13,
+   3.67
+  ],
+  "seamAfter": [
+   0.0,
+   0.0
+  ],
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ],
+  "bakedLight": 0.04
+ },
+ "wall5": {
+  "cn": "夯土墙",
+  "mean": [
+   0.7974,
+   0.5845,
+   0.3346
+  ],
+  "std": 0.047,
+  "seam": "mirror",
+  "seamBefore": [
+   3.65,
+   13.19
+  ],
+  "seamAfter": [
+   0.0,
+   0.0
+  ],
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ],
+  "bakedLight": 0.009
+ },
+ "wall6": {
+  "cn": "冷灰水泥灰泥",
+  "mean": [
+   0.6095,
+   0.6303,
+   0.6414
+  ],
+  "std": 0.0122,
+  "seam": "mirror",
+  "seamBefore": [
+   1.35,
+   0.99
+  ],
+  "seamAfter": [
+   0.0,
+   0.0
+  ],
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ],
+  "bakedLight": 0.018
+ },
+ "wall7": {
+  "cn": "煤渣砖墙",
+  "mean": [
+   0.2206,
+   0.2302,
+   0.2398
+  ],
+  "std": 0.0673,
+  "seam": "mirror",
+  "seamBefore": [
+   8.58,
+   24.84
+  ],
+  "seamAfter": [
+   0.0,
+   0.0
+  ],
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ],
+  "bakedLight": 0.048
+ },
+ "roof0": {
   "cn": "赤陶瓦",
   "mean": [
-   0.6865,
-   0.3676,
-   0.1984
+   0.6912,
+   0.3704,
+   0.1997
   ],
-  "bakedLight": 0.064,
-  "range": 128.0
+  "std": 0.086,
+  "seam": "mx",
+  "seamBefore": [
+   5.44,
+   4.77
+  ],
+  "seamAfter": [
+   0.0,
+   0.5
+  ],
+  "seamAbsAfter": [
+   0.0,
+   1.95
+  ],
+  "bakedLight": 0.039
  },
- "paving_stone": {
-  "cn": "石板路",
+ "roof1": {
+  "cn": "日式青瓦",
   "mean": [
-   0.4773,
-   0.5185,
-   0.4546
+   0.2413,
+   0.2723,
+   0.2862
   ],
-  "bakedLight": 0.027,
-  "range": 108.0
+  "std": 0.0518,
+  "seam": "mx",
+  "seamBefore": [
+   6.62,
+   2.92
+  ],
+  "seamAfter": [
+   0.0,
+   0.7
+  ],
+  "seamAbsAfter": [
+   0.0,
+   1.94
+  ],
+  "bakedLight": 0.066
  },
- "floor_oak": {
+ "roof2": {
+  "cn": "木瓦",
+  "mean": [
+   0.4727,
+   0.4325,
+   0.3518
+  ],
+  "std": 0.0957,
+  "seam": "mx",
+  "seamBefore": [
+   1.94,
+   3.07
+  ],
+  "seamAfter": [
+   0.0,
+   0.74
+  ],
+  "seamAbsAfter": [
+   0.0,
+   3.74
+  ],
+  "bakedLight": 0.064
+ },
+ "roof3": {
+  "cn": "茅草",
+  "mean": [
+   0.8616,
+   0.7004,
+   0.3221
+  ],
+  "std": 0.0751,
+  "seam": "mx",
+  "seamBefore": [
+   1.47,
+   3.87
+  ],
+  "seamAfter": [
+   0.0,
+   0.84
+  ],
+  "seamAbsAfter": [
+   0.0,
+   5.98
+  ],
+  "bakedLight": 0.045
+ },
+ "roof4": {
+  "cn": "瓦楞铁皮",
+  "mean": [
+   0.6269,
+   0.5513,
+   0.4308
+  ],
+  "std": 0.0846,
+  "seam": "mx",
+  "seamBefore": [
+   3.83,
+   11.25
+  ],
+  "seamAfter": [
+   0.0,
+   0.8
+  ],
+  "seamAbsAfter": [
+   0.0,
+   3.9
+  ],
+  "bakedLight": 0.064
+ },
+ "roof5": {
+  "cn": "大谷仓木板",
+  "mean": [
+   0.4692,
+   0.4439,
+   0.3826
+  ],
+  "std": 0.0615,
+  "seam": "mx",
+  "seamBefore": [
+   2.0,
+   3.29
+  ],
+  "seamAfter": [
+   0.0,
+   1.0
+  ],
+  "seamAbsAfter": [
+   0.0,
+   2.17
+  ],
+  "bakedLight": 0.034
+ },
+ "wood0": {
   "cn": "橡木地板",
   "mean": [
-   0.7854,
-   0.5149,
-   0.189
+   0.7824,
+   0.5139,
+   0.1888
   ],
-  "bakedLight": 0.031,
-  "range": 54.0
+  "std": 0.0185,
+  "seam": "mx",
+  "seamBefore": [
+   2.5,
+   2.06
+  ],
+  "seamAfter": [
+   0.0,
+   0.82
+  ],
+  "seamAbsAfter": [
+   0.0,
+   2.35
+  ],
+  "bakedLight": 0.028
  },
- "fabric_linen": {
+ "wood1": {
+  "cn": "风蚀木板",
+  "mean": [
+   0.4692,
+   0.4439,
+   0.3826
+  ],
+  "std": 0.0615,
+  "seam": "mx",
+  "seamBefore": [
+   2.0,
+   3.29
+  ],
+  "seamAfter": [
+   0.0,
+   1.0
+  ],
+  "seamAbsAfter": [
+   0.0,
+   2.17
+  ],
+  "bakedLight": 0.034
+ },
+ "wood2": {
+  "cn": "旧橡木椽",
+  "mean": [
+   0.3672,
+   0.2872,
+   0.2102
+  ],
+  "std": 0.0199,
+  "seam": "mx",
+  "seamBefore": [
+   3.11,
+   1.18
+  ],
+  "seamAfter": [
+   0.0,
+   1.04
+  ],
+  "seamAbsAfter": [
+   0.0,
+   4.19
+  ],
+  "bakedLight": 0.051
+ },
+ "wood3": {
+  "cn": "深青门板",
+  "mean": [
+   0.1384,
+   0.3287,
+   0.32
+  ],
+  "std": 0.0339,
+  "seam": "mx",
+  "seamBefore": [
+   9.47,
+   5.36
+  ],
+  "seamAfter": [
+   0.0,
+   1.1
+  ],
+  "seamAbsAfter": [
+   0.0,
+   1.39
+  ],
+  "bakedLight": 0.04
+ },
+ "wood4": {
+  "cn": "蜂蜜色窗框",
+  "mean": [
+   0.8356,
+   0.6026,
+   0.2641
+  ],
+  "std": 0.0356,
+  "seam": "mx",
+  "seamBefore": [
+   1.05,
+   4.22
+  ],
+  "seamAfter": [
+   0.0,
+   1.03
+  ],
+  "seamAbsAfter": [
+   0.0,
+   1.83
+  ],
+  "bakedLight": 0.014
+ },
+ "wood5": {
+  "cn": "谷仓竖板",
+  "mean": [
+   0.4692,
+   0.4439,
+   0.3826
+  ],
+  "std": 0.0615,
+  "seam": "mx",
+  "seamBefore": [
+   2.0,
+   3.29
+  ],
+  "seamAfter": [
+   0.0,
+   1.0
+  ],
+  "seamAbsAfter": [
+   0.0,
+   2.17
+  ],
+  "bakedLight": 0.034
+ },
+ "stone0": {
+  "cn": "石板路",
+  "mean": [
+   0.4775,
+   0.5187,
+   0.4549
+  ],
+  "std": 0.0624,
+  "seam": "mirror",
+  "seamBefore": [
+   2.77,
+   1.26
+  ],
+  "seamAfter": [
+   0.0,
+   0.0
+  ],
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ],
+  "bakedLight": 0.014
+ },
+ "stone1": {
+  "cn": "毛石砌块",
+  "mean": [
+   0.5434,
+   0.5512,
+   0.5478
+  ],
+  "std": 0.0809,
+  "seam": "mirror",
+  "seamBefore": [
+   2.13,
+   3.67
+  ],
+  "seamAfter": [
+   0.0,
+   0.0
+  ],
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ],
+  "bakedLight": 0.04
+ },
+ "stone2": {
+  "cn": "石阶",
+  "mean": [
+   0.4669,
+   0.473,
+   0.4629
+  ],
+  "std": 0.0925,
+  "seam": "mx→mirror(兜底)",
+  "seamBefore": [
+   5.43,
+   14.25
+  ],
+  "seamAfter": [
+   0.0,
+   0.0
+  ],
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ],
+  "bakedLight": 0.035
+ },
+ "stone3": {
+  "cn": "石板桥",
+  "mean": [
+   0.4796,
+   0.5057,
+   0.4416
+  ],
+  "std": 0.0632,
+  "seam": "mirror",
+  "seamBefore": [
+   10.74,
+   15.34
+  ],
+  "seamAfter": [
+   0.0,
+   0.0
+  ],
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ],
+  "bakedLight": 0.031
+ },
+ "fabric": {
   "cn": "海军蓝亚麻",
   "mean": [
-   0.0558,
-   0.1861,
-   0.3628
+   0.0557,
+   0.1856,
+   0.3626
   ],
-  "bakedLight": 0.049,
-  "range": 54.0
+  "std": 0.029,
+  "seam": "mirror",
+  "seamBefore": [
+   2.11,
+   2.0
+  ],
+  "seamAfter": [
+   0.0,
+   0.0
+  ],
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ],
+  "bakedLight": 0.04
  },
  "snow": {
   "cn": "雪面",
   "mean": [
-   0.9446,
-   0.9505,
-   0.9614
+   0.9439,
+   0.9494,
+   0.9599
   ],
-  "bakedLight": 0.011,
-  "range": 28.0
+  "std": 0.0112,
+  "seam": "mirror",
+  "seamBefore": [
+   3.57,
+   1.85
+  ],
+  "seamAfter": [
+   0.0,
+   0.0
+  ],
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ],
+  "bakedLight": 0.001
  },
  "paddy": {
   "cn": "稻田",
   "mean": [
-   0.5048,
-   0.6183,
-   0.2318
+   0.4964,
+   0.6201,
+   0.2386
   ],
-  "bakedLight": 0.034,
-  "range": 95.0
- },
- "bridge_stone": {
-  "cn": "石板桥",
-  "mean": [
-   0.4796,
-   0.5055,
-   0.4417
+  "std": 0.0591,
+  "seam": "mx",
+  "seamBefore": [
+   2.91,
+   3.75
   ],
-  "bakedLight": 0.068,
-  "range": 153.0
+  "seamAfter": [
+   0.0,
+   1.07
+  ],
+  "seamAbsAfter": [
+   0.0,
+   5.02
+  ],
+  "bakedLight": 0.015
  }
 }

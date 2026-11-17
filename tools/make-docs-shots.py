@@ -13,17 +13,17 @@ os.makedirs(OUT, exist_ok=True)
 
 # 源文件 -> (输出名, 说明)；说明会写进 README 的图注
 PICKS = [
-    ('v3/snowtown.png', 'snow-town.jpg', '雪后的城镇'),
-    ('town/f-gate.png', 'gate.jpg', '清镇市城门'),
-    ('town/food-street.png', 'food-street.jpg', '小吃街'),
-    ('r5/church.png', 'church.jpg', '教堂'),
-    ('town/b-plaza.png', 'plaza.jpg', '中央广场'),
-    ('town-new/forest.png', 'forest.jpg', '城外的森林'),
-    ('town/flowers-on.png', 'flowers.jpg', '野花（139 种手绘立牌）'),
-    ('town/interior.png', 'interior.jpg', '四室两厅'),
-    ('v4/homeFront.png', 'home.jpg', '小鲸鱼的家'),
-    ('town-v3/walkSide.png', 'wanderer.jpg', '走在街上'),
-    ('town/g-temple.png', 'temple.jpg', '夫子庙'),
+    ('v3/snowtown.png', '01-snow-town.jpg', '雪后的城镇'),
+    ('town/b-plaza.png', '02-plaza.jpg', '中央广场'),
+    ('town/f-gate.png', '03-city-gate.jpg', '清镇市城门'),
+    ('town/food-street.png', '04-food-street.jpg', '小吃街'),
+    ('r5/church.png', '05-church.jpg', '教堂'),
+    ('town/g-temple.png', '06-confucius-temple.jpg', '夫子庙'),
+    ('v4/homeFront.png', '07-home.jpg', '小鲸鱼的家'),
+    ('town/interior.png', '08-interior.jpg', '四室两厅'),
+    ('town/flowers-on.png', '09-wildflowers.jpg', '野花（139 种手绘立牌）'),
+    ('town-new/forest.png', '10-forest.jpg', '城外的森林'),
+    ('town-v3/walkSide.png', '11-walking.jpg', '走在街上'),
 ]
 
 MAX_W = 1600

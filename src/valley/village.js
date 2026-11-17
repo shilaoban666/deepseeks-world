@@ -51,6 +51,8 @@ in vec4 vOwn;
 in vec3 vOwnN;
 in vec2 vUp;
 in vec2 vFace;
+uniform float uNight;   // the town's: how deep the night is, 0 by day (the valley never sets it)
+float lampGlow = 0.0;
 void main() {
   vec3 N = normalize(vNormal);
   // in the light or out of it, with a clean turn between: that is what makes a far house a solid thing
@@ -137,6 +139,8 @@ void main() {
       // glass: dark, with a little of the sky in its upper half
       paint = mix(paint, mix(vec3(0.08, 0.1, 0.16), vec3(0.24, 0.36, 0.5), smoothstep(-0.1, 0.6, wy) * 0.8), pane * has);
       paint = mix(paint, vColor * 0.95, bars * pane * has);
+      // (at night most windows are lit from inside)
+      lampGlow = pane * has * (1.0 - bars) * step(0.38, hash12(vec2(bay, storey) * 1.7 + seed * 91.0));
       // the sill, and its line of shadow
       paint *= 1.0 - 0.3 * step(abs(bx), 0.6) * step(-0.84, wy) * step(wy, -0.74) * has;
       paint = mix(paint, vec3(0.74, 0.7, 0.62) * (0.9 + 0.3 * dabs), doorway);
@@ -150,6 +154,7 @@ void main() {
   vec3 sky = mix(uSkyColor, vec3(dot(uSkyColor, vec3(0.333))), 0.6) * vec3(0.8, 0.88, 0.92) + 0.13;
   if (vOwn.w > 0.5) sky = mix(sky, vec3(dot(sky, vec3(0.333))) * vec3(1.12, 0.94, 0.98), 0.5);
   vec3 col = paint * mix(sky, sun, lit) * shadeOnly;
+  col = mix(col, vec3(3.4, 2.3, 0.95) * (0.8 + 0.4 * fract(seed * 7.3)), lampGlow * uNight);
   // (painted already: alpha tells the frame's finish to leave it alone, so a window stays a window)
   outC = vec4(mix(col, applyFog(col, vWorld), 0.7), 0.4);
 }
@@ -273,7 +278,7 @@ function chimney(m, cx, cz, y0, y1, s = 0.78) {
 }
 
 /** The kinds of building, each made once. `reach` is about how far from its middle its walls come, for spacing. */
-const SHAPES = {
+export const SHAPES = {
   cottage: {
     reach: 6,
     make(m) {
@@ -351,7 +356,7 @@ const SHAPES = {
   },
 };
 
-const WALLS = [
+export const WALLS = [
   [0.95, 0.92, 0.82],
   [0.92, 0.86, 0.68],
   [0.93, 0.89, 0.76],
@@ -359,14 +364,14 @@ const WALLS = [
   [0.9, 0.76, 0.68],
   [0.74, 0.72, 0.66],
 ];
-const ROOFS = [
+export const ROOFS = [
   [0.86, 0.3, 0.1],
   [0.78, 0.2, 0.1],
   [0.92, 0.42, 0.13],
   [0.66, 0.2, 0.14],
   [0.84, 0.36, 0.2],
 ];
-const SLATE = [0.3, 0.34, 0.45];
+export const SLATE = [0.3, 0.34, 0.45];
 
 /**
  * Where the village's buildings stand: a tight cluster on its rise, the towers and the tall houses at the top, the
@@ -418,8 +423,8 @@ export function createBuildingMaterial(field) {
   return new THREE.ShaderMaterial({ glslVersion: THREE.GLSL3, vertexShader: vertex, fragmentShader: fragment, uniforms: field.uniforms, side: THREE.DoubleSide });
 }
 
-/** Puts every building in the list on the ground, one draw to a kind. */
-export function addBuildings(group, material, list) {
+/** Puts every building in the list on the ground, one draw to a kind. `groundAt` lets another place (the town) reuse them. */
+export function addBuildings(group, material, list, groundAt = heightAt) {
   const matrix = new THREE.Matrix4();
   const q = new THREE.Quaternion();
   const up = new THREE.Vector3(0, 1, 0);
@@ -434,7 +439,7 @@ export function addBuildings(group, material, list) {
     const mesh = new THREE.InstancedMesh(geometry, material, mine.length);
     mine.forEach((b, i) => {
       q.setFromAxisAngle(up, b.turn);
-      matrix.compose(new THREE.Vector3(b.x, heightAt(b.x, b.z), b.z), q, new THREE.Vector3(b.scale, b.scale, b.scale));
+      matrix.compose(new THREE.Vector3(b.x, groundAt(b.x, b.z), b.z), q, new THREE.Vector3(b.scale, b.scale, b.scale));
       mesh.setMatrixAt(i, matrix);
       roof.set(b.roof, i * 3);
       wall.set(b.wall, i * 3);

@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>小鲸鱼的世界 · Painted Town</title>
+    <link rel="icon" href="data:," />
+    <style>
+      :root {
+        --paper: #f6efdf;
+        --paper2: #efe4cc;
+        --ink: #26333f;
+        --ink2: #5a6b7a;
+        --blue: #2f6d97;
+        --blue2: #6fa8c8;
+        --gold: #d9a83c;
+        --red: #c2543f;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #cfe2ea;
+        color: var(--ink);
+        font: 14px/1.55 'Noto Sans SC', 'Microsoft YaHei', 'PingFang SC', system-ui, sans-serif;
+        user-select: none;
+        -webkit-font-smoothing: antialiased;
+      }
+      canvas#view {
+        display: block;
+        width: 100%;
+        height: 100%;
+        cursor: grab;
+      }
+      canvas#view:active {
+        cursor: grabbing;
+      }
+      /* ---------- 加载 ---------- */
+      #loading {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        background: radial-gradient(circle at 50% 40%, #eaf3f7, #cfe2ea 70%);
+        z-index: 50;
+        transition: opacity 0.6s;
+      }
+      #loading.done {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #loading .box {
+        text-align: center;
+        color: var(--ink2);
+      }
+      #loading b {
+        display: block;
+        font-size: 26px;
+        letter-spacing: 0.16em;
+        color: var(--ink);
+        font-weight: 600;
+        margin-bottom: 10px;
+      }
+      #loading .bar {
+        width: 260px;
+        height: 4px;
+        margin: 16px auto 0;
+        background: rgba(38, 51, 63, 0.14);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      #loading .bar i {
+        display: block;
+        height: 100%;
+        width: 0;
+        background: linear-gradient(90deg, var(--blue2), var(--blue));
+        transition: width 0.3s;
+      }
+      /* ---------- HUD ---------- */
+      #hud {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 10;
+      }
+      .card {
+        background: rgba(246, 239, 223, 0.92);
+        border: 1px solid rgba(38, 51, 63, 0.18);
+        border-radius: 12px;
+        box-shadow: 0 6px 20px rgba(30, 45, 60, 0.16);
+        backdrop-filter: blur(6px);
+      }
+      #status {
+        position: absolute;
+        top: 14px;
+        left: 14px;
+        padding: 10px 13px;
+        min-width: 196px;
+        font-size: 13px;
+      }
+      #status .row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        line-height: 1.9;
+      }
+      #status .k {
+        color: var(--ink2);
+      }
+      #status .v {
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+      }
+      .meter {
+        height: 5px;
+        border-radius: 3px;
+        background: rgba(38, 51, 63, 0.13);
+        overflow: hidden;
+        margin: 1px 0 5px;
+      }
+      .meter > i {
+        display: block;
+        height: 100%;
+        width: 50%;
+        transition: width 0.25s;
+      }
+      .meter.hunger > i {
+        background: linear-gradient(90deg, #e0913f, #d06a3a);
+      }
+      .meter.stamina > i {
+        background: linear-gradient(90deg, #6fbf8a, #3f9a76);
+      }
+      #bag {
+        position: absolute;
+        top: 14px;
+        left: 232px;
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        max-width: 380px;
+      }
+      .bag-item {
+        position: relative;
+        background: rgba(246, 239, 223, 0.92);
+        border: 1px solid rgba(38, 51, 63, 0.16);
+        border-radius: 9px;
+        padding: 4px 7px;
+        font-size: 16px;
+        box-shadow: 0 3px 10px rgba(30, 45, 60, 0.12);
+      }
+      .bag-item b {
+        font-size: 11px;
+        margin-left: 3px;
+        color: var(--ink2);
+        vertical-align: super;
+      }
+      #prompt {
+        position: absolute;
+        left: 50%;
+        bottom: 96px;
+        transform: translate(-50%, 8px);
+        padding: 8px 18px;
+        background: rgba(28, 42, 54, 0.82);
+        color: #fdf6e6;
+        border-radius: 999px;
+        font-size: 14px;
+        letter-spacing: 0.04em;
+        opacity: 0;
+        transition: all 0.18s;
+        white-space: nowrap;
+      }
+      #prompt.on {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+      #prompt kbd {
+        background: #fdf6e6;
+        color: #1c2a36;
+        border-radius: 4px;
+        padding: 0 5px;
+        font: inherit;
+        font-weight: 700;
+        margin-right: 6px;
+      }
+      #toast {
+        position: absolute;
+        left: 50%;
+        top: 76px;
+        transform: translate(-50%, -8px);
+        padding: 9px 18px;
+        background: rgba(246, 239, 223, 0.96);
+        border-left: 4px solid var(--gold);
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(30, 45, 60, 0.2);
+        opacity: 0;
+        transition: all 0.22s;
+        font-size: 14px;
+        color: var(--ink);
+        max-width: 60vw;
+      }
+      #toast.on {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+      #help {
+        position: absolute;
+        left: 14px;
+        bottom: 14px;
+        padding: 8px 12px;
+        font-size: 12px;
+        color: var(--ink2);
+        line-height: 1.8;
+      }
+      #help kbd {
+        background: rgba(38, 51, 63, 0.1);
+        border-radius: 4px;
+        padding: 1px 5px;
+        font: inherit;
+        font-weight: 700;
+        color: var(--ink);
+      }
+      /* ---------- 小地图 ---------- */
+      #papermap {
+        position: fixed;
+        inset: 0;
+        display: none;
+        place-items: center;
+        background: rgba(30, 40, 50, 0.45);
+        z-index: 40;
+      }
+      #papermap.on {
+        display: grid;
+      }
+      #papermap figure {
+        margin: 0;
+        padding: 12px 12px 8px;
+        background: var(--paper);
+        border-radius: 14px;
+        box-shadow: 0 18px 60px rgba(20, 30, 40, 0.45);
+        transform: rotate(-0.6deg);
+      }
+      #papermap img {
+        display: block;
+        height: min(78vh, 86vw);
+        aspect-ratio: 1;
+        border-radius: 8px;
+      }
+      #papermap figcaption {
+        padding-top: 8px;
+        text-align: center;
+        color: var(--ink2);
+        font-size: 13px;
+      }
+      #minimap-wrap {
+        position: absolute;
+        right: 14px;
+        bottom: 14px;
+        width: 210px;
+        padding: 8px;
+        pointer-events: auto;
+      }
+      #minimap {
+        display: block;
+        width: 194px;
+        height: 194px;
+        border-radius: 8px;
+        background: #1d2a33;
+        image-rendering: pixelated;
+      }
+      #minimap-label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        color: var(--ink2);
+        margin-top: 5px;
+        letter-spacing: 0.05em;
+      }
+      /* ---------- 面板 ---------- */
+      #panel {
+        position: absolute;
+        inset: 0;
+        display: none;
+        place-items: center;
+        background: rgba(24, 36, 47, 0.4);
+        pointer-events: auto;
+        z-index: 20;
+      }
+      #panel.on {
+        display: grid;
+      }
+      #panel .sheet {
+        width: min(660px, 90vw);
+        max-height: 82vh;
+        overflow: auto;
+        background: var(--paper);
+        border-radius: 16px;
+        box-shadow: 0 24px 60px rgba(20, 32, 44, 0.4);
+        border: 1px solid rgba(38, 51, 63, 0.14);
+        padding: 20px 22px 16px;
+        animation: pop 0.18s ease-out;
+      }
+      @keyframes pop {
+        from {
+          transform: translateY(10px) scale(0.985);
+          opacity: 0;
+        }
+      }
+      #panel-title {
+        font-size: 19px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+        border-bottom: 2px dashed rgba(38, 51, 63, 0.18);
+        color: var(--ink);
+      }
+      #panel-body {
+        font-size: 14px;
+        line-height: 1.85;
+        color: var(--ink);
+      }
+      #panel-foot {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 16px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(38, 51, 63, 0.12);
+      }
+      #panel-foot button {
+        pointer-events: auto;
+        font: inherit;
+        padding: 8px 16px;
+        border-radius: 9px;
+        border: 1px solid rgba(38, 51, 63, 0.25);
+        background: var(--paper2);
+        color: var(--ink);
+        cursor: pointer;
+        transition: all 0.12s;
+      }
+      #panel-foot button:hover {
+        background: #fff;
+        transform: translateY(-1px);
+      }
+      #panel-foot button.primary {
+        background: var(--blue);
+        border-color: var(--blue);
+        color: #fdf8ee;
+      }
+      #panel-foot button.primary:hover {
+        background: #3b82ad;
+      }
+      #panel-foot button:disabled {
+        opacity: 0.42;
+        cursor: not-allowed;
+        transform: none;
+      }
+      #panel kbd {
+        background: rgba(38, 51, 63, 0.12);
+        border-radius: 4px;
+        padding: 1px 6px;
+        font: inherit;
+        font-weight: 700;
+      }
+      .dim {
+        color: var(--ink2);
+        font-size: 13px;
+      }
+      .ok {
+        color: #2f8f63;
+        font-weight: 600;
+      }
+      .no {
+        color: #b4483a;
+        font-weight: 600;
+      }
+      .warn {
+        color: #c9402a;
+        font-weight: 700;
+      }
+      table.recipes {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      table.recipes td,
+      table.recipes th {
+        padding: 6px 8px;
+        border-bottom: 1px dashed rgba(38, 51, 63, 0.14);
+        text-align: left;
+        vertical-align: top;
+      }
+      table.recipes th {
+        color: var(--ink2);
+        font-weight: 600;
+      }
+      table.recipes .need {
+        white-space: nowrap;
+        color: var(--ink2);
+      }
+      ul.posts {
+        margin: 8px 0;
+        padding-left: 18px;
+      }
+      ul.posts li {
+        margin: 3px 0;
+      }
+      .rail {
+        position: relative;
+        height: 26px;
+        margin: 14px 0;
+        border-radius: 13px;
+        background: rgba(38, 51, 63, 0.12);
+        overflow: hidden;
+      }
+      .rail-zone {
+        position: absolute;
+        left: 36%;
+        width: 28%;
+        top: 0;
+        bottom: 0;
+        background: rgba(47, 109, 151, 0.25);
+      }
+      .rail-needle {
+        position: absolute;
+        top: -3px;
+        bottom: -3px;
+        width: 4px;
+        background: var(--red);
+        border-radius: 2px;
+        transition: left 0.05s linear;
+      }
+      .locked canvas#view {
+        cursor: none;
+      }
+      body.locked #help {
+        opacity: 0.35;
+      }
+      @media (max-width: 760px) {
+        #bag {
+          left: 14px;
+          top: 96px;
+        }
+        #minimap-wrap {
+          width: 150px;
+        }
+        #minimap {
+          width: 134px;
+          height: 134px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="view"></canvas>
+
+    <div id="hud">
+      <div id="status" class="card">
+        <div class="row"><span class="k">金币</span><span class="v" id="stat-coins">0</span></div>
+        <div class="row"><span class="k">时间</span><span class="v" id="stat-clock">第 1 天 08:20</span></div>
+        <div class="row"><span class="k">所在</span><span class="v" id="stat-place">清镇野外</span></div>
+        <div class="k" style="margin-top: 6px">饱食</div>
+        <div class="meter hunger"><i id="stat-hunger"></i></div>
+        <div class="k">体力</div>
+        <div class="meter stamina"><i id="stat-stamina"></i></div>
+      </div>
+
+      <div id="bag"></div>
+
+      <div id="prompt"></div>
+      <div id="toast"></div>
+
+      <div id="help" class="card">
+        <kbd>W A S D</kbd> 走 · <kbd>Shift</kbd> 跑 · <kbd>E</kbd> 互动 · <kbd>M</kbd> 全图 · 拖鼠标转视角 · 滚轮远近
+      </div>
+
+      <div id="minimap-wrap" class="card">
+        <canvas id="minimap" width="194" height="194"></canvas>
+        <div id="minimap-label"><span>小地图</span><span id="minimap-mode">M 全图</span></div>
+      </div>
+
+      <div id="panel">
+        <div class="sheet">
+          <div id="panel-title"></div>
+          <div id="panel-body"></div>
+          <div id="panel-foot"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="loading">
+      <div class="box">
+        <b>小鲸鱼的世界</b>
+        <span id="loading-text">正在铺路…</span>
+        <div class="bar"><i id="loading-bar"></i></div>
+      </div>
+    </div>
+
+    <script type="module" src="./src/town/main.js"></script>
+    <!-- 手绘地图（M 键轮着看） -->
+    <div id="papermap">
+      <figure>
+        <img id="papermap-img" alt="地图" />
+        <figcaption id="papermap-cap"></figcaption>
+      </figure>
+    </div>
+  </body>
+</html>

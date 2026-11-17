@@ -1,0 +1,50 @@
+{
+ "run": {
+  "file": "run.png",
+  "frames": 12,
+  "cols": 8,
+  "rows": 2,
+  "cell": [
+   256,
+   224
+  ],
+  "seconds": 1.2,
+  "clip": "侧身急躁跑"
+ },
+ "jog": {
+  "file": "jog.png",
+  "frames": 12,
+  "cols": 8,
+  "rows": 2,
+  "cell": [
+   256,
+   224
+  ],
+  "seconds": 1.2,
+  "clip": "开心小跑"
+ },
+ "idle": {
+  "file": "idle.png",
+  "frames": 12,
+  "cols": 8,
+  "rows": 2,
+  "cell": [
+   256,
+   224
+  ],
+  "seconds": 3,
+  "clip": "待机呼吸休闲"
+ },
+ "sit": {
+  "file": "sit.png",
+  "frames": 8,
+  "cols": 8,
+  "rows": 1,
+  "cell": [
+   256,
+   224
+  ],
+  "seconds": 3,
+  "clip": "睡觉-循环"
+ }
+}

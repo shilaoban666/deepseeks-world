@@ -9,7 +9,7 @@ import { Input } from '../figure/input.js';
 import { Player as Walker } from '../figure/player.js';
 import RAPIER from '../figure/rapier/rapier.mjs';
 import * as THREE from 'three';
-import { bakeGround, createField, createFrame, loadGroundTextures } from '../lib/index.js';
+import { bakeGround, createField, createFrame, LITE_RINGS, loadGroundTextures } from '../lib/index.js';
 import { createFluff, createStones } from './dressing.js';
 import { createFarWoods } from './farwoods.js';
 import { createFloor, FLOOR, paintFloor } from './floor.js';
@@ -77,9 +77,12 @@ const offThread = (message, here) =>
     }
   });
 const quality = params.get('quality') ?? 'high';
+// ?lite=1: the same valley made to run on a machine with no graphics card — a thinner meadow, no MSAA, one stroke of
+// the brush instead of three, smaller sky pictures, fewer leaf cards, and fewer pixels than the window has.
+const lite = params.has('lite');
 const EXTENT = 1280;
 const GROUND = { extent: EXTENT, extentRes: EXTENT, centre: [0, 0] };
-const FLOOR_SIZE = quality === 'low' ? 1024 : 1536;
+const FLOOR_SIZE = lite || quality === 'low' ? 1024 : 1536;
 const hour0 = params.has('hour') ? Number(params.get('hour')) : 15.5;
 const groundJob = offThread({ job: 'ground', ...GROUND }, () => bakeGround({ heightAt, paint, ...GROUND }));
 const floorJob = offThread({ job: 'floor', size: FLOOR_SIZE }, () => ({ pixels: paintFloor(FLOOR_SIZE) }));
@@ -112,14 +115,39 @@ function fitView() {
 }
 window.addEventListener('resize', fitView);
 
+// ?res=0.75 draws fewer pixels than the window has and lets the browser stretch them, which is the cheapest saving
+// there is; ?lite=1 takes it as well. ?dyn=1 moves it up and down on its own to hold the frame rate, the way a game
+// on a phone does. 1 is the window's own pixels, times the device's pixel ratio (capped at 1.5).
+let resScale = 1;
+function setResScale(scale) {
+  resScale = Math.min(1, Math.max(0.4, scale));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, params.has('dpr') ? Number(params.get('dpr')) : 1.5) * resScale);
+  fitView();
+}
+if (params.has('res')) setResScale(Number(params.get('res')));
+else if (lite) setResScale(0.75);
+const dynamicRes = params.has('dyn');
+const adapt = { total: 0, frames: 0 };
+/** Every forty frames: too slow for a while, draw fewer pixels; room to spare, put some back. */
+function adaptRes(dt) {
+  if (!dynamicRes || !loaded || stepped || window.__tg?.view) return;
+  adapt.total += dt;
+  if (++adapt.frames < 40) return;
+  const mean = adapt.total / adapt.frames;
+  adapt.total = 0;
+  adapt.frames = 0;
+  if (mean > 1 / 24 && resScale > 0.45) setResScale(resScale - 0.1);
+  else if (mean < 1 / 55 && resScale < 1) setResScale(resScale + 0.05);
+}
+
 const groundTextures = loadGroundTextures(renderer, './textures/');
 // The sky's clouds and mountains need nothing from the land and are the graphics card's work, most of the wait on
 // a fast PC: begun now, they are painted while the land is still being worked out.
 const skyParts = createSkyParts(renderer, {
-  cloudSize: quality === 'low' ? 512 : quality === 'medium' ? 1024 : 2048,
-  cloudSteps: quality === 'low' ? 150 : 240,
-  liveClouds: quality !== 'low',
-  backdropWidth: quality === 'high' ? 12288 : 4096,
+  cloudSize: lite || quality === 'low' ? 512 : quality === 'medium' ? 1024 : 2048,
+  cloudSteps: lite || quality === 'low' ? 150 : 240,
+  liveClouds: !lite && quality !== 'low',
+  backdropWidth: !lite && quality === 'high' ? 12288 : 4096,
 });
 const skyReady = (async () => {
   const from = performance.now();
@@ -148,7 +176,8 @@ const field = createField({
   size: 256,
   baked,
   textures: await groundTextures,
-  density: quality === 'low' ? 0.45 : quality === 'medium' ? 0.7 : 1,
+  density: lite ? 0.55 : quality === 'low' ? 0.45 : quality === 'medium' ? 0.7 : 1,
+  rings: lite ? LITE_RINGS : undefined,
   height: 0.5,
   seed: 3,
 });
@@ -187,23 +216,23 @@ mark('strokes');
 }
 mark('floor');
 await stage(0.3, 'Building the village');
-const frame = createFrame(renderer, field, { samples: quality === 'low' ? 0 : 4, bloom: 0.1 });
+const frame = createFrame(renderer, field, { samples: lite || quality === 'low' ? 0 : 4, bloom: 0.1 });
 mark('frame');
 const sky = createSky(renderer, field, { parts: skyParts });
 mark('sky');
-const trees = createTrees(field, { cards: quality === 'low' ? 0.6 : quality === 'medium' ? 0.8 : 1 });
+const trees = createTrees(field, { cards: lite ? 0.4 : quality === 'low' ? 0.6 : quality === 'medium' ? 0.8 : 1 });
 mark('trees');
 const farWoods = createFarWoods(field);
 mark('farWoods');
 scene.add(sky.mesh, createHorizon(field, EXTENT / 2), trees.group, farWoods.group, createTarn(field, sky));
 // the finish: the frame laid in as brush marks. ?paint=0 for none; P turns it on and off.
-frame.paint = params.has('paint') ? Number(params.get('paint')) : quality === 'low' ? 0 : quality === 'medium' ? 2 : 3;
+frame.paint = params.has('paint') ? Number(params.get('paint')) : lite ? 1 : quality === 'low' ? 0 : quality === 'medium' ? 2 : 3;
 const paintWas = frame.paint || 3;
 mark('build');
 await stage(0.45, 'Planting trees');
 const stones = createStones(field);
 scene.add(stones.group);
-if (quality !== 'low' && params.get('seeds') !== '0') scene.add(createFluff(field, quality === 'medium' ? 200 : 320));
+if (!lite && quality !== 'low' && params.get('seeds') !== '0') scene.add(createFluff(field, quality === 'medium' ? 200 : 320));
 // time passes: the afternoon you start in is sunset twenty minutes later. ?drift=0 holds the hour; T and 1 to 4
 // pick a time of day and hold it there, 0 lets it pass again, and , and . nudge it.
 let drift = params.has('drift') ? Number(params.get('drift')) : 1;
@@ -596,6 +625,7 @@ function gpuDone() {
 
 // ---- the loop ------------------------------------------------------------------------------------------------
 function tick(dt) {
+  adaptRes(dt);
   if (third) updateWanderer(dt);
   else {
     input.read(dt);

@@ -18,6 +18,7 @@ import { bakeRows } from './bake.js';
 
 export { loadGroundTextures } from './ground.js';
 export { createFrame } from './frame.js';
+export { LITE_RINGS, RINGS } from './blades.js';
 export { bakeRows } from './bake.js';
 export { COMMON, LEAF_LIGHT, FIRE_RAMP } from './glsl.js';
 
@@ -58,6 +59,7 @@ export async function bakeGround({ heightAt = () => 0, paint = () => ({}), exten
  * @param o.size side of the square inside it that reacts and remembers (0.125 m a texel); o.centre its middle
  * @param o.textures from loadGroundTextures(), or leave out for plain soil
  * @param o.height metres, a tall blade. o.density 0 to 1, how many blades are drawn.
+ * @param o.rings RINGS, or LITE_RINGS (from blades.js) for a thinner meadow on a weak graphics card.
  * @param o.recover seconds for flattened grass to stand halfway up (0 never); o.regrow seconds for cut grass to grow back (0 never)
  * @param o.baked what bakeGround made of the same heightAt, paint, extent, extentRes and centre, so making the field doesn't stop the page
  */
@@ -72,6 +74,7 @@ export function createField({
   height = 0.52,
   density = 1,
   seed = 1,
+  rings,
   recover = 70,
   regrow = 0,
   flowers = true,
@@ -160,7 +163,7 @@ export function createField({
 
   const group = new THREE.Group();
   const ground = createGround(shared, textures, { height, extentMin, texel });
-  const blades = createBlades(shared, { height, density, seed }, groundAt);
+  const blades = createBlades(shared, { height, density, seed, rings }, groundAt);
   blades.init();
   group.add(ground.mesh, blades.group);
   const random = mulberry(seed * 31 + 9);

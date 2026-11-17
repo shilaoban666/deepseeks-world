@@ -92,6 +92,7 @@ void main() {
     float rel = slopeRel(landNormal(vWorld.xz));
     vec3 g = meadowGreen(0.6 + 0.1 * gust * min(U / 6.0, 1.0) + (rel - 0.5) * mix(0.6, 0.4, smoothstep(150.0, 450.0, dist))) * mix(vec3(1.0), meadowTint(vWorld.xz), 0.5 * (1.0 - smoothstep(40.0, 110.0, dist)));
     g = mix(g, vec3(0.44, 0.47, 0.17), dry * 0.45);
+    g = mix(g, vec3(0.74, 0.58, 0.17), smoothstep(0.8, 0.93, m.r));
     // seen from off, a meadow is not one green: darker tufts stand in it, and where flowers grow it is dusted
     // with their colour
     float tuft = texture(tNoise, vWorld.xz / 3.1).g * 0.6 + texture(tNoise, vWorld.xz / 0.83 + 0.2).r * 0.4;

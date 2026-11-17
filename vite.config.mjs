@@ -15,6 +15,14 @@ export default {
     assetsInlineLimit: 0,
     modulePreload: { polyfill: false },
     chunkSizeWarningLimit: 4000,
+    rollupOptions: {
+      input: {
+        // 原来的山谷 demo
+        main: `${here}index.html`,
+        // 小鲸鱼的世界
+        town: `${here}town.html`,
+      },
+    },
     // three's notice, and any other library's, into the release
     license: { fileName: 'THIRD-PARTY-NOTICES.md' },
   },

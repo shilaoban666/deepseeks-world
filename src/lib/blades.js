@@ -15,6 +15,18 @@ export const RINGS = [
   { name: 'far', cell: 0.625, tile: 40, tiles: 8, rows: 3, sub: 3, fade: [34, 48, 96, 120], width: 10, tops: 0.4 },
 ];
 
+/**
+ * The same four rings, coarser: about a third of the blades and of the tiles, and six rows instead of eight on the
+ * near ones. It is for a machine without a graphics card (`?lite=1`): the meadow still covers the same ground and
+ * no ring's edge moves, it is only thinner and more cheaply drawn.
+ */
+export const LITE_RINGS = [
+  { name: 'near', cell: 0.065, tile: 3, tiles: 4, rows: 6, sub: 1, fade: [-2, -1, 2.8, 6], width: 1, tops: 0 },
+  { name: 'mid', cell: 0.12, tile: 7.2, tiles: 6, rows: 4, sub: 1, fade: [2.8, 6, 13, 21.6], width: 2.0, tops: 0.05 },
+  { name: 'wide', cell: 0.26, tile: 16, tiles: 6, rows: 3, sub: 1, fade: [13, 21.6, 34, 48], width: 4.6, tops: 0.22 },
+  { name: 'far', cell: 0.8, tile: 40, tiles: 6, rows: 3, sub: 2, fade: [34, 48, 96, 120], width: 10, tops: 0.4 },
+];
+
 const vertex = /* glsl */ `
 ${COMMON}
 in vec2 aCell;
@@ -171,6 +183,8 @@ void main() {
   tone -= 0.2 * (1.0 - smoothstep(1.5, 9.0, dist));
   col = meadowGreen(tone) * mix(vec3(1.0), meadowTint(xz), 0.5);
   col = mix(col, vec3(0.44, 0.47, 0.17), dry * 0.45);
+  // (corn: where the ground is painted as dry as it goes, it is a field of ripe wheat, gold to the tips)
+  col = mix(col, mix(vec3(0.5, 0.38, 0.1), vec3(0.86, 0.66, 0.2), s) * mix(0.9, 1.1, cl.a), smoothstep(0.8, 0.93, m.r));
   if (stalk) col = mix(col, mix(vec3(0.46, 0.52, 0.18), vec3(0.4, 0.46, 0.2), step(0.72, cl.g)), smoothstep(0.75, 0.82, s));
   // far off, a few tufts carry the colour of the flowers among them
   if (uTops > 0.35 && q.w < m.a * 0.1) col = mix(col, mix(vec3(0.75, 0.72, 0.6), vec3(0.7, 0.5, 0.05), step(0.5, q.z)), smoothstep(0.4, 1.0, s));
@@ -256,12 +270,13 @@ function ringGeometry(ring, random) {
  * @param shared the uniforms every material of the field binds (shared.js)
  * @param o.height metres, a tall blade
  * @param o.density 0 to 1, the share of blades drawn
+ * @param o.rings RINGS, or LITE_RINGS for a thinner meadow
  * @param heightAt the CPU's ground, for placing each tile so it's culled properly
  */
-export function createBlades(shared, { height = 0.52, density = 1, seed = 1 } = {}, heightAt) {
+export function createBlades(shared, { height = 0.52, density = 1, seed = 1, rings: shape = RINGS } = {}, heightAt) {
   const group = new THREE.Group();
   const random = mulberry(seed * 977 + 3);
-  const rings = RINGS.map((ring, index) => {
+  const rings = shape.map((ring, index) => {
     const { geometry, count } = ringGeometry(ring, random);
     const uniforms = {
       ...shared,

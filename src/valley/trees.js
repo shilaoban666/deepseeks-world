@@ -622,3 +622,152 @@ export function createTrees(field, { cards = 1 } = {}) {
     },
   };
 }
+
+// ---------------------------------------------------------------------------------------------------------------
+// 小鲸鱼的世界用的入口：同样的树（同一套生长规则、同一种画法），但位置由外面给，
+// 而且按 96 m 的格子分块：看不见的格子不画，远处的格子换成叶片少的那一档，再远就不画了。
+/**
+ * @param places [[x, z, kind, scale, turn]]，kind：0 大树，1~3 中等的树，7/8 灌木
+ * @param o.cards 0~1，每团叶子画多少片；o.heightAt 地面；o.near / o.far 换档和不画的距离（米）
+ */
+export function createGrove(field, places, { cards = 1, heightAt: groundAt = heightAt, near = 120, far = 560, cell = 96 } = {}) {
+  const mid = { 1: { trunk: 2.6, girth: 0.42, crown: 5.6, rise: 8.2, limbs: 4, clump: 1.9, fill: 9 }, 2: { trunk: 3.3, girth: 0.36, crown: 4.6, rise: 9.6, limbs: 4, clump: 1.7, fill: 10 }, 3: { trunk: 2.2, girth: 0.5, crown: 6.6, rise: 7.2, limbs: 5, clump: 2.1, fill: 8 } };
+  const seeds = { 1: 23, 2: 37, 3: 51 };
+  const kinds = [];
+  kinds[0] = growTree(11, { trunk: 3.6, girth: 0.92, crown: 11.5, rise: 12.5, limbs: 6, clump: 2.7, fill: 26, cards: Math.round(92 * cards), spray: 1.05 });
+  for (const k of [1, 2, 3]) {
+    kinds[k] = growTree(seeds[k], { ...mid[k], cards: Math.round(48 * cards), spray: 1.15 });
+    kinds[k + 3] = growTree(seeds[k], { ...mid[k], cards: 20, spray: 1.9 });
+  }
+  const BUSH = 7;
+  kinds[7] = growTree(71, { trunk: 0.25, girth: 0.07, crown: 1.5, rise: 1.9, limbs: 3, clump: 0.8, fill: 7, cards: Math.round(30 * cards), spray: 0.62 });
+  kinds[8] = growTree(83, { trunk: 0.2, girth: 0.06, crown: 2.1, rise: 1.5, limbs: 4, clump: 0.85, fill: 8, cards: Math.round(30 * cards), spray: 0.62 });
+  // 大树的远档：叶片少而大
+  kinds[9] = growTree(11, { trunk: 3.6, girth: 0.92, crown: 11.5, rise: 12.5, limbs: 6, clump: 2.7, fill: 26, cards: 24, spray: 2.1 });
+  const farOf = (k) => (k === 0 ? 9 : k >= 1 && k <= 3 ? k + 3 : k);
+
+  const group = new THREE.Group();
+  const leafMaterial = new THREE.ShaderMaterial({
+    glslVersion: THREE.GLSL3,
+    vertexShader: leafVertex,
+    fragmentShader: leafFragment,
+    uniforms: { ...field.uniforms, tLeaf: { value: leafTexture() } },
+    side: THREE.DoubleSide,
+    alphaToCoverage: true,
+  });
+  const woodMaterial = new THREE.ShaderMaterial({ glslVersion: THREE.GLSL3, vertexShader: woodVertex, fragmentShader: woodFragment, uniforms: field.uniforms });
+  const coreMaterial = new THREE.ShaderMaterial({ glslVersion: THREE.GLSL3, vertexShader: leafVertex, fragmentShader: coreFragment, uniforms: { ...field.uniforms, tLeaf: leafMaterial.uniforms.tLeaf }, side: THREE.DoubleSide });
+
+  const cells = new Map();
+  for (const t of places) {
+    const key = `${Math.floor(t[0] / cell)},${Math.floor(t[1] / cell)}`;
+    let c = cells.get(key);
+    if (!c) cells.set(key, (c = { list: [], x: 0, z: 0, y: 0 }));
+    c.list.push(t);
+  }
+  const matrix = new THREE.Matrix4();
+  const q = new THREE.Quaternion();
+  const up = new V3(0, 1, 0);
+  const build = (list, pickKind) => {
+    const g = new THREE.Group();
+    const by = new Map();
+    for (const t of list) {
+      const k = pickKind(t[2]);
+      if (!by.has(k)) by.set(k, []);
+      by.get(k).push(t);
+    }
+    for (const [k, mine] of by) {
+      const kind = kinds[k];
+      const leaves = new THREE.InstancedMesh(kind.leaves, leafMaterial, mine.length);
+      const wood = new THREE.InstancedMesh(kind.wood, woodMaterial, mine.length);
+      const core = new THREE.InstancedMesh(kind.core, coreMaterial, mine.length);
+      mine.forEach(([x, z, , scale, turn], i) => {
+        q.setFromAxisAngle(up, turn);
+        matrix.compose(new V3(x, groundAt(x, z), z), q, new V3(scale, scale * (0.94 + 0.12 * ((i * 7) % 5) * 0.25), scale));
+        leaves.setMatrixAt(i, matrix);
+        wood.setMatrixAt(i, matrix);
+        core.setMatrixAt(i, matrix);
+      });
+      for (const m of [leaves, wood, core]) {
+        m.instanceMatrix.needsUpdate = true;
+        m.computeBoundingSphere();
+        m.frustumCulled = true;
+      }
+      g.add(wood, core, leaves);
+    }
+    return g;
+  };
+  for (const c of cells.values()) {
+    for (const t of c.list) {
+      c.x += t[0] / c.list.length;
+      c.z += t[1] / c.list.length;
+    }
+    c.near = build(c.list, (k) => k);
+    c.far = build(c.list.filter((t) => t[2] < BUSH), farOf);
+    c.near.visible = false;
+    group.add(c.near, c.far);
+  }
+
+  // ---- 树影：烘进一张图给草地读 ----
+  const RES = 1024;
+  const data = new Uint8Array(RES * RES);
+  const shade = new THREE.DataTexture(data, RES, RES, THREE.RedFormat, THREE.UnsignedByteType);
+  shade.minFilter = shade.magFilter = THREE.LinearFilter;
+  shade.unpackAlignment = 1;
+  const extentMin = field.uniforms.uExtentMin.value;
+  const extent = 1 / field.uniforms.uExtentInv.value;
+  field.uniforms.tShade.value = shade;
+
+  return {
+    group,
+    trees: places,
+    count: places.length,
+    /** 每帧：按离相机多远，决定每个格子画哪一档。 */
+    update(camera) {
+      const px = camera.position.x;
+      const pz = camera.position.z;
+      for (const c of cells.values()) {
+        const d = Math.hypot(c.x - px, c.z - pz);
+        const isNear = d < near + (c.near.visible ? cell * 0.25 : 0);
+        c.near.visible = isNear;
+        c.far.visible = !isNear && d < far;
+      }
+    },
+    cast(sunDir) {
+      data.fill(0);
+      const flat = Math.hypot(sunDir.x, sunDir.z) || 1e-3;
+      const sx = sunDir.x / flat;
+      const sz = sunDir.z / flat;
+      const slope = Math.min(3.2, flat / Math.max(sunDir.y, 0.12));
+      const texel = extent / RES;
+      for (const [x, z, k, scale] of places) {
+        const kind = kinds[k];
+        const r = kind.crown * scale * 1.02;
+        const long = Math.hypot(r, kind.height * 0.28 * scale * slope);
+        const cx = x - sx * kind.crownY * scale * slope;
+        const cz = z - sz * kind.crownY * scale * slope;
+        const reach = long + 2;
+        const i0 = Math.max(0, Math.floor((cx - reach - extentMin.x) / texel));
+        const i1 = Math.min(RES - 1, Math.ceil((cx + reach - extentMin.x) / texel));
+        const j0 = Math.max(0, Math.floor((cz - reach - extentMin.y) / texel));
+        const j1 = Math.min(RES - 1, Math.ceil((cz + reach - extentMin.y) / texel));
+        for (let j = j0; j <= j1; j++) {
+          for (let i = i0; i <= i1; i++) {
+            const dx = extentMin.x + (i + 0.5) * texel - cx;
+            const dz = extentMin.y + (j + 0.5) * texel - cz;
+            const al = (dx * sx + dz * sz) / long;
+            const ac = (-dx * sz + dz * sx) / r;
+            const d = Math.hypot(al, ac);
+            if (d >= 1.08) continue;
+            const ang = Math.atan2(ac, al);
+            const edge = 0.9 + 0.09 * Math.sin(ang * 5 + x) + 0.06 * Math.sin(ang * 9 + z);
+            const v = 255 * (1 - THREE.MathUtils.smoothstep(d, edge - 0.16, edge + 0.04));
+            const at = i + j * RES;
+            if (v > data[at]) data[at] = v;
+          }
+        }
+      }
+      shade.needsUpdate = true;
+    },
+  };
+}

@@ -504,7 +504,7 @@ export function createFrame(renderer, field, { samples = 4, fireScale = 0.5, blo
   const finalMaterial = fs(
     head +
       /* glsl */ `
-    uniform sampler2D tHdr, tBloom; uniform float uBloom, uExposure, uVignette, uPaint; uniform vec2 uPaintTexel; uniform highp sampler2D tDepth;
+    uniform sampler2D tHdr, tBloom; uniform float uBloom, uExposure, uVignette, uPaint; uniform vec3 uGrade; uniform vec2 uPaintTexel; uniform highp sampler2D tDepth;
     // The frame as paint: round each point, four overlapping patches; the calmest of them gives its colour. Edges
     // stay where they are and everything between them goes flat, as a loaded brush leaves it.
     vec3 painted(vec2 uv) {
@@ -574,6 +574,8 @@ export function createFrame(renderer, field, { samples = 4, fireScale = 0.5, blo
       c = mix(c, min(c, vec3(1.2)) * vec3(0.2, 0.14, 0.15), inkAt(vUv) * 0.92);
       vec2 d = vUv - 0.5;
       c *= 1.0 - uVignette * dot(d, d) * 1.6;
+      // (night: the picture is graded down and blue, as film shoots day for night; what shines of itself stays)
+      c = mix(c * uGrade, c, smoothstep(1.1, 2.4, max(c.r, max(c.g, c.b))) * step(dot(uGrade, vec3(1.0)), 2.99));
       c *= uExposure;
       // a painter's curve: what is below white stays as it was mixed, and only the brightest lights are eased in
       vec3 hi = max(c - 0.62, 0.0);
@@ -583,7 +585,7 @@ export function createFrame(renderer, field, { samples = 4, fireScale = 0.5, blo
       float n = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));
       outC = vec4(c + (n - 0.5) / 255.0, 1.0);
     }`,
-    { tHdr: { value: rtComposite.texture }, tBloom: { value: rtUp[0].texture }, uBloom: { value: bloom }, uExposure: { value: exposure }, uVignette: { value: 0.14 }, uPaint: { value: 0 }, tDepth: { value: depth }, uPaintTexel: { value: new THREE.Vector2(1, 1) } },
+    { tHdr: { value: rtComposite.texture }, tBloom: { value: rtUp[0].texture }, uBloom: { value: bloom }, uExposure: { value: exposure }, uVignette: { value: 0.14 }, uGrade: { value: new THREE.Vector3(1, 1, 1) }, uPaint: { value: 0 }, tDepth: { value: depth }, uPaintTexel: { value: new THREE.Vector2(1, 1) } },
   );
 
   field.renderer = renderer;
@@ -684,6 +686,7 @@ export function createFrame(renderer, field, { samples = 4, fireScale = 0.5, blo
       }
       finalMaterial.uniforms.uBloom.value = frame.bloom;
       finalMaterial.uniforms.uExposure.value = frame.exposure;
+      if (frame.grade) finalMaterial.uniforms.uGrade.value.copy(frame.grade);
       finalMaterial.uniforms.uPaint.value = frame.paint ?? 0;
       finalMaterial.uniforms.uPaintTexel.value.set(1 / size.x, 1 / size.y);
       pass(finalMaterial, null);

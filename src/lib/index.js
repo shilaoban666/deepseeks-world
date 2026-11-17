@@ -138,6 +138,8 @@ export function createField({
     uSkyColor: { value: new THREE.Color(0.34, 0.42, 0.6) },
     uBounceColor: { value: new THREE.Color(0.1, 0.09, 0.05) },
     uFogColor: { value: new THREE.Color(0.55, 0.6, 0.7) },
+    uFrost: { value: 0 },
+    uWetness: { value: 0 },
     uFogSunColor: { value: new THREE.Color(1.0, 0.75, 0.45) },
     uFogDensity: { value: 0.0016 },
     uFireColor: { value: new THREE.Color(0, 0, 0) },
@@ -207,6 +209,10 @@ export function createField({
       return this.cutLine(x, z, x, z, radius * 2, h, h);
     },
     ignite: (x, z, radius) => state.ignite(x, z, radius),
+    /** How damp the field is, 0 to 1 (rain, frost): fire spreads less and burns out sooner. */
+    setDamp(d) {
+      state.damp = Math.min(1, Math.max(0, d));
+    },
     stateAt: (x, z) => state.stateAt(x, z),
     /** Wind from a compass angle in radians (the direction it blows towards, round Y) at `speed` m/s. */
     setWind(angle, speed, gust = 1) {

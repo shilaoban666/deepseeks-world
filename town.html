@@ -224,6 +224,144 @@
         color: var(--ink);
       }
       /* ---------- 小地图 ---------- */
+
+      /* ---------- 动作栏 / 天气牌 / 氧气 / 水下 / 背包格子 ---------- */
+      #actionbar {
+        position: absolute;
+        left: 50%;
+        bottom: 62px;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        justify-content: center;
+        max-width: calc(100vw - 520px);
+      }
+      #actionbar.indoor .act:not(.menu) {
+        display: none;
+      }
+      .act {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 11px 6px 7px;
+        border: 1px solid rgba(38, 51, 63, 0.18);
+        border-radius: 12px;
+        background: rgba(246, 239, 223, 0.94);
+        color: var(--ink);
+        font: inherit;
+        font-size: 13px;
+        cursor: pointer;
+        box-shadow: 0 3px 10px rgba(30, 40, 50, 0.14);
+        transition: transform 0.12s, opacity 0.2s;
+      }
+      .act:hover {
+        transform: translateY(-2px);
+      }
+      .act kbd {
+        min-width: 22px;
+        padding: 1px 5px;
+        border-radius: 6px;
+        background: var(--blue);
+        color: #fff;
+        font: 700 11px/18px inherit;
+        text-align: center;
+      }
+      .act.menu kbd {
+        background: var(--gold);
+        color: var(--ink);
+      }
+      .act.off {
+        opacity: 0.38;
+        cursor: default;
+        transform: none;
+      }
+      #weather-chip {
+        position: absolute;
+        top: 14px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 14px;
+        font-size: 13px;
+        white-space: nowrap;
+      }
+      #weather-chip .wi {
+        font-size: 18px;
+      }
+      #weather-chip .dim {
+        color: var(--ink2);
+      }
+      #o2 {
+        position: absolute;
+        left: 14px;
+        top: 186px;
+        width: 196px;
+        padding: 8px 12px;
+        display: none;
+        font-size: 12px;
+      }
+      #o2.on {
+        display: block;
+      }
+      .meter.o2 i {
+        background: linear-gradient(90deg, #7ec8e8, #2f6d97);
+      }
+      #underwater {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.35s;
+        background: radial-gradient(ellipse at 50% 20%, rgba(120, 210, 230, 0.1), rgba(10, 60, 90, 0.42) 75%), repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.035) 0 18px, transparent 18px 44px);
+        mix-blend-mode: multiply;
+        z-index: 5;
+      }
+      #underwater.on {
+        opacity: 1;
+      }
+      .bag-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+        gap: 8px;
+        margin: 10px 0;
+      }
+      .bag-grid .slot {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        padding: 10px 6px 8px;
+        border-radius: 12px;
+        border: 1px solid rgba(38, 51, 63, 0.16);
+        background: rgba(255, 255, 255, 0.55);
+        font: inherit;
+        color: var(--ink);
+        cursor: pointer;
+      }
+      .bag-grid .slot:hover {
+        background: #fff;
+      }
+      .bag-grid .slot.cur {
+        border-color: var(--blue);
+        box-shadow: 0 0 0 2px rgba(47, 109, 151, 0.25);
+      }
+      .bag-grid .ic {
+        font-size: 26px;
+      }
+      .bag-grid i {
+        font-style: normal;
+        color: var(--ink2);
+        font-size: 12px;
+      }
+      @media (max-width: 1100px) {
+        #actionbar {
+          max-width: calc(100vw - 260px);
+          bottom: 70px;
+        }
+      }
       #papermap {
         position: fixed;
         inset: 0;
@@ -291,6 +429,19 @@
       }
       #panel.on {
         display: grid;
+      }
+      /* 钓鱼这种要看着画面的：贴在底部的小条，不压暗、不挡画面 */
+      #panel.dock {
+        background: transparent;
+        pointer-events: none;
+        align-items: end;
+        padding-bottom: 116px;
+      }
+      #panel.dock .sheet {
+        pointer-events: auto;
+        width: min(380px, 90vw);
+        padding: 10px 16px;
+        box-shadow: 0 10px 30px rgba(20, 32, 44, 0.28);
       }
       #panel .sheet {
         width: min(660px, 90vw);
@@ -475,8 +626,12 @@
       <div id="toast"></div>
 
       <div id="help" class="card">
-        <kbd>W A S D</kbd> 走 · <kbd>Shift</kbd> 跑 · <kbd>E</kbd> 互动 · <kbd>M</kbd> 全图 · 拖鼠标转视角 · 滚轮远近
+        <kbd>W A S D</kbd> 走 · <kbd>E</kbd> 互动 · <kbd>M</kbd> 地图 · <kbd>P</kbd> 笔触 · 拖鼠标转视角 · 滚轮远近
       </div>
+
+      <div id="weather-chip" class="card"></div>
+      <div id="o2" class="card"><span class="k">氧气</span><div class="meter o2"><i id="stat-o2"></i></div></div>
+      <div id="actionbar"></div>
 
       <div id="minimap-wrap" class="card">
         <canvas id="minimap" width="194" height="194"></canvas>
@@ -491,6 +646,8 @@
         </div>
       </div>
     </div>
+
+    <div id="underwater"></div>
 
     <div id="loading">
       <div class="box">

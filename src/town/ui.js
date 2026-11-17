@@ -56,7 +56,7 @@ export function createHud() {
       toastTimer = setTimeout(() => el.toast.classList.remove('on'), ms);
     },
     /** 打开一个面板；body 是 HTML 字符串，buttons 是 [{label, onClick, primary}] */
-    open(title, body, buttons = []) {
+    open(title, body, buttons = [], { dock = false } = {}) {
       el.panelTitle.textContent = title;
       el.panelBody.innerHTML = body;
       el.panelFoot.innerHTML = '';
@@ -71,6 +71,7 @@ export function createHud() {
         });
         el.panelFoot.appendChild(b);
       }
+      el.panel.classList.toggle('dock', dock);
       el.panel.classList.add('on');
       el.root.classList.add('panel-open');
       panelOpen = true;

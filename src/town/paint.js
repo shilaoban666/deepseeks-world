@@ -134,6 +134,13 @@ void main() {
     col *= mix(vec3(1.0), detail, uAlbedoMix);
   }
 
+  // 天气：雨后墙面颜色深一点；霜和雪落在朝上的面（屋顶、窗台、石阶）上
+  if (uIndoor < 0.5) {
+    col = mix(col, col * vec3(0.76, 0.8, 0.86), uWetness * 0.35);
+    float up = smoothstep(0.3, 0.8, N.y) * (0.82 + 0.18 * fract(sin(dot(floor(vWorld.xz * 1.7), vec2(12.9898, 78.233))) * 43758.5));
+    vec3 snow = mix(vec3(0.6, 0.68, 0.82) * (uSkyColor * 1.3 + 0.18), vec3(0.97, 0.97, 1.0) * (uSunColor * 0.4 + uSkyColor * 0.36), lit);
+    col = mix(col, snow, uFrost * up * 0.9);
+  }
   outC = vec4(uIndoor > 0.5 ? col : applyFog(col, vWorld), 1.0);
 }
 `;

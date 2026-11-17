@@ -284,6 +284,8 @@ void main() {
   // seen against the sun, leaves glow
   float through = pow(max(dot(-V, uSunDir), 0.0), 2.0);
   col = col * light + vec3(0.3, 0.5, 0.05) * uSunColor * through * (0.05 + 0.24 * vRand.x * vRand.x);
+  // (the town's weather: frost whitens the crowns from the top down)
+  col = mix(col, vec3(0.84, 0.88, 0.94) * (uSunColor * 0.36 + uSkyColor * 0.5), uFrost * 0.6 * smoothstep(-0.3, 0.6, vBall.y));
   outC = vec4(applyFog(col, vWorld), a);
 }
 `;
@@ -722,6 +724,8 @@ export function createGrove(field, places, { cards = 1, heightAt: groundAt = hei
     group,
     trees: places,
     count: places.length,
+    /** 每种树多高、树冠从多高开始、多宽（给爬树用） */
+    sizes: kinds.map((k) => (k ? { height: k.height, crownY: k.crownY, crown: k.crown } : null)),
     /** 每帧：按离相机多远，决定每个格子画哪一档。 */
     update(camera) {
       const px = camera.position.x;

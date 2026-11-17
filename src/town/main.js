@@ -14,6 +14,10 @@ import { createFarGround } from './props.js';
 import { configureAlbedo, loadAlbedo } from './paint.js';
 import { loadPlantAtlases } from './billboard.js';
 import * as plan from './plan.js';
+import { createParticles } from './particles.js';
+import { createWeather } from './weather.js';
+import { createActions } from './actions.js';
+import { createPanels } from './panels.js';
 
 const params = new URLSearchParams(location.search);
 // 画质档和原作一样：high / medium / low。?lite=1 是 low 的别名（给核显用）。
@@ -151,6 +155,11 @@ if (params.get('tex') !== '0') {
     // 街具：长椅木条 / 铸铁椅架 / 木栅栏 / 铁皮桶 / 木牌
     bench0: 'bench0', bench1: 'bench1', fence0: 'fence0', bin0: 'bin0', sign0: 'sign0',
   };
+  // 画风筛选：下面这几张和吉卜力/煤炭镇的手绘感不搭——鹅卵石和碎石路像照片、柏油和瓦楞铁太现代、
+  // 铁艺灯柱和铁皮桶镜像拼接后出了对称花纹、木电杆是一整根画在图里（不能平铺）、煤渣砖太灰太脏。
+  // 它们不载入；用到它们的地方自动退回同类的第 0 号或程序化画法。?alltex=1 全部载入（对比用）。
+  const OFF_STYLE = ['road0', 'road1', 'road2', 'road3', 'roof4', 'wall7', 'lamp0', 'lamp2', 'bin0'];
+  if (params.get('alltex') !== '1') for (const k of OFF_STYLE) delete names[k];
   const loaded = {};
   await Promise.all(
     Object.entries(names).map(async ([kind, file]) => {
@@ -177,7 +186,8 @@ if (params.get('plants') !== '0') {
 await setProgress(0.5, '正在盖房子…');
 const city = createCity(field.uniforms, field, {
   plants,
-  roadTex: params.get('tex') !== '0' && params.get('roadtex') !== '0',
+  // 路面默认用程序化的手绘石板（新贴图版过曝、像照片）；?roadtex=1 才换贴图
+  roadTex: params.get('tex') !== '0' && params.get('roadtex') === '1',
   cards: high ? 1 : medium ? 0.7 : 0.4,
   treeNear: high ? 150 : medium ? 110 : 70,
   treeFar: high ? 760 : medium ? 560 : 340,
@@ -217,6 +227,14 @@ cam.update(0.016, whale.state, plan.heightAt);
 const mover = createMover({ colliderList: () => (indoor ? interior.colliders : city.colliders) });
 
 // ---- 界面 ------------------------------------------------------------------------------------------------------
+// ---- 粒子和天气 -------------------------------------------------------------------------------------------------
+const particles = createParticles(field.uniforms, lite ? 1400 : 2600);
+scene.add(particles.mesh);
+const weather = createWeather({ field, frame, particles, lite, ignite: (x, z, r) => field.ignite(x, z, r) });
+scene.add(weather.group);
+if (params.get('weather')) weather.set(params.get('weather'), { immediate: true });
+let nightNow = 0;
+
 const hud = createHud();
 await setProgress(0.86, '正在画地图…');
 const bakedMap = bakeMinimap();
@@ -233,7 +251,9 @@ const game = createGame({
       return whale.state.z;
     },
     get nearWater() {
-      return plan.lakeDistance(whale.state.x, whale.state.z) < 1.35;
+      // 湖、河、海：身边 3 米以内有水就算
+      for (const r of [2, 3.5, 5]) for (let a = 0; a < 6.28; a += 0.6) if (plan.waterAt(whale.state.x + Math.cos(a) * r, whale.state.z + Math.sin(a) * r) != null) return true;
+      return plan.waterAt(whale.state.x, whale.state.z) != null;
     },
   },
   city,
@@ -245,6 +265,7 @@ const game = createGame({
     showMap(1);
   },
   onDoor(enter) {
+    actions?.reset();
     if (enter === indoor) return;
     if (enter) {
       outdoorPos.x = whale.state.x;
@@ -352,11 +373,39 @@ const syncSky = () => {
     frame.exposure = sky.exposure * (1 - 0.25 * night);
     frame.grade.set(1 - 0.8 * night, 1 - 0.68 * night, 1 - 0.36 * night);
     field.uniforms.uNight.value = night;
+    nightNow = night;
+    // 天气在这一刻的天光上再调一层（屋里有自己的灯，不调）
+    if (!indoor) {
+      weather.apply();
+      underwaterLook();
+    }
   }
 };
+/** 眼睛进了水：雾变成青绿色、很浓，画面整体压蓝 */
+const underwaterLook = () => {
+  const w = actions?.underwater(camera);
+  if (w == null) return;
+  const u = field.uniforms;
+  const lum = Math.max(0.25, (u.uSkyColor.value.r + u.uSkyColor.value.g + u.uSkyColor.value.b) / 3);
+  u.uFogColor.value.setRGB(0.05 * lum * 3, 0.26 * lum * 3, 0.32 * lum * 3);
+  u.uFogSunColor.value.copy(u.uFogColor.value);
+  u.uFogDensity.value = 0.11;
+  frame.grade.x *= 0.62;
+  frame.grade.y *= 0.9;
+  frame.grade.z *= 1.04;
+};
+let actions = null;
 await setProgress(0.92, '正在画云…');
 await skyReady;
 sky = createSky(renderer, field, { parts: skyParts });
+{
+  // 每次天光重算之后，让天气记下新的基准光
+  const setHour = sky.setHour.bind(sky);
+  sky.setHour = (h, soft) => {
+    setHour(h, soft);
+    weather.capture(sky);
+  };
+}
 scene.add(sky.mesh);
 city.lake.userData.setSky(sky);
 syncSky();
@@ -422,6 +471,30 @@ const findNearest = () => {
   return best;
 };
 
+// ---- 动作 ------------------------------------------------------------------------------------------------------
+actions = createActions({ whale, mover, cam, game, hud, woods: city.woods, particles, field, plan, weather, plants, shared: field.uniforms, scene });
+const panels = createPanels({
+  actions,
+  weather,
+  game,
+  hud,
+  onAction(id) {
+    if (id === 'bag') return panels.openBag();
+    if (id === 'weather') return panels.openWeather();
+    if (id === 'strike') {
+      hud.close();
+      // 劈在她前面二十几米的草地上
+      const fx = Math.sin(whale.state.yaw);
+      const fz = Math.cos(whale.state.yaw);
+      weather.strike(camera, { x: whale.state.x + fx * 24, z: whale.state.z + fz * 24 });
+      return;
+    }
+    if (id === 'run') return hud.toast('按住 Shift 跑');
+    if (indoor || seated) return;
+    actions.act(id);
+  },
+});
+
 const doInteract = () => {
   // 坐着的时候，E 就是起身
   if (seated) {
@@ -433,6 +506,8 @@ const doInteract = () => {
     game.interact(nearest ?? { kind: 'none', name: '' });
   } else if (nearest) {
     game.interact(nearest);
+  } else if (!indoor && actions.canFish()) {
+    actions.act('fish');
   } else if (indoor) {
     game.indoorMenu();
   }
@@ -456,7 +531,14 @@ window.addEventListener('keydown', (e) => {
     else if (hud.isOpen) hud.close();
     else cam.unlock();
   }
-  if (e.code === 'KeyF') {
+  if (e.code === 'KeyB') panels.openBag();
+  if (e.code === 'KeyT') {
+    if (hud.isOpen) hud.close();
+    else panels.openWeather();
+  }
+  if (!indoor && !hud.isOpen && !seated && actions.handleKey(e.code)) e.preventDefault();
+  if (e.code === 'Space') e.preventDefault();
+  if (e.code === 'KeyP') {
     paintNow = paintNow ? 0 : paintWas;
     hud.toast(paintNow ? `笔触：开（${paintNow}）` : '笔触：关');
   }
@@ -481,10 +563,23 @@ function tick(dt) {
     whale.update(dt, camera, false, 'sit');
     cam.update(dt, whale.state, ground, 1.3);
   } else {
-    const moved = mover.step(dt, whale.state, cam, game.state.stamina > 15 ? 1 : 0.62);
-    whale.state.y = ground(whale.state.x, whale.state.z);
-    // 朝向跟着走的方向
-    if (moved.speed > 0.25) {
+    let moving;
+    let pose = null;
+    let eye = indoor ? 0.9 : 1.35;
+    if (indoor) {
+      const moved = mover.step(dt, whale.state, cam, game.state.stamina > 15 ? 1 : 0.62);
+      whale.state.y = whale.state.groundY = ground(whale.state.x, whale.state.z);
+      moving = moved.moved > 0.004;
+    } else {
+      // 室外：交给动作系统（跑、跳、爬树、游泳、潜水、钓鱼、晒太阳）
+      const r = actions.step(dt, ground);
+      moving = r.moving;
+      pose = r.pose;
+      eye = r.eye;
+    }
+    // 朝向跟着走的方向（爬树、钓鱼、躺着的时候不转）
+    const turn = indoor || ['ground', 'swim', 'dive'].includes(actions.mode);
+    if (turn && moving) {
       const f = cam.forward;
       const rxp = -f.y;
       const rzp = f.x;
@@ -496,9 +591,8 @@ function tick(dt) {
       if (mover.keys.has('KeyA') || mover.keys.has('ArrowLeft')) mx -= 1;
       if (mx || mz) whale.state.yaw = Math.atan2(f.x * mz + rxp * mx, f.y * mz + rzp * mx);
     }
-    whale.update(dt, camera, moved.moved > 0.004 || window.__tg?.forceMoving);
-    // 屋里镜头比人低一点：第三人称在 2.9 m 的房间里要收着
-    cam.update(dt, whale.state, ground, indoor ? 0.9 : 1.35);
+    whale.update(dt, camera, moving || window.__tg?.forceMoving, window.__tg?.forcePose ?? pose);
+    cam.update(dt, whale.state, ground, eye);
   }
 
   field.update(dt, camera);
@@ -506,6 +600,8 @@ function tick(dt) {
   if (!indoor) field.uniforms.uWalker.value.set(whale.state.x, whale.state.z, 0.55, 2.2);
   else interior.update(dt);
   game.update(dt);
+  weather.update(dt, camera, { minutes: game.state.day * 1440 + game.state.minutes, outdoor: !indoor, night: nightNow });
+  particles.update(dt, [field.uniforms.uWind.value.x, field.uniforms.uWind.value.y, field.uniforms.uWind.value.z]);
   syncSky();
   indoorLight();
   if (sky) sky.update(dt, camera);
@@ -516,11 +612,12 @@ function tick(dt) {
   frame.render(indoor ? indoorScene : scene, camera);
 
   nearest = seated ? null : findNearest();
-  if (!hud.isOpen) hud.prompt(seated ? '站起身' : nearest ? nearest.hint ?? 'E 互动' : null);
+  if (!hud.isOpen) hud.prompt(seated ? '站起身' : nearest ? nearest.hint ?? 'E 互动' : !indoor && actions.canFish() ? 'E 钓鱼' : null);
 
   mapAccum += dt;
   if (mapAccum > 0.1) {
     mapAccum = 0;
+    panels.update(indoor, camera);
     minimap.draw(0.1, { x: whale.state.x, z: whale.state.z, yaw: whale.state.yaw });
   }
 }
@@ -586,6 +683,10 @@ window.__tg = {
     if (h != null) game.state.minutes = h * 60;
     syncSky();
   },
+  weather,
+  actions,
+  particles,
+  panels,
   setPaint(v) {
     paintNow = v;
   },

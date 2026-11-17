@@ -154,6 +154,9 @@ void main() {
   vec3 sky = mix(uSkyColor, vec3(dot(uSkyColor, vec3(0.333))), 0.6) * vec3(0.8, 0.88, 0.92) + 0.13;
   if (vOwn.w > 0.5) sky = mix(sky, vec3(dot(sky, vec3(0.333))) * vec3(1.12, 0.94, 0.98), 0.5);
   vec3 col = paint * mix(sky, sun, lit) * shadeOnly;
+  // (the town's weather: wet walls a shade darker, snow lying on the roofs)
+  col = mix(col, col * vec3(0.76, 0.8, 0.86), uWetness * 0.35);
+  col = mix(col, mix(vec3(0.6, 0.68, 0.82) * (uSkyColor * 1.3 + 0.18), vec3(0.97, 0.97, 1.0) * (uSunColor * 0.4 + uSkyColor * 0.36), lit), uFrost * step(0.5, vOwn.w) * 0.88);
   col = mix(col, vec3(3.4, 2.3, 0.95) * (0.8 + 0.4 * fract(seed * 7.3)), lampGlow * uNight);
   // (painted already: alpha tells the frame's finish to leave it alone, so a window stays a window)
   outC = vec4(mix(col, applyFog(col, vWorld), 0.7), 0.4);

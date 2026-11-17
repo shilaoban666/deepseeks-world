@@ -471,3 +471,15 @@ export function mountainAt(x, z) {
 // ---- 出生点 ----------------------------------------------------------------------------------------------------
 export const START = [0, 6];
 export const START_YAW = Math.PI * 0.32;
+/** 这里的水面有多高；不是水（或水太浅）就返回 null。湖、河、海都算。 */
+export function waterAt(x, z) {
+  const h = heightAt(x, z);
+  if (lakeDistance(x, z) < 1.3 && h < LAKE.level) return LAKE.level;
+  const rv = riverAt(x, z);
+  if (rv.d < RIVER_HALF + 9) {
+    const L = riverLevel(rv.t);
+    if (h < L) return L;
+  }
+  if (x > 480 && h < SEA.level) return SEA.level;
+  return null;
+}

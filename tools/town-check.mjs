@@ -74,6 +74,40 @@ const report = await page.evaluate(async () => {
   for (let i = 0; i < 60; i++) tg.tick(1 / 30);
   window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW' }));
   out.walked = +Math.hypot(tg.whale.state.x - before[0], tg.whale.state.z - before[1]).toFixed(1);
+  // ---- 动作 ----
+  const A = tg.actions;
+  const step = (n) => { for (let i = 0; i < n; i++) tg.tick(1 / 30); };
+  const act = {};
+  tg.weather.set('clear', { immediate: true });
+  A.reset();
+  tg.whale.state.x = 40; tg.whale.state.z = 25; step(3);
+  const y0 = tg.whale.state.y; A.act('jump'); step(6); act.jump = +(tg.whale.state.y - y0).toFixed(2); step(30); act.landed = Math.abs(tg.whale.state.y - y0) < 0.05;
+  // 游泳 → 潜水
+  tg.whale.state.x = -150; tg.whale.state.z = -600; step(4); act.swim = A.mode;
+  A.act('dive'); step(60); act.dive = A.mode; act.oxygen = Math.round(A.oxygen);
+  A.act('jump'); step(30); act.surface = A.mode;
+  tg.whale.state.x = 40; tg.whale.state.z = 25; step(10); act.ashore = A.mode;
+  // 爬树
+  const t = tg.city.woods.trees.find((t) => t[2] >= 1 && t[2] <= 3 && t[3] > 0.9 && Math.hypot(t[0] + 300, t[1] - 300) < 200);
+  tg.whale.state.x = t[0] + 1.2; tg.whale.state.z = t[1] + 1.2; step(2);
+  A.act('climb'); act.climb = A.mode; tg.mover.keys.add('KeyW'); const yc = tg.whale.state.y; step(40); tg.mover.keys.clear(); act.climbUp = +(tg.whale.state.y - yc).toFixed(2);
+  A.act('jump'); step(40); act.climbOff = A.mode;
+  // 晒太阳
+  const m0 = tg.game.state.minutes; A.act('lie'); step(30); act.lie = A.mode; act.lieMinutes = Math.round(tg.game.state.minutes - m0);
+  tg.mover.keys.add('KeyW'); step(2); tg.mover.keys.clear(); act.lieUp = A.mode;
+  // 点火：晴天能着、雨天点不着
+  tg.whale.state.x = -240; tg.whale.state.z = -84; tg.whale.state.yaw = 0; step(2);
+  A.act('fire'); for (let i = 0; i < 120; i++) tg.field.update(1 / 30, tg.camera); act.fireBurning = tg.field.stateAt(-240, -80).burnt > 0 || tg.field.stateAt(-240, -81.8).burning;
+  tg.weather.set('rain', { immediate: true }); step(2);
+  act.rainFireBlocked = !A.available(false).find((a) => a.id === 'fire').on;
+  // 每种天气都切一遍
+  act.weathers = tg.weather.list.map((w) => { tg.weather.set(w.kind, { immediate: true }); step(3); return w.kind; }).length;
+  tg.weather.strike(tg.camera); step(5);
+  // 背包：吃一碗饭
+  tg.game.state.bag.rice = 2; const h0 = tg.game.state.hunger; tg.game.use('rice'); act.eat = Math.round(tg.game.state.hunger - h0);
+  tg.panels.openBag(); act.bagPanel = document.querySelectorAll('.bag-grid .slot').length; tg.hud.close();
+  tg.panels.openWeather(); act.weatherPanel = document.querySelectorAll('.bag-grid .wx').length; tg.hud.close();
+  out.actions = act;
   out.state = { coins: tg.game.state.coins ?? tg.game.state.gold, day: tg.game.state.day };
   out.stats = tg.city.stats;
   return out;

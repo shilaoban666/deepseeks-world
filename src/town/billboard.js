@@ -69,6 +69,7 @@ void main() {
   tint = mix(tint, tint * vec3(0.42, 0.46, 0.62), uNight);
   vec3 col = t.rgb * tint * 1.9;
   // 少数几个像素的 alpha：让笔触收尾跳过、并且自动描墨线
+  col = mix(col, vec3(0.84, 0.88, 0.94) * (uSunColor * 0.36 + uSkyColor * 0.5), uFrost * 0.55 * vSway);
   outC = vec4(applyFog(col, vWorld), uAlpha);
 }
 `;

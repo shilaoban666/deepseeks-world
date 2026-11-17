@@ -39,6 +39,20 @@ export const VIEWS = {
   wild: { x: 420, z: -120, yaw: 110, pitch: 8, dist: 8 },
   peak: { x: 60, z: -470, yaw: 0, pitch: 4, dist: 8 },
   overview: { x: 110, z: 60, yaw: 200, pitch: 52, dist: 26 },
+  rainStreet: { x: 40, z: 25, yaw: 230, pitch: 8, dist: 7, weather: 'rain' },
+  storm: { x: -400, z: 600, yaw: 300, pitch: 14, dist: 10, weather: 'storm', setup: "tg.weather.strike(tg.camera, { x: -440, z: 560 });" },
+  frost: { x: 96, z: 44, yaw: 235, pitch: 12, dist: 9, weather: 'frost' },
+  frostWild: { x: -400, z: 640, yaw: 60, pitch: 14, dist: 8, weather: 'frost' },
+  sunny: { x: 760, z: 40, yaw: 250, pitch: 10, dist: 8, weather: 'sunny' },
+  windy: { x: -470, z: 600, yaw: 300, pitch: 12, dist: 8, weather: 'windy', setup: "for (let i = 0; i < 120; i++) tg.weather.update(1/30, tg.camera, { minutes: 0 });" },
+  swim: { x: -150, z: -560, yaw: 160, pitch: 14, dist: 6, setup: "tg.actions.step(0.016, tg.plan.walkAt);" },
+  dive: { x: -150, z: -620, yaw: 120, pitch: 2, dist: 4.5, setup: "tg.actions.step(0.016, tg.plan.walkAt); tg.actions.act('dive'); for (let i = 0; i < 90; i++) tg.actions.step(1/30, tg.plan.walkAt);" },
+  climb: { x: 0, z: 0, yaw: 30, pitch: 10, dist: 9, face: 180, setup: "const t = tg.city.woods.trees.filter((t) => t[2] >= 1 && t[2] <= 3 && t[3] > 0.9 && tg.city.colliders.every((c) => Math.abs(c.x - t[0]) > c.hw + 14 || Math.abs(c.z - t[1]) > c.hd + 14) && Math.hypot(t[0] + 300, t[1] - 300) < 400).sort((a, b) => Math.hypot(a[0] + 300, a[1] - 300) - Math.hypot(b[0] + 300, b[1] - 300))[0]; tg.whale.state.x = t[0] + 1.5; tg.whale.state.z = t[1] + 1.5; tg.whale.state.y = tg.plan.heightAt(t[0], t[1]); tg.actions.act('climb'); tg.mover.keys.add('KeyW'); for (let i = 0; i < 32; i++) tg.actions.step(1/30, tg.plan.walkAt); tg.mover.keys.clear(); tg.cam.yaw = Math.atan2(tg.whale.state.x - t[0], tg.whale.state.z - t[1]) + 0.5;" },
+  fishing: { x: -150, z: -513, yaw: 50, pitch: 16, dist: 6, face: 180, setup: "tg.whale.state.yaw = Math.PI; tg.game.interact({ kind: 'fish', name: 'x' }); tg.game.fishing.wait = 99;" },
+  lie: { x: 760, z: 40, yaw: 200, pitch: 28, dist: 5, weather: 'sunny', setup: "tg.actions.act('lie');" },
+  fire: { x: -240, z: -84, yaw: 190, pitch: 16, dist: 11, face: 10, weather: 'windy', setup: "tg.whale.state.x = -240; tg.whale.state.z = -84; tg.whale.state.yaw = 0.17; tg.actions.act('fire'); for (let i = 0; i < 300; i++) tg.field.update(1/30, tg.camera);" },
+  weatherPanel: { x: 96, z: 44, yaw: 235, pitch: 12, dist: 9, setup: "tg.panels.openWeather();" },
+  bagPanel: { x: 40, z: 25, yaw: 230, pitch: 8, dist: 7, setup: "tg.game.state.bag.fish = 2; tg.game.state.bag.cooked = 1; tg.game.state.bag.flower = 3; tg.panels.openBag();" },
   living: { indoor: true, x: -2.5, z: 2.5, yaw: 30, pitch: 40, dist: 7 },
   kitchen: { indoor: true, x: 4, z: 3.5, yaw: 200, pitch: 40, dist: 7 },
   bedroom: { indoor: true, x: -5, z: -3.5, yaw: 150, pitch: 40, dist: 7 },
@@ -114,6 +128,10 @@ for (const name of names.length ? names : Object.keys(VIEWS)) {
       tg.cam.distance = tg.cam.want = v.dist;
       tg.whale.state.yaw = v.face != null ? (v.face * Math.PI) / 180 : tg.cam.yaw + Math.PI;
       tg.mover.keys.clear();
+      tg.actions?.reset();
+      tg.forcePose = null;
+      tg.weather?.set(v.weather ?? 'clear', { immediate: true });
+      if (v.setup) new Function('tg', v.setup)(tg);
       if (v.sit) tg.game.interact(tg.interior.interactables.find((i) => i.kind === 'sofa'));
       for (let i = 0; i < 50; i++) {
         if (v.walk) {

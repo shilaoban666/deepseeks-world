@@ -79,7 +79,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
     fishing = { phase: 'cast', t: 0, wait: 1.4 + Math.random() * 2.6 };
     hud.open('钓鱼', '<p id="fish-line">甩出鱼线……水面很静。</p>', [
       { label: '收线', onClick: () => { fishing = null; hud.close(); } },
-    ]);
+    ], { dock: true });
     panelTick = () => {
       if (!fishing) return;
       if (fishing.phase === 'cast') hud.refresh('fish-line', '甩出鱼线……水面上有细细的波纹。<br><span class="dim">（等一等）</span>');
@@ -544,6 +544,34 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
     interact,
     update,
     openCook,
+    startFishing,
+    stopFishing() {
+      fishing = null;
+      if (hud.isOpen) hud.close();
+    },
+    get fishing() {
+      return fishing;
+    },
+    syncStats,
+    /** 背包里的东西：[{ key, name, icon, count, food }] */
+    bagList,
+    /** 用一样东西（吃掉 / 看看） */
+    use(key) {
+      const FOOD = { rice: 18, fish: 0, veg: 6, cooked: 45, tea: 10, flower: 0 };
+      if (!(state.bag[key] > 0)) return '没有了';
+      if (key === 'fish') return '生鱼……还是拿去厨房做了再吃吧';
+      if (key === 'seed') return '种子要种到菜地里（家门口那块，E 种点什么）';
+      if (key === 'pearl') return '圆圆的，亮晶晶的。舍不得卖';
+      if (key === 'flower') return '一把野花，闻起来是太阳的味道';
+      if (FOOD[key]) {
+        take(key, 1);
+        state.hunger = Math.min(100, state.hunger + FOOD[key]);
+        if (key === 'tea') state.stamina = Math.min(100, state.stamina + 15);
+        syncStats();
+        return `吃掉了 ${ITEMS[key].icon}${ITEMS[key].name}，饱食 +${FOOD[key]}`;
+      }
+      return '';
+    },
     indoorMenu() {
       hud.open(
         '家里',

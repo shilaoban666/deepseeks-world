@@ -236,31 +236,65 @@ export function createWhalechan(shared, arts) {
       mesh.rotation.y = anim.rotation.y = yawToCam;
       const facing = Math.atan2(Math.sin(state.yaw), Math.cos(state.yaw));
       const view = pickView(yawToCam, facing);
-      state.walkPhase += dt * (moving ? 9 : 2.2);
+      // 她往屏幕右边走：立牌的 +x 就是屏幕右。原画朝左，所以往右走要翻转
+      const right = Math.sin(state.yaw) * Math.cos(yawToCam) - Math.cos(state.yaw) * Math.sin(yawToCam);
+      const running = pose === 'run';
+      const air = pose === 'air';
+      const swim = pose === 'swim';
+      const dive = pose === 'dive';
+      const climb = pose === 'climb';
+      const resting = pose === 'sit' || pose === 'lie' || pose === 'fish';
+      state.walkPhase += dt * (moving ? (running ? 13 : dive ? 4 : 9) : swim ? 3 : 2.2);
       let animated = false;
-      if (pose === 'sit') animated = play('sit', dt, 1);
-      else if (moving && view === 'side') {
-        // 她往屏幕右边走：立牌的 +x 就是屏幕右。原画朝左，所以往右走要翻转
-        const right = Math.sin(state.yaw) * Math.cos(yawToCam) - Math.cos(state.yaw) * Math.sin(yawToCam);
-        animated = play('run', dt, 1.5, right > 0);
-      } else if (moving && view === 'front') animated = play('jog', dt, 1.4);
+      let forceView = null;
+      if (resting) animated = play('sit', dt, pose === 'lie' ? 0.55 : 1);
+      else if (climb) forceView = 'back';
+      else if (dive) animated = play('run', dt, moving ? 0.8 : 0.35, right > 0);
+      else if ((moving || air) && view === 'side') animated = play('run', dt, running ? 2.2 : air ? 0.6 : 1.5, right > 0);
+      else if ((moving || air) && view === 'front') animated = play('jog', dt, running ? 2 : air ? 0.5 : 1.4);
       else if (!moving && view === 'front') animated = play('idle', dt, 1);
       anim.visible = animated;
       mesh.visible = !animated;
       if (!animated) {
         clipName = '';
-        if (mesh.material !== arts[view]) mesh.material = arts[view];
+        const v = forceView ?? view;
+        if (mesh.material !== arts[v]) mesh.material = arts[v];
       }
       // 走动时的小动作：上下颠、左右摆（背面没有动画帧，靠这个）
-      const bob = moving ? Math.abs(Math.sin(state.walkPhase)) * 0.07 : Math.sin(state.walkPhase) * 0.012;
-      mesh.position.y = bob;
-      anim.position.y = moving ? bob * 0.5 : 0;
-      mesh.rotation.z = moving ? Math.sin(state.walkPhase) * 0.06 : Math.sin(state.walkPhase * 0.6) * 0.012;
-      mesh.scale.set(1 + (moving ? Math.sin(state.walkPhase * 2) * 0.025 : 0), 1 - (moving ? Math.sin(state.walkPhase * 2) * 0.03 : 0), 1);
-      // 影子贴着地面，稍微往太阳的反方向偏
-      shadow.position.set(0, 0.03, 0);
-      const s = 1 + Math.max(0, 1 - Math.abs(state.vy) * 0.2) * 0.1;
-      shadow.scale.setScalar(s);
+      const step = moving && !air && !climb && !swim && !dive;
+      const bob = step ? Math.abs(Math.sin(state.walkPhase)) * (running ? 0.1 : 0.07) : Math.sin(state.walkPhase) * (swim ? 0.06 : 0.012);
+      mesh.position.set(0, bob, 0);
+      anim.position.set(0, step ? bob * 0.5 : swim ? bob : 0, 0);
+      let tilt = step ? Math.sin(state.walkPhase) * (running ? 0.09 : 0.06) : Math.sin(state.walkPhase * 0.6) * 0.012;
+      let sx = 1 + (step ? Math.sin(state.walkPhase * 2) * 0.025 : 0);
+      let sy = 1 - (step ? Math.sin(state.walkPhase * 2) * 0.03 : 0);
+      if (air) {
+        // 跳：往上冲的时候拉长，往下落的时候压扁一点
+        const k = Math.max(-0.14, Math.min(0.18, state.vy * 0.035));
+        sy = 1 + k;
+        sx = 1 - k * 0.6;
+        tilt = (right > 0 ? -1 : 1) * 0.08;
+      }
+      if (climb) {
+        // 抱着树干：左右晃，往上爬的时候一耸一耸
+        tilt = Math.sin(state.walkPhase * 0.8) * 0.05;
+        mesh.position.y = moving ? Math.abs(Math.sin(state.walkPhase * 1.3)) * 0.12 : 0;
+      }
+      if (dive) {
+        // 潜水：整个人横过来（头朝前进的方向），身子一波一波
+        tilt = (right > 0 ? -1 : 1) * (1.2 + Math.sin(state.walkPhase) * 0.08);
+        anim.position.set(right > 0 ? -0.55 : 0.55, 0.9, 0);
+      }
+      mesh.rotation.z = tilt;
+      anim.rotation.z = dive ? tilt : air ? tilt : 0;
+      mesh.scale.set(sx, sy, 1);
+      anim.scale.set(air ? sx : 1, air ? sy : 1, 1);
+      // 影子贴着地面（跳起来的时候影子留在地上、变小）；水里和树上没有影子
+      const groundY = state.groundY ?? state.y;
+      shadow.position.set(0, groundY - state.y + 0.03, 0);
+      shadow.visible = !swim && !dive && state.y - groundY < 4;
+      const s = 1 - Math.min(0.5, (state.y - groundY) * 0.12);
+      shadow.scale.setScalar(Math.max(0.4, s) * 1.1);
     },
     setPos(x, z) {
       state.x = x;
@@ -430,7 +464,7 @@ export function createMover(o) {
   return {
     keys,
     /** 返回这一帧走了多远（给小地图和脚步声用）。 */
-    step(dt, p, cam, speedScale = 1) {
+    step(dt, p, cam, speedScale = 1, allowWater = false) {
       const f = cam.forward;
       const rxp = -f.y;
       const rzp = f.x;
@@ -457,7 +491,7 @@ export function createMover(o) {
       if (Math.abs(p.z) > lim) p.z = Math.sign(p.z) * lim;
       pushOut(p, state.radius);
       // 不下水
-      if (inLake(p.x, p.z)) {
+      if (!allowWater && inLake(p.x, p.z)) {
         p.x = ox;
         p.z = oz;
         state.vx *= 0.4;

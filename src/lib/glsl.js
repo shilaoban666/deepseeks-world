@@ -43,6 +43,8 @@ uniform float uFloorInv;
 uniform float uCloudShade;   // how dark a cloud's shadow is, 0 for none
 uniform vec4 uWalker;        // someone walking in the open: x, z, how dark their shadow, how long (0 for nobody)
 uniform vec4 uLamp;          // a flame carried through the field: where it is, how bright (0 for none)
+uniform float uFrost;        // the town's weather: frost on the meadow, 0 to 1 (the valley leaves it at 0)
+uniform float uWetness;      // the town's weather: how wet everything is after rain, 0 to 1
 
 // The carried flame's light at p, in the same measure as tGlow's.
 float lampAt(vec3 p) {
@@ -199,7 +201,10 @@ float slopeSun(float rel) {
 // The meadow as it is painted: three greens, chosen by tone (0 in deep shade, 1 where the light is full).
 vec3 meadowGreen(float tone) {
   vec3 c = mix(vec3(0.05, 0.25, 0.07), vec3(0.15, 0.46, 0.085), smoothstep(0.2, 0.5, tone));
-  return mix(c, vec3(0.3, 0.57, 0.12), smoothstep(0.56, 0.9, tone));
+  c = mix(c, vec3(0.3, 0.57, 0.12), smoothstep(0.56, 0.9, tone));
+  // rain: a wet meadow is darker and bluer; frost: the blades go white-blue, more so where the light is
+  c = mix(c, c * vec3(0.72, 0.84, 0.86), uWetness * 0.6);
+  return mix(c, mix(vec3(0.5, 0.6, 0.66), vec3(0.86, 0.9, 0.94), smoothstep(0.2, 0.8, tone)), uFrost * 0.78);
 }
 
 // The light on it at this hour. shade is how open the place is to the sun (cloudAt's measure).

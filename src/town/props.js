@@ -79,6 +79,7 @@ void main() {
   vec3 white = mix(vec3(0.62, 0.74, 0.95) * (uSkyColor * 1.6 + 0.12), vec3(1.0, 0.99, 0.96) * (uSunColor * 0.42 + uSkyColor * 0.36), ndl);
   lit = mix(lit, white, snow);
 
+  lit = mix(lit, vec3(0.86, 0.9, 0.96) * (uSunColor * 0.36 + uSkyColor * 0.5), uFrost * 0.65);
   outC = vec4(applyFog(lit, vWorld), 1.0);
 }
 `;
@@ -850,7 +851,10 @@ void main() {
   float shade = cloudAt(xz);
   vec3 sun = uSunColor * 0.4 * max(dot(normalize(vN), uSunDir), 0.0) * 1.25;
   vec3 light = mix(uSkyColor * 0.95 + 0.04, sun + uSkyColor * 0.5, smoothstep(0.2, 0.9, shade));
-  outC = vec4(applyFog(albedo * light, vWorld), 1.0);
+  vec3 c = albedo * light;
+  c = mix(c, c * vec3(0.7, 0.76, 0.84), uWetness * 0.5);
+  c = mix(c, vec3(0.86, 0.9, 0.96) * (uSunColor * 0.36 + uSkyColor * 0.5), uFrost * 0.72 * (0.6 + 0.4 * gap));
+  outC = vec4(applyFog(c, vWorld), 1.0);
 }
 `;
 

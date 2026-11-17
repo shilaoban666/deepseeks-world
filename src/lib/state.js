@@ -138,6 +138,7 @@ export class FieldState {
     this.active = new Int32Array(cells);
     this.activeCount = 0;
     this.burning = 0;
+    this.damp = 0;
     this.burntCells = 0;
     this.acc = 0;
     this.time = 0;
@@ -413,7 +414,8 @@ export class FieldState {
       if (i > i1) i1 = i;
       if (j < j0) j0 = j;
       if (j > j1) j1 = j;
-      const age = (fAge[k] += dt);
+      // (rain: a burning tuft burns out three times sooner, and passes far less of its heat on)
+      const age = (fAge[k] += dt * (fState[k] === BURNING ? 1 + this.damp * 3 : 1));
       const o = k * 4;
       if (fState[k] === BURNING) {
         const dur = fDur[k];
@@ -434,7 +436,7 @@ export class FieldState {
         burning++;
         gsum[Math.floor(i / perG) + Math.floor(j / perG) * G] += heat;
         if (i < 3 || j < 3 || i > M - 4 || j > M - 4 || this.fDone[k]) continue;
-        const give = heat * dt;
+        const give = heat * dt * (1 - 0.88 * this.damp);
         let fresh = 0;
         for (let n = 0; n < kernel.length; n += 2) {
           const q = k + kernel[n];

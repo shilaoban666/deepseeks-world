@@ -1,0 +1,707 @@
+{
+ "source": "dashscope/qwen-image-3.0 生成的图集页，本地自动切分",
+ "groups": {
+  "plant": [
+   {
+    "file": "crops/plant/rice.png",
+    "w": 292,
+    "h": 465,
+    "sheet": "image-d437f5bc.png"
+   },
+   {
+    "file": "crops/plant/wheat.png",
+    "w": 132,
+    "h": 433,
+    "sheet": "image-d437f5bc.png"
+   },
+   {
+    "file": "crops/plant/maize.png",
+    "w": 236,
+    "h": 489,
+    "sheet": "image-d437f5bc.png"
+   },
+   {
+    "file": "crops/plant/soybean.png",
+    "w": 255,
+    "h": 433,
+    "sheet": "image-d437f5bc.png"
+   },
+   {
+    "file": "crops/plant/sorghum.png",
+    "w": 238,
+    "h": 484,
+    "sheet": "image-d437f5bc.png"
+   },
+   {
+    "file": "crops/plant/millet.png",
+    "w": 224,
+    "h": 431,
+    "sheet": "image-d437f5bc.png"
+   },
+   {
+    "file": "crops/plant/potato.png",
+    "w": 259,
+    "h": 420,
+    "sheet": "image-d437f5bc.png"
+   },
+   {
+    "file": "crops/plant/sweet-potato.png",
+    "w": 237,
+    "h": 456,
+    "sheet": "image-d437f5bc.png"
+   },
+   {
+    "file": "crops/plant/rapeseed.png",
+    "w": 198,
+    "h": 464,
+    "sheet": "image-f8db445f.png"
+   },
+   {
+    "file": "crops/plant/peanut.png",
+    "w": 254,
+    "h": 343,
+    "sheet": "image-f8db445f.png"
+   },
+   {
+    "file": "crops/plant/cotton.png",
+    "w": 222,
+    "h": 431,
+    "sheet": "image-f8db445f.png"
+   },
+   {
+    "file": "crops/plant/sugarcane.png",
+    "w": 246,
+    "h": 467,
+    "sheet": "image-f8db445f.png"
+   },
+   {
+    "file": "crops/plant/sugar-beet.png",
+    "w": 273,
+    "h": 382,
+    "sheet": "image-f8db445f.png"
+   },
+   {
+    "file": "crops/plant/tobacco.png",
+    "w": 214,
+    "h": 403,
+    "sheet": "image-f8db445f.png"
+   },
+   {
+    "file": "crops/plant/tea.png",
+    "w": 284,
+    "h": 292,
+    "sheet": "image-f8db445f.png"
+   },
+   {
+    "file": "crops/plant/flax.png",
+    "w": 108,
+    "h": 309,
+    "sheet": "image-f8db445f.png"
+   },
+   {
+    "file": "crops/plant/sunflower.png",
+    "w": 249,
+    "h": 476,
+    "sheet": "image-06f17d95.png"
+   },
+   {
+    "file": "crops/plant/sesame.png",
+    "w": 196,
+    "h": 473,
+    "sheet": "image-06f17d95.png"
+   },
+   {
+    "file": "crops/plant/barley.png",
+    "w": 143,
+    "h": 453,
+    "sheet": "image-06f17d95.png"
+   },
+   {
+    "file": "crops/plant/buckwheat.png",
+    "w": 188,
+    "h": 465,
+    "sheet": "image-06f17d95.png"
+   },
+   {
+    "file": "crops/plant/pea.png",
+    "w": 221,
+    "h": 462,
+    "sheet": "image-06f17d95.png"
+   },
+   {
+    "file": "crops/plant/broad-bean.png",
+    "w": 231,
+    "h": 464,
+    "sheet": "image-06f17d95.png"
+   },
+   {
+    "file": "crops/plant/mung-bean.png",
+    "w": 211,
+    "h": 441,
+    "sheet": "image-06f17d95.png"
+   },
+   {
+    "file": "crops/plant/taro.png",
+    "w": 273,
+    "h": 455,
+    "sheet": "image-06f17d95.png"
+   },
+   {
+    "file": "crops/plant/ginger.png",
+    "w": 285,
+    "h": 482,
+    "sheet": "image-85ace374.png"
+   },
+   {
+    "file": "crops/plant/garlic.png",
+    "w": 213,
+    "h": 477,
+    "sheet": "image-85ace374.png"
+   },
+   {
+    "file": "crops/plant/chilli.png",
+    "w": 330,
+    "h": 466,
+    "sheet": "image-85ace374.png"
+   },
+   {
+    "file": "crops/plant/tomato.png",
+    "w": 299,
+    "h": 451,
+    "sheet": "image-85ace374.png"
+   },
+   {
+    "file": "crops/plant/napa-cabbage.png",
+    "w": 254,
+    "h": 426,
+    "sheet": "image-85ace374.png"
+   },
+   {
+    "file": "crops/plant/radish.png",
+    "w": 360,
+    "h": 401,
+    "sheet": "image-85ace374.png"
+   }
+  ],
+  "produce": [
+   {
+    "file": "crops/produce/rice-ears.png",
+    "w": 274,
+    "h": 442,
+    "sheet": "image-2de82173.png"
+   },
+   {
+    "file": "crops/produce/wheat-ears.png",
+    "w": 187,
+    "h": 405,
+    "sheet": "image-2de82173.png"
+   },
+   {
+    "file": "crops/produce/maize-cob.png",
+    "w": 223,
+    "h": 430,
+    "sheet": "image-2de82173.png"
+   },
+   {
+    "file": "crops/produce/soybean-pods.png",
+    "w": 257,
+    "h": 312,
+    "sheet": "image-2de82173.png"
+   },
+   {
+    "file": "crops/produce/sorghum-head.png",
+    "w": 168,
+    "h": 474,
+    "sheet": "image-2de82173.png"
+   },
+   {
+    "file": "crops/produce/millet-head.png",
+    "w": 99,
+    "h": 456,
+    "sheet": "image-2de82173.png"
+   },
+   {
+    "file": "crops/produce/potato-tuber.png",
+    "w": 205,
+    "h": 268,
+    "sheet": "image-2de82173.png"
+   },
+   {
+    "file": "crops/produce/sweet-potato-root.png",
+    "w": 187,
+    "h": 388,
+    "sheet": "image-2de82173.png"
+   },
+   {
+    "file": "crops/produce/rapeseed-pods.png",
+    "w": 255,
+    "h": 387,
+    "sheet": "image-efceed8d.png"
+   },
+   {
+    "file": "crops/produce/peanuts.png",
+    "w": 203,
+    "h": 285,
+    "sheet": "image-efceed8d.png"
+   },
+   {
+    "file": "crops/produce/cotton-boll.png",
+    "w": 249,
+    "h": 276,
+    "sheet": "image-efceed8d.png"
+   },
+   {
+    "file": "crops/produce/sugarcane-stalk.png",
+    "w": 164,
+    "h": 400,
+    "sheet": "image-efceed8d.png"
+   },
+   {
+    "file": "crops/produce/sugar-beet-root.png",
+    "w": 225,
+    "h": 433,
+    "sheet": "image-efceed8d.png"
+   },
+   {
+    "file": "crops/produce/tobacco-leaf.png",
+    "w": 205,
+    "h": 419,
+    "sheet": "image-efceed8d.png"
+   },
+   {
+    "file": "crops/produce/tea-shoots.png",
+    "w": 231,
+    "h": 351,
+    "sheet": "image-efceed8d.png"
+   },
+   {
+    "file": "crops/produce/flax-fibre.png",
+    "w": 236,
+    "h": 431,
+    "sheet": "image-efceed8d.png"
+   },
+   {
+    "file": "crops/produce/sunflower-head.png",
+    "w": 314,
+    "h": 343,
+    "sheet": "image-55ae3e33.png"
+   },
+   {
+    "file": "crops/produce/sesame-pods.png",
+    "w": 185,
+    "h": 412,
+    "sheet": "image-55ae3e33.png"
+   },
+   {
+    "file": "crops/produce/barley-ears.png",
+    "w": 159,
+    "h": 435,
+    "sheet": "image-55ae3e33.png"
+   },
+   {
+    "file": "crops/produce/buckwheat-grain.png",
+    "w": 209,
+    "h": 374,
+    "sheet": "image-55ae3e33.png"
+   },
+   {
+    "file": "crops/produce/pea-pods.png",
+    "w": 226,
+    "h": 376,
+    "sheet": "image-55ae3e33.png"
+   },
+   {
+    "file": "crops/produce/broad-bean-pods.png",
+    "w": 236,
+    "h": 419,
+    "sheet": "image-55ae3e33.png"
+   },
+   {
+    "file": "crops/produce/mung-bean-pods.png",
+    "w": 203,
+    "h": 374,
+    "sheet": "image-55ae3e33.png"
+   },
+   {
+    "file": "crops/produce/taro-corm.png",
+    "w": 246,
+    "h": 325,
+    "sheet": "image-55ae3e33.png"
+   },
+   {
+    "file": "crops/produce/ginger-root.png",
+    "w": 276,
+    "h": 355,
+    "sheet": "image-abca7b66.png"
+   },
+   {
+    "file": "crops/produce/garlic-bulb.png",
+    "w": 268,
+    "h": 283,
+    "sheet": "image-abca7b66.png"
+   },
+   {
+    "file": "crops/produce/chilli.png",
+    "w": 224,
+    "h": 360,
+    "sheet": "image-abca7b66.png"
+   },
+   {
+    "file": "crops/produce/tomato.png",
+    "w": 325,
+    "h": 297,
+    "sheet": "image-abca7b66.png"
+   },
+   {
+    "file": "crops/produce/napa-cabbage.png",
+    "w": 259,
+    "h": 422,
+    "sheet": "image-abca7b66.png"
+   },
+   {
+    "file": "crops/produce/radish.png",
+    "w": 154,
+    "h": 471,
+    "sheet": "image-abca7b66.png"
+   }
+  ],
+  "tool": [
+   {
+    "file": "tools/hoe.png",
+    "w": 154,
+    "h": 440,
+    "sheet": "image-e4c5dc97.png"
+   },
+   {
+    "file": "tools/spade.png",
+    "w": 125,
+    "h": 447,
+    "sheet": "image-e4c5dc97.png"
+   },
+   {
+    "file": "tools/shovel.png",
+    "w": 131,
+    "h": 448,
+    "sheet": "image-e4c5dc97.png"
+   },
+   {
+    "file": "tools/hand-rake.png",
+    "w": 176,
+    "h": 427,
+    "sheet": "image-e4c5dc97.png"
+   },
+   {
+    "file": "tools/iron-rake.png",
+    "w": 218,
+    "h": 431,
+    "sheet": "image-e4c5dc97.png"
+   },
+   {
+    "file": "tools/sickle.png",
+    "w": 194,
+    "h": 388,
+    "sheet": "image-e4c5dc97.png"
+   },
+   {
+    "file": "tools/scythe.png",
+    "w": 232,
+    "h": 446,
+    "sheet": "image-e4c5dc97.png"
+   },
+   {
+    "file": "tools/billhook.png",
+    "w": 150,
+    "h": 384,
+    "sheet": "image-e4c5dc97.png"
+   },
+   {
+    "file": "tools/axe.png",
+    "w": 207,
+    "h": 392,
+    "sheet": "image-d6f468ac.png"
+   },
+   {
+    "file": "tools/carrying-pole.png",
+    "w": 273,
+    "h": 393,
+    "sheet": "image-d6f468ac.png"
+   },
+   {
+    "file": "tools/bamboo-baskets.png",
+    "w": 255,
+    "h": 276,
+    "sheet": "image-d6f468ac.png"
+   },
+   {
+    "file": "tools/winnowing-basket.png",
+    "w": 234,
+    "h": 182,
+    "sheet": "image-d6f468ac.png"
+   },
+   {
+    "file": "tools/sieve.png",
+    "w": 248,
+    "h": 244,
+    "sheet": "image-d6f468ac.png"
+   },
+   {
+    "file": "tools/wooden-plough.png",
+    "w": 250,
+    "h": 339,
+    "sheet": "image-d6f468ac.png"
+   },
+   {
+    "file": "tools/ploughshare.png",
+    "w": 188,
+    "h": 324,
+    "sheet": "image-d6f468ac.png"
+   },
+   {
+    "file": "tools/harrow.png",
+    "w": 245,
+    "h": 408,
+    "sheet": "image-d6f468ac.png"
+   },
+   {
+    "file": "tools/ox-yoke.png",
+    "w": 256,
+    "h": 234,
+    "sheet": "image-86c7260f.png"
+   },
+   {
+    "file": "tools/ox-cart.png",
+    "w": 269,
+    "h": 234,
+    "sheet": "image-86c7260f.png"
+   },
+   {
+    "file": "tools/handcart.png",
+    "w": 249,
+    "h": 289,
+    "sheet": "image-86c7260f.png"
+   },
+   {
+    "file": "tools/wheelbarrow.png",
+    "w": 251,
+    "h": 270,
+    "sheet": "image-86c7260f.png"
+   },
+   {
+    "file": "tools/waterwheel.png",
+    "w": 241,
+    "h": 318,
+    "sheet": "image-86c7260f.png"
+   },
+   {
+    "file": "tools/water-bucket.png",
+    "w": 189,
+    "h": 301,
+    "sheet": "image-86c7260f.png"
+   },
+   {
+    "file": "tools/ladle.png",
+    "w": 229,
+    "h": 337,
+    "sheet": "image-86c7260f.png"
+   },
+   {
+    "file": "tools/manure-bucket.png",
+    "w": 234,
+    "h": 262,
+    "sheet": "image-86c7260f.png"
+   },
+   {
+    "file": "tools/hand-cultivator.png",
+    "w": 175,
+    "h": 428,
+    "sheet": "image-0eba4102.png"
+   },
+   {
+    "file": "tools/soil-fork.png",
+    "w": 166,
+    "h": 419,
+    "sheet": "image-0eba4102.png"
+   },
+   {
+    "file": "tools/seed-drill.png",
+    "w": 212,
+    "h": 429,
+    "sheet": "image-0eba4102.png"
+   },
+   {
+    "file": "tools/trowel.png",
+    "w": 148,
+    "h": 404,
+    "sheet": "image-0eba4102.png"
+   },
+   {
+    "file": "tools/sprayer.png",
+    "w": 228,
+    "h": 415,
+    "sheet": "image-0eba4102.png"
+   },
+   {
+    "file": "tools/watering-can.png",
+    "w": 284,
+    "h": 306,
+    "sheet": "image-0eba4102.png"
+   },
+   {
+    "file": "tools/pruning-shears.png",
+    "w": 158,
+    "h": 391,
+    "sheet": "image-0eba4102.png"
+   },
+   {
+    "file": "tools/hand-saw.png",
+    "w": 179,
+    "h": 409,
+    "sheet": "image-0eba4102.png"
+   },
+   {
+    "file": "tools/chopping-knife.png",
+    "w": 172,
+    "h": 454,
+    "sheet": "image-7b6d70ca.png"
+   },
+   {
+    "file": "tools/whetstone.png",
+    "w": 244,
+    "h": 370,
+    "sheet": "image-7b6d70ca.png"
+   },
+   {
+    "file": "tools/pitchfork.png",
+    "w": 196,
+    "h": 524,
+    "sheet": "image-7b6d70ca.png"
+   },
+   {
+    "file": "tools/hay-fork.png",
+    "w": 254,
+    "h": 485,
+    "sheet": "image-7b6d70ca.png"
+   },
+   {
+    "file": "tools/winnowing-fork.png",
+    "w": 222,
+    "h": 404,
+    "sheet": "image-7b6d70ca.png"
+   },
+   {
+    "file": "tools/flail.png",
+    "w": 191,
+    "h": 416,
+    "sheet": "image-7b6d70ca.png"
+   },
+   {
+    "file": "tools/stone-mill.png",
+    "w": 281,
+    "h": 288,
+    "sheet": "image-7b6d70ca.png"
+   },
+   {
+    "file": "tools/stone-roller.png",
+    "w": 255,
+    "h": 243,
+    "sheet": "image-7b6d70ca.png"
+   },
+   {
+    "file": "tools/rice-pounder.png",
+    "w": 213,
+    "h": 369,
+    "sheet": "image-5379d99b.png"
+   },
+   {
+    "file": "tools/winnowing-machine.png",
+    "w": 260,
+    "h": 345,
+    "sheet": "image-5379d99b.png"
+   },
+   {
+    "file": "tools/jute-sack.png",
+    "w": 244,
+    "h": 347,
+    "sheet": "image-5379d99b.png"
+   },
+   {
+    "file": "tools/rope-coil.png",
+    "w": 235,
+    "h": 236,
+    "sheet": "image-5379d99b.png"
+   },
+   {
+    "file": "tools/straw-hat.png",
+    "w": 258,
+    "h": 292,
+    "sheet": "image-5379d99b.png"
+   },
+   {
+    "file": "tools/rain-cape.png",
+    "w": 240,
+    "h": 333,
+    "sheet": "image-5379d99b.png"
+   },
+   {
+    "file": "tools/straw-sandals.png",
+    "w": 230,
+    "h": 271,
+    "sheet": "image-5379d99b.png"
+   },
+   {
+    "file": "tools/work-gloves.png",
+    "w": 245,
+    "h": 293,
+    "sheet": "image-5379d99b.png"
+   },
+   {
+    "file": "tools/ox-halter.png",
+    "w": 232,
+    "h": 313,
+    "sheet": "image-65319449.png"
+   },
+   {
+    "file": "tools/tractor.png",
+    "w": 274,
+    "h": 291,
+    "sheet": "image-65319449.png"
+   },
+   {
+    "file": "tools/threshing-tub.png",
+    "w": 262,
+    "h": 235,
+    "sheet": "image-65319449.png"
+   },
+   {
+    "file": "tools/grain-scoop.png",
+    "w": 215,
+    "h": 348,
+    "sheet": "image-65319449.png"
+   },
+   {
+    "file": "tools/drying-rake.png",
+    "w": 232,
+    "h": 282,
+    "sheet": "image-65319449.png"
+   },
+   {
+    "file": "tools/bamboo-basket.png",
+    "w": 210,
+    "h": 321,
+    "sheet": "image-65319449.png"
+   },
+   {
+    "file": "tools/water-trough.png",
+    "w": 282,
+    "h": 269,
+    "sheet": "image-65319449.png"
+   },
+   {
+    "file": "tools/ladder.png",
+    "w": 198,
+    "h": 392,
+    "sheet": "image-65319449.png"
+   }
+  ]
+ }
+}

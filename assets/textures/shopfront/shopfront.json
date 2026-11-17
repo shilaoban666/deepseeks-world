@@ -1,0 +1,422 @@
+{
+ "street_avenue": {
+  "cn": "大道石板",
+  "mean": [
+   0.8208,
+   0.803,
+   0.7168
+  ],
+  "std": 0.0617,
+  "seam": "mx→mirror(兜底)",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "street_asphalt": {
+  "cn": "街道柏油",
+  "mean": [
+   0.279,
+   0.293,
+   0.2987
+  ],
+  "std": 0.0128,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "street_sidewalk": {
+  "cn": "人行道方砖",
+  "mean": [
+   0.7646,
+   0.732,
+   0.6633
+  ],
+  "std": 0.1093,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "street_plaza": {
+  "cn": "广场拼花",
+  "mean": [
+   0.8832,
+   0.78,
+   0.6113
+  ],
+  "std": 0.09,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   6.37
+  ]
+ },
+ "street_kerb": {
+  "cn": "路缘石",
+  "mean": [
+   0.5892,
+   0.596,
+   0.5874
+  ],
+  "std": 0.0996,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   5.85
+  ]
+ },
+ "building_apartment": {
+  "cn": "公寓立面（窗列）",
+  "mean": [
+   0.8737,
+   0.8158,
+   0.6885
+  ],
+  "std": 0.1586,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.09
+  ]
+ },
+ "building_brick": {
+  "cn": "红砖公寓",
+  "mean": [
+   0.6946,
+   0.4914,
+   0.3941
+  ],
+  "std": 0.1127,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "building_concrete": {
+  "cn": "清水混凝土",
+  "mean": [
+   0.7356,
+   0.7303,
+   0.6999
+  ],
+  "std": 0.027,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "building_window": {
+  "cn": "橱窗玻璃",
+  "mean": [
+   0.54,
+   0.5783,
+   0.5411
+  ],
+  "std": 0.1951,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "building_awning": {
+  "cn": "遮阳篷条纹",
+  "mean": [
+   0.4681,
+   0.6624,
+   0.521
+  ],
+  "std": 0.2616,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "building_signboard": {
+  "cn": "木招牌板",
+  "mean": [
+   0.922,
+   0.8646,
+   0.7562
+  ],
+  "std": 0.1245,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.67
+  ]
+ },
+ "shop_flower": {
+  "cn": "花店",
+  "mean": [
+   0.5911,
+   0.5935,
+   0.4301
+  ],
+  "std": 0.2344,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "shop_pharmacy": {
+  "cn": "药店",
+  "mean": [
+   0.6268,
+   0.7087,
+   0.6779
+  ],
+  "std": 0.334,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "shop_clothing": {
+  "cn": "衣服店",
+  "mean": [
+   0.7067,
+   0.633,
+   0.5063
+  ],
+  "std": 0.1861,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.0
+  ]
+ },
+ "shop_weapon": {
+  "cn": "武器店",
+  "mean": [
+   0.367,
+   0.3299,
+   0.2828
+  ],
+  "std": 0.2854,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "shop_jewelry": {
+  "cn": "首饰店",
+  "mean": [
+   0.2921,
+   0.3669,
+   0.2132
+  ],
+  "std": 0.1626,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "shop_food": {
+  "cn": "食物店",
+  "mean": [
+   0.6682,
+   0.2945,
+   0.1312
+  ],
+  "std": 0.1783,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "shop_bookstore": {
+  "cn": "书店",
+  "mean": [
+   0.3,
+   0.2584,
+   0.2091
+  ],
+  "std": 0.0998,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.2
+  ]
+ },
+ "church_stone": {
+  "cn": "教堂琢石墙",
+  "mean": [
+   0.6688,
+   0.6402,
+   0.5867
+  ],
+  "std": 0.0455,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "church_glass": {
+  "cn": "彩绘玻璃",
+  "mean": [
+   0.2232,
+   0.1913,
+   0.2196
+  ],
+  "std": 0.0835,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "garden_lawn": {
+  "cn": "花园草坪",
+  "mean": [
+   0.3748,
+   0.6927,
+   0.3337
+  ],
+  "std": 0.0578,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "garden_gravel": {
+  "cn": "花园砾石径",
+  "mean": [
+   0.5578,
+   0.6774,
+   0.4626
+  ],
+  "std": 0.1993,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "garden_pond": {
+  "cn": "池水",
+  "mean": [
+   0.4498,
+   0.6482,
+   0.533
+  ],
+  "std": 0.0334,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "garden_pondbed": {
+  "cn": "池底卵石",
+  "mean": [
+   0.4979,
+   0.4493,
+   0.3817
+  ],
+  "std": 0.0543,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "garden_field": {
+  "cn": "田垄表土",
+  "mean": [
+   0.267,
+   0.188,
+   0.1275
+  ],
+  "std": 0.0339,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.75
+  ]
+ },
+ "transit_trafficlight": {
+  "cn": "红绿灯箱体",
+  "mean": [
+   0.1547,
+   0.3356,
+   0.2352
+  ],
+  "std": 0.0754,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "transit_subway": {
+  "cn": "地铁站瓷砖",
+  "mean": [
+   0.7409,
+   0.7875,
+   0.7516
+  ],
+  "std": 0.3082,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "transit_platform": {
+  "cn": "站台边缘",
+  "mean": [
+   0.6984,
+   0.6623,
+   0.5521
+  ],
+  "std": 0.0795,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   6.8
+  ]
+ },
+ "transit_train": {
+  "cn": "高铁车体",
+  "mean": [
+   0.7496,
+   0.8002,
+   0.8105
+  ],
+  "std": 0.2213,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.53
+  ]
+ },
+ "transit_bus": {
+  "cn": "公交车身",
+  "mean": [
+   0.803,
+   0.6309,
+   0.5486
+  ],
+  "std": 0.2889,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   0.55
+  ]
+ }
+}

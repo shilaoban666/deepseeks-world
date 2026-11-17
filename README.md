@@ -155,6 +155,8 @@ npm run serve        # 起在 http://127.0.0.1:5383/
 
 ## 素材与授权
 
+> **全部贴图与精灵的清单、地址和逐项介绍见 [docs/贴图说明.md](docs/贴图说明.md)**（43 张可平铺材质 + 30 张城镇设施贴图 + 621 个精灵 + 4 张植物图集，含每个文件的相对路径）。
+
 - **代码**：MIT（沿用 painted-valley 的协议，见 [LICENSE](LICENSE)）
 - **山谷原作的画**：CC0，作者 Patch，见 [LICENCE-NOTES.md](LICENCE-NOTES.md)
 - **鲸鱼娘形象**：来自 DSH 桌面宠物插件 `dsh-pet` 的官方立绘（社区二创形象，原型为 B 站 UP 主「上善无形」的原创角色「溟月」）

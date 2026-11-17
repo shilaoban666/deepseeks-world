@@ -1,96 +1,188 @@
+# DeepSeek's World · 小鲸鱼的世界
+
+一个能走进去的吉卜力风小镇。画法沿用 [painted-valley](https://git.patch.gg/blendi/painted-valley)（MIT）那套「颜色按颜料调、细节靠墨线、收尾走一遍笔触」的做法，把它从一条山谷长成一座城。
+
+![雪后的城镇](docs/screenshots/snow-town.jpg)
+
+*A walkable hand-painted town in three.js — WebGL2, no texture packs for the world itself, everything painted in shaders. Built on the [painted-valley](https://git.patch.gg/blendi/painted-valley) renderer.*
+
 ---
-kind: effect
-engine: three.js
+
+## 目录
+
+- [这是什么](#这是什么)
+- [截图](#截图)
+- [怎么跑](#怎么跑)
+- [操作](#操作)
+- [地图上有什么](#地图上有什么)
+- [能做些什么](#能做些什么)
+- [技术说明](#技术说明)
+- [素材与授权](#素材与授权)
+- [已知限制](#已知限制)
+
 ---
 
-# Painted valley
+## 这是什么
 
-A summer valley to walk through, drawn in the look of hand-painted animated film backgrounds: flat, clean colour, heaped white cloud, far mountains with every face painted, a village of tiled roofs, and a meadow whose brush marks stay round under your feet. A wanderer in a straw hat and a blue cloak walks it, drawn as a film draws its people: flat colour and an inked line. The land and sky are made in code, in three.js.
+repository 里有两个 demo，共用同一套渲染骨架：
 
-![A wanderer in a straw hat and a blue cloak on a meadow hill above a village of red roofs, mountains under heaped white clouds behind](shots/readme.jpg)
+| 页面 | 是什么 |
+|---|---|
+| **`town.html`** | 小鲸鱼的世界：2 km × 2 km 的城镇、田野、森林、湖、雪山，可进屋、可互动 |
+| `index.html` | 原来的山谷 demo（painted-valley 原样保留，说明见 [README-painted-valley.md](README-painted-valley.md)） |
 
-**In the demo:** click to look with the mouse, WASD to move, Shift to sprint, Alt to walk, Space to jump, the wheel to bring the eye in or out. A gamepad works too. V goes into his own eyes and back. T changes the time of day (noon, afternoon, golden hour, sunset) and 1 to 4 go straight to one; `,` and `.` nudge the hour, 0 lets the day pass by itself. P takes the paint finish off and on. There is nothing to do but walk: down the hill to the village, along the river, up to the tarn.
+主角是社区二创的 **DeepSeek 鲸鱼娘**形象（取自桌面宠物插件 `dsh-pet` 的官方立绘），三向立牌：镜头转到正面、侧面、背面各用一张图。
 
-![The village from the meadow](shots/village.jpg)
+---
 
-![The same hill at golden hour](shots/sunset.jpg)
-
-It is a starting point, not a filter. You can't lay it over a finished game: the look comes from how each part of the place is painted. Start from the valley, change it, put your own game in it.
-
-## The idea
-
-A painted background reads as paint because of what is left out: no photographed texture, no noise at every scale, few tones, and detail only where a brush would have put it.
-
-- **Few tones, chosen as paint.** Each thing has a lit colour and a shade colour and a short step between them. One shared palette (`meadowGreen`, `meadowLight` in `src/valley/world.js`) paints the grass, the ground under it, the far fields and the hills, so the valley is one picture.
-- **Marks, not noise.** The meadow is one slow green with thin strokes that follow the slope, and dabs laid out as they would look from the hill where the walk starts, so they are round from there and fade before they could turn to speckle (`heroPaint`). Far ground has no fine pattern at all: it would shimmer.
-- **Far things are painted once.** The mountains are a height map marched into a strip of paint (lit colour, shade colour, where the light falls, air, a bank of cloud), which the sky then lights for the hour. Rock is cut into facets, the lower slopes carry rounded tree crowns, and three ranks of foothills step back in the haze. Nothing far costs anything per frame.
-- **Clouds are heaps.** Each cumulus is a pile of spheres, ray-marched once into a cube map and given flat tones: white top, cool shade, a warm underside. They stand still on purpose; a redraw per hour changes their light.
-- **The plain is a painting too.** Fields, hedges, roads and the river are drawn into one texture, with trees, orchards, poplars and a mill standing on it as small painted cards.
-- **Buildings carry detail the way a background painter gives it:** rows of tiles, limewash with stains under the eaves, shutters, doors, attic windows, chimneys, all drawn in the shader from the wall's own coordinates.
-- **A finish over the frame** (a small Kuwahara pass) rounds everything into strokes, and leaves the sky and anything else that asks to be left alone.
-- **People are cel, not paint.** A film paints its backgrounds and inks its people, and the difference is most of the look. The wanderer is three flat tones (in the light, in the shade, the deep of a fold) with a clean turn between them; shade colours are mixed as they should look, not the light ones made darker. Each part of him writes a small number into the frame's alpha, and the last pass draws a line wherever two different numbers meet, except where the other thing is in front of him, so grass he stands in is not inked. His cloak is real cloth, with a few fold shadows drawn rising from the hem as a painter would put them. His shadow on the grass is a shape with a clean edge that grows as the sun comes down.
-
-## Use it in a game
-
-It is a place with its own renderer set-up, not a material: `src/valley/main.js` is the whole demo and the thing to start from. Built on three 0.186, WebGL2.
-
-```js
-import { createField, createFrame } from './src/lib/index.js';
-import { createSky } from './src/valley/sky.js';
-import { createTrees } from './src/valley/trees.js';
-import { heightAt, START } from './src/valley/world.js';
-
-const field = createField({ /* the meadow: grass, flowers, the ground; see main.js */ });
-const frame = createFrame(renderer, field, { samples: 4, bloom: 0.1 });
-const sky = createSky(renderer, field, { /* clouds and mountains are painted in here */ });
-scene.add(sky.mesh, createTrees(field).group);
-
-frame.paint = 3;                    // the paint finish: 0 is off
-sky.setHour(15.5);                  // 12.5 noon to 20.4 sunset
-camera.position.y = heightAt(x, z) + 1.7;
-frame.render(scene, camera);
-```
-
-- **Your own things in it.** Add meshes to the scene as usual. To be left out of the paint finish (a crisp character, a HUD in the world), write alpha below 0.6. To sit in the valley's light, read the sun and sky colours from `field.uniforms`.
-- **Your own people in it.** `src/valley/wanderer.js` is the cel look: give any mesh, rigged or not, its material with a light and a shade colour and a line number below 0.23 (parts with different numbers get a line between them). `field.uniforms.uWalker` (x, z, how dark, how long) lays one walker's shadow on the meadow. His movement, camera and cloth are in `src/figure/`, on Rapier, and come from Patch's oil paint block (`blendi/oil-paint`).
-- **Change the place.** `src/valley/world.js` holds the land: `heightAt`, the paths, the tarn, the river, where the village and the woods are. `village.js` builds houses from eight shapes. `backdrop.js` holds the mountains' outline, `clouds.js` where each cloud stands.
-- **Change the hour.** `sky.js` has one set of colours per hour key; add a night, a storm, a dawn.
-- **Performance mode.** `?quality=low` or `medium` draws less: fewer blades, no seed fluff, a lighter finish.
-
-## What is where
+## 截图
 
 | | |
 |---|---|
-| `src/valley/main.js` | The demo: start-up, the walker, the keys, the loop |
-| `src/valley/world.js` | The land and the shared palette |
-| `src/valley/sky.js`, `clouds.js`, `backdrop.js` | The sky and its hours, the clouds, the far mountains and foothills |
-| `src/valley/horizon.js`, `floor.js`, `farwoods.js` | The plain out to 6 km, its painted fields and roads, its trees and mill |
-| `src/valley/village.js` | The houses, church and barns |
-| `src/valley/trees.js`, `dressing.js`, `water.js` | Near trees and bushes with their shade, stones and drifting seeds, the tarn |
-| `src/valley/strokes.js` | The brush-dab texture the ground is painted with |
-| `src/valley/sounds.js` | The sound, from recordings (see below) |
-| `src/valley/wanderer.js` | The wanderer's look: cel colour, his hat and cloak, what the line is drawn from |
-| `src/figure/` | The starter man and how he moves: `man.js` (loading), `animator.js`, `player.js` (a Rapier character), `input.js`, `camera.js` (the eye behind him), `cloak.js` (cloth) |
-| `src/lib/` | The grass, flowers, ground and frame, from Patch's grass block (`blendi/touch-grass`), restyled for this look |
-| `tools/` | Headless stills (`shots.mjs`, and `walk.mjs` for the wanderer), frame time (`fps.mjs`), a first visit (`cold.mjs`), the sound cuts (`sounds.mjs`), `compact-glb.mjs` (a clip file with only what its clips use) |
+| ![中央广场](docs/screenshots/plaza.jpg) **中央广场**：喷泉、长椅、路灯，26 只鸽子会被你惊飞 | ![清镇市城门](docs/screenshots/gate.jpg) **清镇市城门**：牌坊和两翼城墙 |
+| ![小吃街](docs/screenshots/food-street.jpg) **小吃街**：9 个摊位，横幅上写着烤鱼和白米饭 | ![教堂](docs/screenshots/church.jpg) **教堂**：中殿、钟塔和玫瑰窗 |
+| ![夫子庙](docs/screenshots/temple.jpg) **夫子庙**：重檐青瓦、朱红柱、匾额 | ![小鲸鱼的家](docs/screenshots/home.jpg) **小鲸鱼的家**：门口就是菜地 |
+| ![四室两厅](docs/screenshots/interior.jpg) **四室两厅**：16 × 12 m，层高 2.9 m，家具按真实尺寸 | ![野花](docs/screenshots/flowers.jpg) **野花**：139 种手绘立牌，会随风摆、跟着一天的光变 |
+| ![城外的森林](docs/screenshots/forest.jpg) **城外的森林**：110 种树 | ![走在街上](docs/screenshots/wanderer.jpg) **走在街上**：第三人称，默认看到她的背影 |
 
-## Sound
+---
 
-The released demo has wind in the grass, leaves, birds and insects, water at the tarn and crickets at dusk. Those five recordings come from the Sonniss GDC bundles, which may be used in a game but not passed on as files, so they are **not in this repo**: a build from it has footsteps only. [MISSING_ASSETS.md](MISSING_ASSETS.md) names each recording, where to get it and the one command that cuts it back in.
+## 怎么跑
 
-## Limits
+需要 **Node.js 20+**。
 
-- three.js on WebGL2 only.
-- One valley, about 2 km across, with painted land out to the mountains. Walk past its edge and you are turned back.
-- Noon to sunset only: there is no night, and the clouds don't move.
-- You can't go into the houses, and nobody lives there yet.
-- The wanderer is one man with one face, made to be seen from a few metres. Through his own eyes you see no body or hands.
-- Measured only on an RTX 4090 at 1080p. A first visit is ready in about 8 seconds there; the demo downloads about 13 MB.
+```bash
+npm install          # 只装 three + vite + playwright-core
+npm run build        # 产出 dist/
+npm run serve        # 起在 http://127.0.0.1:5383/
+```
 
-## Build
+然后打开：
 
-`npm install`, then `npm run build`: the demo is in `dist/` with `index.html` at the top. `npm run serve` serves it on port 5383. The tools in `tools/` drive it headless with Playwright: set `CHROME` to a Chromium of your own if Playwright has none.
+- **http://127.0.0.1:5383/town.html** —— 小鲸鱼的世界
+- http://127.0.0.1:5383/index.html —— 原来的山谷
 
-## Credits
+> 必须用服务器打开，不能双击 HTML —— 页面用的是 ES module，还要 fetch 贴图。
 
-Code MIT, art CC0 1.0. The wanderer is Patch's starter man (a MakeHuman figure, CC0) with clips from Quaternius' Universal Animation Library (CC0) and Patch's own (CC0). Physics by Rapier (Apache-2.0). The earth of the footpaths is two ambientCG grounds (CC0); the footsteps are Kenney's (CC0). Everything else you see is made in code. Every part and its source is in [LICENCE-NOTES.md](LICENCE-NOTES.md).
+### 画质参数
+
+| 参数 | 作用 |
+|---|---|
+| `?quality=high` | 默认。MSAA 4×、云图 2048、远山贴条 12288、地面 1.5 m/纹素 |
+| `?quality=medium` | 推荐给核显：MSAA 2×、云图 1024、远山 4096 |
+| `?quality=low` 或 `?lite=1` | 最低档：无 MSAA、云图 512、草更稀 |
+| `?dpr=0.8` | 少画像素再拉伸（最省的一档） |
+| `?tex=0` | 关掉建筑/室内的手绘贴图，回到纯 shader 版 |
+| `?texmix=0.5` | 贴图强度（0~1，默认 0.85） |
+| `?plants=0` | 野花退回程序化低模（对比用） |
+| `?paint=0` | 关掉 Kuwahara 笔触收尾 |
+
+例：**`town.html?quality=medium&dpr=0.85`** 是核显上比较舒服的组合。
+
+---
+
+## 操作
+
+| 键 | 作用 |
+|---|---|
+| `W A S D` / 方向键 | 走（方向跟着镜头） |
+| `Shift` | 跑 |
+| **`E`** | 互动（屏幕下方会提示能做什么）；在屋里是用家具；坐着时是起身 |
+| `M` | 小地图切换「以人为中心的雷达」/「全图」 |
+| 拖鼠标 / 点一下画面锁鼠标 | 转视角 |
+| 滚轮 | 拉近拉远 |
+| `Esc` | 关面板 / 解锁鼠标 |
+| `F` | 开关笔触收尾 |
+
+---
+
+## 地图上有什么
+
+世界坐标 2 km 见方。从家门口往东南 120 m 是中央广场，四条街由广场放射出去；城区半径 430 m，外面是田野、森林、湖和山。
+
+**城市**：小鲸鱼的家 · 中央广场 · 小吃街 · 网吧 · 超市 · 菜市场 · 花鸟市场 · 图书馆 · 学校（清镇市第一小学 / 中学 / 大学）· 教堂 · 夫子庙 · 电玩厅 · 体育馆 · 冒险者协会 · 三个居民区 · 清镇市牌坊城门
+
+**城外**：农村 · 田亩（梯田）· 西林 / 东林 · 湖（水面、湖底、水草）· 环山与雪山
+
+**室内**（16 × 12 m，四室两厅）：客厅 7.5×7.0 · 厨房 4.5×3.0 · 餐厅 4.5×4.0 · 卫生间 4×3 · 玄关 4×4 · 主卧 4.5×5 · 次卧 3.5×5 · 小卧室 3×5 · 客房 2.5×5 · 书房 2.5×5
+
+---
+
+## 能做些什么
+
+- **钓鱼**：抛竿 → 等「上钩了」→ 1.5 秒内按 E 拉竿，小概率钓到珍珠
+- **种植**：门前菜地按 E 种菜，过一会儿回来收割
+- **烹饪**：厨房 4 个菜谱（饭团 / 烤鱼饭 / 青菜粥 / 清炒时蔬）
+- **买菜 / 逛超市 / 小吃街**：金币交易
+- **上网**：论坛发帖赚补贴 · **打电玩**：滑轨停指针，5 轮换钱
+- **接委托**：钓 3 条鱼换 60 金币，有进度追踪
+- **看电视**：屏幕上真的在放片子（Canvas 实时画的）；**沙发能坐**，坐下镜头落到座位高度
+- **看图鉴 / 睡觉 / 洗澡 / 看书 / 祈祷 / 采花 / 翻信箱**
+- **天气与时间**：白天到黄昏到夜晚，路灯会亮
+
+---
+
+## 技术说明
+
+### 沿用的（来自 painted-valley，基本没改）
+
+- **`src/lib/frame.js` 的收尾**：HDR → 火 → 合成 → bloom → **Kuwahara 笔触 + alpha 墨线** → 画家曲线。整个项目的「吉卜力感」主要来自这一步。
+- **`src/lib/` 的草地系统**：instanced 草叶、踩踏记忆、野花、割草、火焰。
+- **`src/valley/sky.js` + `clouds.js` + `backdrop.js`**：云一次烘进 cubemap、远山烘成贴条、4 组时刻色插值。
+
+### 新写的（`src/town/`，约 4 千行）
+
+| 文件 | 职责 |
+|---|---|
+| `plan.js` | 地形纯函数 `heightAt(x,z)` + 31 个街区的数据表 + 路网 + 湖 + 铺装判定 |
+| `paint.js` | cel 材质：两阶色 + 倒壳描边 + shader 里长的瓦行/墙渍/木纹/砌石；可选 albedo 贴图（世界坐标三平面采样） |
+| `buildings.js` | 建筑生成器（民居/厅堂/教堂/庙/牌坊/喷泉/体育馆/摊位/路灯/长椅…），按材质合并 |
+| `props.js` | 远地面、湖、树、田垄、石头、野花、鸽子、小动物、路面、广场 |
+| `city.js` | 把街区摆好，产出「场景 + 碰撞盒 + 互动点」 |
+| `player.js` | 鲸鱼娘三向立牌 + 第三人称相机 + 走路碰撞 |
+| `interior.js` | 四室两厅，真实尺寸，墙有剖面避免挡镜头 |
+| `billboard.js` | 植物立牌批渲染（风摆 + 实时染色 + alpha 墨线技巧） |
+| `ui.js` / `interactions.js` | HUD、面板、小地图、以及那一堆互动 |
+
+### 三个值得说的做法
+
+1. **主角的 alpha 技巧**：立牌材质是 `alphaTest` 的**不透明**材质，片元里写 `alpha = 0.16`。于是 `frame.js` 的笔触收尾判定「这已经是一幅画」→ 不给她上 Kuwahara（手绘线条保住）；而墨线检测看到她与背景 alpha 差 0.84 → **自动描一圈墨线**。一行新代码没加，全用原作现成机制。
+2. **贴图只借亮度，不借光**：albedo 用世界坐标三平面采样（不依赖 UV），只取相对平均色的偏差，再按实测标准差自动补对比度。所以奶油墙还是奶油墙，只是多了笔触和水渍，不会双重打光。
+3. **立牌打包**：257 个植物/物件精灵打成 4 张图集（花 139 个 / 树 110 个 / 物件 8 个），约 4000 朵野花只花 **2 个 draw call**。
+
+---
+
+## 素材与授权
+
+- **代码**：MIT（沿用 painted-valley 的协议，见 [LICENSE](LICENSE)）
+- **山谷原作的画**：CC0，作者 Patch，见 [LICENCE-NOTES.md](LICENCE-NOTES.md)
+- **鲸鱼娘形象**：来自 DSH 桌面宠物插件 `dsh-pet` 的官方立绘（社区二创形象，原型为 B 站 UP 主「上善无形」的原创角色「溟月」）
+- **本仓库新增的手绘贴图与植物精灵**：由 AI 生成（dashscope qwen-image），经本地脚本处理成 albedo / 图集
+- 用到的第三方库：three.js（MIT）、Rapier（Apache-2.0）、vite（MIT）
+
+> 城镇的**地形、建筑、天空、草地、路面**没有用任何贴图文件 —— 全部在 shader 里算。贴图只用于室内表面、地标建筑和植物立牌。
+
+---
+
+## 已知限制
+
+- **只有自己家能进**；其他建筑是门面 + 交互，没有内景。
+- **不能潜水**：湖有水面、湖底和水草，但岸边会挡住。
+- **树还是低模**：110 种树的图集已经做好（`public/textures/plants/trees.png`），但城市里暂时用 3D 低模，还没换成 billboard。
+- **没有存档**，刷新回到第一天早上。
+- 性能参考：Intel UHD 630 核显上 `?quality=medium` 约 15–20 fps，`?lite=1` 约 19 fps；独显满帧。场景在 medium 下约 450 draw call / 9 M 三角。
+- 贴图与图集走 **Git LFS**，克隆前请确认装了 `git-lfs`。
+
+---
+
+## 接下来想做的
+
+- [ ] 树换成「近处 3D + 远处 billboard」的 LOD
+- [ ] 鱼群、蜻蜓、河虾做成湖边的活物
+- [ ] 采集图鉴（用 `critters.png` 那 8 个图标）
+- [ ] 存档
+- [ ] 更多街区：网吧内景、菜市场内景
+
+---
+
+<sub>Built on [painted-valley](https://git.patch.gg/blendi/painted-valley) by Patch · MIT code / CC0 art</sub>

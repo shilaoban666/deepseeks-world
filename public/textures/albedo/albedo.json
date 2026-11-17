@@ -619,5 +619,373 @@
    5.02
   ],
   "bakedLight": 0.015
+ },
+ "bridge0": {
+  "cn": "木桥面板",
+  "mean": [
+   0.4977,
+   0.453,
+   0.3781
+  ],
+  "std": 0.0745,
+  "seam": "mx",
+  "seamBefore": [
+   2.86,
+   5.32
+  ],
+  "seamAfter": [
+   0.0,
+   1.05
+  ],
+  "seamAbsAfter": [
+   0.0,
+   2.82
+  ],
+  "bakedLight": 0.033
+ },
+ "bridge1": {
+  "cn": "木桥栏杆",
+  "mean": [
+   0.6751,
+   0.6507,
+   0.6025
+  ],
+  "std": 0.1258,
+  "seam": "mx",
+  "seamBefore": [
+   1.83,
+   0.69
+  ],
+  "seamAfter": [
+   0.0,
+   0.64
+  ],
+  "seamAbsAfter": [
+   0.0,
+   1.48
+  ],
+  "bakedLight": 0.207
+ },
+ "bridge2": {
+  "cn": "桥墩砌石",
+  "mean": [
+   0.5516,
+   0.5587,
+   0.5274
+  ],
+  "std": 0.0833,
+  "seam": "mirror",
+  "seamBefore": [
+   2.08,
+   3.89
+  ],
+  "seamAfter": [
+   0.0,
+   0.0
+  ],
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ],
+  "bakedLight": 0.038
+ },
+ "bridge3": {
+  "cn": "石桥护墙",
+  "mean": [
+   0.5232,
+   0.5063,
+   0.4232
+  ],
+  "std": 0.0903,
+  "seam": "mirror",
+  "seamBefore": [
+   3.17,
+   2.93
+  ],
+  "seamAfter": [
+   0.0,
+   0.0
+  ],
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ],
+  "bakedLight": 0.023
+ },
+ "road0": {
+  "cn": "乡间土路",
+  "mean": [
+   0.8632,
+   0.7832,
+   0.6344
+  ],
+  "std": 0.0283,
+  "seam": "mirror",
+  "seamBefore": [
+   1.33,
+   2.51
+  ],
+  "seamAfter": [
+   0.0,
+   0.0
+  ],
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ],
+  "bakedLight": 0.027
+ },
+ "road1": {
+  "cn": "鹅卵石路",
+  "mean": [
+   0.5155,
+   0.5133,
+   0.4718
+  ],
+  "std": 0.0581,
+  "seam": "mirror",
+  "seamBefore": [
+   4.03,
+   3.75
+  ],
+  "seamAfter": [
+   0.0,
+   0.0
+  ],
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ],
+  "bakedLight": 0.027
+ },
+ "road2": {
+  "cn": "碎石路",
+  "mean": [
+   0.56,
+   0.562,
+   0.5589
+  ],
+  "std": 0.102,
+  "seam": "mirror",
+  "seamBefore": [
+   2.38,
+   2.45
+  ],
+  "seamAfter": [
+   0.0,
+   0.0
+  ],
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ],
+  "bakedLight": 0.004
+ },
+ "road3": {
+  "cn": "旧柏油路",
+  "mean": [
+   0.3214,
+   0.329,
+   0.3233
+  ],
+  "std": 0.0475,
+  "seam": "mirror",
+  "seamBefore": [
+   1.81,
+   2.92
+  ],
+  "seamAfter": [
+   0.0,
+   0.0
+  ],
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ],
+  "bakedLight": 0.053
+ },
+ "lamp0": {
+  "cn": "铁艺灯柱",
+  "mean": [
+   0.6978,
+   0.6596,
+   0.5626
+  ],
+  "std": 0.3123,
+  "seam": "mx→mirror(兜底)",
+  "seamBefore": [
+   4.41,
+   5.79
+  ],
+  "seamAfter": [
+   0.0,
+   0.0
+  ],
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ],
+  "bakedLight": 0.397
+ },
+ "lamp1": {
+  "cn": "灯罩玻璃",
+  "mean": [
+   0.7355,
+   0.507,
+   0.1239
+  ],
+  "std": 0.1473,
+  "seam": "mirror",
+  "seamBefore": [
+   7.01,
+   7.53
+  ],
+  "seamAfter": [
+   0.0,
+   0.0
+  ],
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ],
+  "bakedLight": 0.112
+ },
+ "lamp2": {
+  "cn": "木电杆",
+  "mean": [
+   0.6629,
+   0.6281,
+   0.5544
+  ],
+  "std": 0.1914,
+  "seam": "mx",
+  "seamBefore": [
+   0.23,
+   4.27
+  ],
+  "seamAfter": [
+   0.0,
+   0.71
+  ],
+  "seamAbsAfter": [
+   0.0,
+   2.23
+  ],
+  "bakedLight": 0.567
+ },
+ "bench0": {
+  "cn": "长椅木条",
+  "mean": [
+   0.2872,
+   0.3871,
+   0.2951
+  ],
+  "std": 0.0679,
+  "seam": "mx→mirror(兜底)",
+  "seamBefore": [
+   18.25,
+   7.78
+  ],
+  "seamAfter": [
+   0.0,
+   0.0
+  ],
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ],
+  "bakedLight": 0.076
+ },
+ "bench1": {
+  "cn": "铸铁椅架",
+  "mean": [
+   0.1783,
+   0.1612,
+   0.1402
+  ],
+  "std": 0.0508,
+  "seam": "mirror",
+  "seamBefore": [
+   4.42,
+   2.53
+  ],
+  "seamAfter": [
+   0.0,
+   0.0
+  ],
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ],
+  "bakedLight": 0.03
+ },
+ "fence0": {
+  "cn": "木栅栏",
+  "mean": [
+   0.5609,
+   0.5145,
+   0.4048
+  ],
+  "std": 0.0706,
+  "seam": "mx",
+  "seamBefore": [
+   1.56,
+   28.27
+  ],
+  "seamAfter": [
+   0.0,
+   1.06
+  ],
+  "seamAbsAfter": [
+   0.0,
+   2.79
+  ],
+  "bakedLight": 0.085
+ },
+ "bin0": {
+  "cn": "铁皮桶",
+  "mean": [
+   0.7299,
+   0.7417,
+   0.7307
+  ],
+  "std": 0.0484,
+  "seam": "mirror",
+  "seamBefore": [
+   7.8,
+   8.63
+  ],
+  "seamAfter": [
+   0.0,
+   0.0
+  ],
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ],
+  "bakedLight": 0.02
+ },
+ "sign0": {
+  "cn": "木牌",
+  "mean": [
+   0.94,
+   0.9054,
+   0.8235
+  ],
+  "std": 0.0761,
+  "seam": "mx",
+  "seamBefore": [
+   38.85,
+   12.79
+  ],
+  "seamAfter": [
+   0.0,
+   0.41
+  ],
+  "seamAbsAfter": [
+   0.0,
+   2.21
+  ],
+  "bakedLight": 0.045
  }
 }

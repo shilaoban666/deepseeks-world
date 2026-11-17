@@ -180,7 +180,11 @@ NO_TEX.needsUpdate = true;
  * @param scales 每米几个循环，默认按材质给一套合理的
  */
 export function configureAlbedo(map = {}, { scales = {}, mix = 0.85 } = {}) {
-  const defaults = { wall: 0.34, roof: 0.55, wood: 0.7, stone: 0.2, paddy: 0.05, snow: 0.12 };
+  const defaults = {
+    wall: 0.34, roof: 0.55, wood: 0.7, stone: 0.2, paddy: 0.05, snow: 0.12,
+    // 街道设施：小物件用大一些的 scale（每米一个循环左右）
+    bridge: 0.55, road: 0.14, lamp: 1.1, bench: 0.9, fence: 0.8, bin: 1.0, sign: 1.0,
+  };
   for (const [kind, entry] of Object.entries(map)) {
     if (!entry?.texture) continue;
     ALBEDO[kind] = {
@@ -194,6 +198,10 @@ export function configureAlbedo(map = {}, { scales = {}, mix = 0.85 } = {}) {
   }
   // 每一类的第 0 号当默认（室内、道具这类没指定变体的地方就用它）
   for (const family of ['wall', 'roof', 'wood', 'stone']) {
+    if (!ALBEDO[family] && ALBEDO[`${family}0`]) ALBEDO[family] = ALBEDO[`${family}0`];
+  }
+  // 街道设施的各组也登记一个"组名"默认值，方便按类别直接取
+  for (const family of ['bridge', 'road', 'lamp', 'bench', 'fence', 'bin', 'sign']) {
     if (!ALBEDO[family] && ALBEDO[`${family}0`]) ALBEDO[family] = ALBEDO[`${family}0`];
   }
   return Object.keys(ALBEDO);

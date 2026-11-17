@@ -854,6 +854,16 @@ void main() {
 }
 `;
 
+/**
+ * 贴图版路面：直接复用 paint.js 的 cel 材质 + 三平面贴图。
+ * 用于 ?roadtex=1 时替换掉程序化的卵石（program 版本见 roadMaterial）。
+ * @param albedo getAlbedo('road1') 之类
+ */
+export function roadMaterialTextured(shared, albedo, { scale = 0.14, lit = [0.66, 0.64, 0.6], shade = [0.32, 0.33, 0.38] } = {}) {
+  const a = albedo ? { ...albedo, scale } : null;
+  return paintMaterial(shared, { lit, shade, kind: 'stone', rows: 6, albedo: a });
+}
+
 export function roadMaterial(shared, plaza = 0) {
   return new THREE.ShaderMaterial({
     glslVersion: THREE.GLSL3,

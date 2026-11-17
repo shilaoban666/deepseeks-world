@@ -142,6 +142,14 @@ if (params.get('tex') !== '0') {
     stone0: 'stone0', stone1: 'stone1', stone2: 'stone2', stone3: 'stone3',
     // 其它
     fabric: 'fabric', snow: 'snow', paddy: 'paddy',
+    // 桥：木桥面 / 木栏杆 / 桥墩石 / 石桥护墙
+    bridge0: 'bridge0', bridge1: 'bridge1', bridge2: 'bridge2', bridge3: 'bridge3',
+    // 路：土路 / 鹅卵石 / 碎石 / 柏油
+    road0: 'road0', road1: 'road1', road2: 'road2', road3: 'road3',
+    // 路灯：铁艺灯柱 / 灯罩玻璃 / 木电杆
+    lamp0: 'lamp0', lamp1: 'lamp1', lamp2: 'lamp2',
+    // 街具：长椅木条 / 铸铁椅架 / 木栅栏 / 铁皮桶 / 木牌
+    bench0: 'bench0', bench1: 'bench1', fence0: 'fence0', bin0: 'bin0', sign0: 'sign0',
   };
   const loaded = {};
   await Promise.all(
@@ -169,6 +177,7 @@ if (params.get('plants') !== '0') {
 await setProgress(0.5, '正在盖房子…');
 const city = createCity(field.uniforms, field, {
   plants,
+  roadTex: params.get('tex') !== '0' && params.get('roadtex') !== '0',
   cards: high ? 1 : medium ? 0.7 : 0.4,
   treeNear: high ? 150 : medium ? 110 : 70,
   treeFar: high ? 760 : medium ? 560 : 340,

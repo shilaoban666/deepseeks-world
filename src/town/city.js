@@ -4,9 +4,9 @@ import * as THREE from 'three';
 import { Builder, PALETTE, house, hall, church, temple, gate, fountain, gym, stall, banner, lamp, bench, stoneLantern, fence } from './buildings.js';
 import { addBuildings, createBuildingMaterial, SHAPES, WALLS, ROOFS, SLATE } from '../valley/village.js';
 import { createGrove } from '../valley/trees.js';
-import { createLake, createTrees, createCrops, createRocks, createFlowerClumps, createPigeons, createCritters, roadGeometry, plazaGeometry, roadMaterial } from './props.js';
+import { createLake, createTrees, createCrops, createRocks, createFlowerClumps, createPigeons, createCritters, roadGeometry, plazaGeometry, roadMaterial, roadMaterialTextured } from './props.js';
 import { createPlantBatch } from './billboard.js';
-import { paintMaterial } from './paint.js';
+import { paintMaterial, getAlbedo } from './paint.js';
 import { DISTRICTS, ROADS, SEGS, STREET_HALF, PLAZA, HOME, LAKE, SEA, GATE, CITY_R, RIVER, BRIDGES, BUS_ROUTE, BUS_STOPS, RIVER_HALF, riverAt, riverLevel, coastX, plotAt, heightAt, forestAt, fieldsAt, mountainAt, lakeDistance, roadDistance, roadEdge, plazaDistance, cityDistance, fbm, HALF } from './plan.js';
 
 /** 一个固定的随机数发生器：地图每次都长一样。 */
@@ -68,7 +68,7 @@ function RSEGSample(t) {
   return [lo[0], lo[1], 1, 0, best];
 }
 
-export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar = 560, density = 1, plants = null } = {}) {
+export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar = 560, density = 1, plants = null, roadTex = false } = {}) {
   const group = new THREE.Group();
   const b = new Builder(shared);
   const random = rng(20261116);
@@ -607,10 +607,13 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
   // ===== 路面和广场 ============================================================
   {
     const geo = roadGeometry(SEGS.filter((g) => !g.lane), STREET_HALF * 2 + 1.2);
-    const mesh = new THREE.Mesh(geo, roadMaterial(shared));
+    // ?roadtex=1 时用手绘贴图版（鹅卵石路 + 石板广场），否则仍是程序化画的那条
+    const roadAlb = roadTex ? getAlbedo('road1') : null;
+    const plazaAlb = roadTex ? getAlbedo('stone0') : null;
+    const mesh = new THREE.Mesh(geo, roadAlb ? roadMaterialTextured(shared, roadAlb, { scale: 0.16 }) : roadMaterial(shared));
     mesh.matrixAutoUpdate = false;
     group.add(mesh);
-    const plaza = new THREE.Mesh(plazaGeometry(PLAZA, 31.5), roadMaterial(shared, 1));
+    const plaza = new THREE.Mesh(plazaGeometry(PLAZA, 31.5), plazaAlb ? roadMaterialTextured(shared, plazaAlb, { scale: 0.2, lit: [0.68, 0.64, 0.58] }) : roadMaterial(shared, 1));
     plaza.matrixAutoUpdate = false;
     group.add(plaza);
   }

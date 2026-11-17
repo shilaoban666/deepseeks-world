@@ -58,6 +58,59 @@ export const PALETTE = {
   // 灯罩里的光、铁
   glow: [[1.6, 1.25, 0.7]],
   iron: [[0.16, 0.18, 0.22]],
+  // ---- 街道设施：下面这些颜色只做"底"，真正的质感来自对应的手绘贴图 ----
+  bench: [
+    [0.34, 0.44, 0.32], // 褪色深绿漆木条
+    [0.26, 0.24, 0.22], // 铸铁椅架
+  ],
+  fence: [
+    [0.62, 0.56, 0.44],
+    [0.52, 0.48, 0.4],
+  ],
+  bridge: [
+    [0.56, 0.5, 0.42], // 木桥面
+    [0.6, 0.58, 0.54], // 木栏杆
+    [0.62, 0.63, 0.6], // 桥墩石
+    [0.66, 0.64, 0.56], // 石桥护墙
+  ],
+  road: [
+    [0.78, 0.7, 0.56], // 土路
+    [0.58, 0.58, 0.54], // 鹅卵石
+    [0.66, 0.66, 0.65], // 碎石
+    [0.36, 0.37, 0.37], // 柏油
+  ],
+  lamp: [
+    [0.2, 0.22, 0.24], // 铁艺灯柱
+    [0.95, 0.78, 0.42], // 灯罩玻璃（暖）
+    [0.5, 0.46, 0.38], // 木电杆
+  ],
+  bin: [[0.62, 0.64, 0.64]],
+  sign: [
+    [0.86, 0.8, 0.68],
+    [0.8, 0.74, 0.6],
+  ],
+};
+
+/** 材质族 → shader 里那套"画法"（决定瓦行/木纹/砌缝/玻璃哪套程序化细节） */
+const FAMILY_KIND = {
+  wall: 'wall',
+  roof: 'roof',
+  wood: 'wood',
+  stone: 'stone',
+  road: 'stone',
+  bridge: 'wood',
+  bench: 'wood',
+  fence: 'wood',
+  lamp: 'flat',
+  bin: 'flat',
+  sign: 'flat',
+  glass: 'glass',
+  cloth: 'flat',
+  leaf: 'flat',
+  flower: 'flat',
+  glow: 'glow',
+  iron: 'flat',
+  metal: 'flat',
 };
 
 const SHADE = 0.62; // 背光色 = 受光色 × 这个（在冷色环境光下再压）
@@ -102,7 +155,7 @@ export class Builder {
     const [family, index = 0] = key.split('#');
     const pal = PALETTE[family] ?? PALETTE.stone;
     const lit = pal[Math.abs(Number(index) || 0) % pal.length];
-    const kind = family === 'wall' ? 'wall' : family === 'roof' ? 'roof' : family === 'wood' ? 'wood' : family === 'stone' ? 'stone' : family === 'glass' ? 'glass' : family === 'glow' ? 'glow' : 'flat';
+    const kind = FAMILY_KIND[family] ?? 'flat';
     const rows = family === 'roof' ? 14 : family === 'wood' ? 8 : 12;
     const bucket = this.bucket(`${family}#${index}`, { kind, lit, shade: lit.map((c) => c * SHADE), rows, stain: family === 'wall' ? 0.55 : 0.2 });
     const clone = plain(geo);
@@ -513,24 +566,24 @@ export function banner(b, x, z, text, rotY = 0, w = 6.5) {
 /** 路灯：细铁杆、一截横臂、挂着的小灯笼。 */
 export function lamp(b, x, z, rotY = 0) {
   const gy = heightAt(x, z);
-  b.add(cylinder(0.11, 0.5, 8), `iron#0`, [x, gy + 0.25, z]);
-  b.add(cylinder(0.05, 3.3, 6), `iron#0`, [x, gy + 1.65, z]);
+  b.add(cylinder(0.11, 0.5, 8), `lamp#0`, [x, gy + 0.25, z]);
+  b.add(cylinder(0.05, 3.3, 6), `lamp#0`, [x, gy + 1.65, z]);
   const ax = Math.sin(rotY) * 0.3;
   const az = Math.cos(rotY) * 0.3;
-  b.add(box(0.05, 0.05, 0.7), `iron#0`, [x + ax, gy + 3.26, z + az], rotY);
-  b.add(box(0.26, 0.34, 0.26), `glow#0`, [x + ax * 2, gy + 2.95, z + az * 2], rotY);
+  b.add(box(0.05, 0.05, 0.7), `lamp#0`, [x + ax, gy + 3.26, z + az], rotY);
+  b.add(box(0.26, 0.34, 0.26), `lamp#1`, [x + ax * 2, gy + 2.95, z + az * 2], rotY);
   const cap = new THREE.ConeGeometry(0.26, 0.2, 4);
   cap.rotateY(Math.PI / 4);
-  b.add(cap, `iron#0`, [x + ax * 2, gy + 3.2, z + az * 2], rotY);
+  b.add(cap, `lamp#0`, [x + ax * 2, gy + 3.2, z + az * 2], rotY);
   b.collide(x, z, 0.14, 0.14, 4);
 }
 
 /** 长椅。 */
 export function bench(b, x, z, rotY = 0) {
   const gy = heightAt(x, z);
-  b.add(box(2.2, 0.14, 0.6), `wood#1`, [x, gy + 0.5, z], rotY);
-  b.add(box(2.2, 0.5, 0.12), `wood#1`, [x + Math.sin(rotY) * 0.24, gy + 0.82, z + Math.cos(rotY) * 0.24], rotY);
-  for (const dx of [-0.85, 0.85]) b.add(box(0.12, 0.5, 0.5), `wood#2`, [x + dx * Math.cos(rotY), gy + 0.25, z - dx * Math.sin(rotY)], rotY);
+  b.add(box(2.2, 0.14, 0.6), `bench#0`, [x, gy + 0.5, z], rotY);
+  b.add(box(2.2, 0.5, 0.12), `bench#0`, [x + Math.sin(rotY) * 0.24, gy + 0.82, z + Math.cos(rotY) * 0.24], rotY);
+  for (const dx of [-0.85, 0.85]) b.add(box(0.12, 0.5, 0.5), `bench#1`, [x + dx * Math.cos(rotY), gy + 0.25, z - dx * Math.sin(rotY)], rotY);
 }
 
 /** 石灯笼（夫子庙、湖边用）。 */
@@ -551,11 +604,11 @@ export function fence(b, x1, z1, x2, z2, height = 1.1) {
     const t = i / n;
     const px = x1 + (x2 - x1) * t;
     const pz = z1 + (z2 - z1) * t;
-    b.add(cylinder(0.07, height, 5), `wood#2`, [px, heightAt(px, pz) + height / 2, pz]);
+    b.add(cylinder(0.07, height, 5), `fence#1`, [px, heightAt(px, pz) + height / 2, pz]);
   }
   const mx = (x1 + x2) / 2;
   const mz = (z1 + z2) / 2;
   const gy = heightAt(mx, mz);
-  b.add(box(0.07, 0.1, len), `wood#1`, [mx, gy + height * 0.75, mz], rotY);
-  b.add(box(0.07, 0.1, len), `wood#1`, [mx, gy + height * 0.4, mz], rotY);
+  b.add(box(0.07, 0.1, len), `fence#0`, [mx, gy + height * 0.75, mz], rotY);
+  b.add(box(0.07, 0.1, len), `fence#0`, [mx, gy + height * 0.4, mz], rotY);
 }

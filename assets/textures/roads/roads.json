@@ -1,0 +1,2102 @@
+{
+ "stone_large-flagstone": {
+  "cn": "大块石板",
+  "mean": [
+   0.7102,
+   0.6529,
+   0.5476
+  ],
+  "std": 0.1405,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   5.29
+  ]
+ },
+ "stone_small-flagstone": {
+  "cn": "小块石板",
+  "mean": [
+   0.5197,
+   0.4857,
+   0.4302
+  ],
+  "std": 0.106,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.85
+  ]
+ },
+ "stone_crazy-paving": {
+  "cn": "不规则碎拼",
+  "mean": [
+   0.6064,
+   0.5347,
+   0.4418
+  ],
+  "std": 0.0548,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "stone_granite-slab": {
+  "cn": "花岗岩板",
+  "mean": [
+   0.5153,
+   0.4916,
+   0.4409
+  ],
+  "std": 0.0584,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.02
+  ]
+ },
+ "stone_bluestone": {
+  "cn": "青石铺装",
+  "mean": [
+   0.438,
+   0.5109,
+   0.5349
+  ],
+  "std": 0.0471,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.85
+  ]
+ },
+ "stone_sandstone-slab": {
+  "cn": "砂岩板",
+  "mean": [
+   0.8208,
+   0.603,
+   0.3903
+  ],
+  "std": 0.0516,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.81
+  ]
+ },
+ "stone_slate": {
+  "cn": "板岩铺装",
+  "mean": [
+   0.2509,
+   0.2587,
+   0.2504
+  ],
+  "std": 0.0249,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "stone_basalt-setts": {
+  "cn": "玄武岩小方石",
+  "mean": [
+   0.1813,
+   0.2106,
+   0.2278
+  ],
+  "std": 0.022,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.11
+  ]
+ },
+ "stone_mossy": {
+  "cn": "带苔石铺",
+  "mean": [
+   0.468,
+   0.468,
+   0.3396
+  ],
+  "std": 0.0638,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "stone_polished-marble": {
+  "cn": "磨光大理石",
+  "mean": [
+   0.9134,
+   0.8945,
+   0.8339
+  ],
+  "std": 0.0233,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.95
+  ]
+ },
+ "stone_terrazzo": {
+  "cn": "水磨石",
+  "mean": [
+   0.802,
+   0.736,
+   0.6385
+  ],
+  "std": 0.083,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "stone_sandstone-crazy": {
+  "cn": "砂岩碎拼",
+  "mean": [
+   0.7789,
+   0.5764,
+   0.3785
+  ],
+  "std": 0.0714,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "stone_worn-cobble-slab": {
+  "cn": "磨圆石板",
+  "mean": [
+   0.4834,
+   0.4433,
+   0.3786
+  ],
+  "std": 0.0514,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "stone_ashlar": {
+  "cn": "琢石铺装",
+  "mean": [
+   0.6395,
+   0.5854,
+   0.4869
+  ],
+  "std": 0.08,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "stone_pebble-mosaic": {
+  "cn": "卵石拼花",
+  "mean": [
+   0.6346,
+   0.5819,
+   0.5013
+  ],
+  "std": 0.0602,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "stone_red-sandstone": {
+  "cn": "红砂岩板",
+  "mean": [
+   0.6824,
+   0.3925,
+   0.2998
+  ],
+  "std": 0.0368,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.62
+  ]
+ },
+ "stone_limestone": {
+  "cn": "石灰岩板",
+  "mean": [
+   0.8412,
+   0.8058,
+   0.7269
+  ],
+  "std": 0.0783,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.82
+  ]
+ },
+ "stone_travertine": {
+  "cn": "洞石铺装",
+  "mean": [
+   0.854,
+   0.754,
+   0.5707
+  ],
+  "std": 0.0428,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "stone_brick-mix": {
+  "cn": "砖石混铺",
+  "mean": [
+   0.5792,
+   0.4867,
+   0.3892
+  ],
+  "std": 0.0846,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "stone_grass-joint": {
+  "cn": "宽缝长草石铺",
+  "mean": [
+   0.5857,
+   0.5785,
+   0.4058
+  ],
+  "std": 0.0971,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   7.97
+  ]
+ },
+ "brick_red": {
+  "cn": "红砖路",
+  "mean": [
+   0.6287,
+   0.3581,
+   0.258
+  ],
+  "std": 0.0735,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "brick_blue": {
+  "cn": "青砖路",
+  "mean": [
+   0.3944,
+   0.4465,
+   0.4893
+  ],
+  "std": 0.0408,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.62
+  ]
+ },
+ "brick_herringbone": {
+  "cn": "人字铺砖",
+  "mean": [
+   0.8374,
+   0.6263,
+   0.4689
+  ],
+  "std": 0.0551,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.28
+  ]
+ },
+ "brick_basket-weave": {
+  "cn": "编织纹砖",
+  "mean": [
+   0.676,
+   0.5262,
+   0.3947
+  ],
+  "std": 0.057,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.09
+  ]
+ },
+ "brick_fan": {
+  "cn": "扇形砖",
+  "mean": [
+   0.7182,
+   0.4744,
+   0.3268
+  ],
+  "std": 0.0323,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.09
+  ]
+ },
+ "brick_hex-paver": {
+  "cn": "六角砖",
+  "mean": [
+   0.6379,
+   0.6079,
+   0.5557
+  ],
+  "std": 0.0538,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "brick_square-paver": {
+  "cn": "方形砖块",
+  "mean": [
+   0.5847,
+   0.5453,
+   0.473
+  ],
+  "std": 0.1063,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "brick_terracotta": {
+  "cn": "陶砖",
+  "mean": [
+   0.7392,
+   0.3686,
+   0.2077
+  ],
+  "std": 0.0335,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.34
+  ]
+ },
+ "brick_chipped": {
+  "cn": "破损旧砖",
+  "mean": [
+   0.5821,
+   0.4522,
+   0.337
+  ],
+  "std": 0.067,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "brick_yellow": {
+  "cn": "黄砖路",
+  "mean": [
+   0.8782,
+   0.7387,
+   0.3886
+  ],
+  "std": 0.045,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "cobble_river-large": {
+  "cn": "大河卵石",
+  "mean": [
+   0.6547,
+   0.5467,
+   0.3847
+  ],
+  "std": 0.0741,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "cobble_small": {
+  "cn": "小卵石密铺",
+  "mean": [
+   0.5848,
+   0.5149,
+   0.4273
+  ],
+  "std": 0.0608,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "cobble_colour": {
+  "cn": "彩色卵石",
+  "mean": [
+   0.6159,
+   0.5445,
+   0.4832
+  ],
+  "std": 0.0706,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "cobble_crushed-gravel": {
+  "cn": "碎石",
+  "mean": [
+   0.5033,
+   0.4314,
+   0.3507
+  ],
+  "std": 0.0767,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "cobble_pea-gravel": {
+  "cn": "豆石",
+  "mean": [
+   0.7441,
+   0.6668,
+   0.5408
+  ],
+  "std": 0.0706,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "cobble_river-bed": {
+  "cn": "河卵石床",
+  "mean": [
+   0.5933,
+   0.5703,
+   0.5244
+  ],
+  "std": 0.0787,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "cobble_bands": {
+  "cn": "卵石条带",
+  "mean": [
+   0.8278,
+   0.7865,
+   0.7044
+  ],
+  "std": 0.0481,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "cobble_exposed-aggregate": {
+  "cn": "水洗石",
+  "mean": [
+   0.6411,
+   0.5972,
+   0.5319
+  ],
+  "std": 0.0583,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "cobble_sand-grit": {
+  "cn": "砂砾路",
+  "mean": [
+   0.7193,
+   0.6086,
+   0.4439
+  ],
+  "std": 0.0486,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "cobble_grass-paver": {
+  "cn": "植草砖",
+  "mean": [
+   0.6382,
+   0.7296,
+   0.4417
+  ],
+  "std": 0.1257,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   6.73
+  ]
+ },
+ "earth_dirt-track": {
+  "cn": "土路",
+  "mean": [
+   0.7296,
+   0.6096,
+   0.429
+  ],
+  "std": 0.0326,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "earth_rutted": {
+  "cn": "车辙土路",
+  "mean": [
+   0.5962,
+   0.4355,
+   0.2653
+  ],
+  "std": 0.0752,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.46
+  ]
+ },
+ "earth_rammed": {
+  "cn": "夯土路",
+  "mean": [
+   0.6862,
+   0.5156,
+   0.3311
+  ],
+  "std": 0.0381,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   7.07
+  ]
+ },
+ "earth_ochre-clay": {
+  "cn": "赭色黏土",
+  "mean": [
+   0.6743,
+   0.4731,
+   0.2711
+  ],
+  "std": 0.0332,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "earth_red-laterite": {
+  "cn": "红壤路",
+  "mean": [
+   0.6883,
+   0.2871,
+   0.1614
+  ],
+  "std": 0.0213,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "earth_dark-loam": {
+  "cn": "黑土路",
+  "mean": [
+   0.2167,
+   0.1569,
+   0.1051
+  ],
+  "std": 0.0176,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "earth_sandy": {
+  "cn": "沙土路",
+  "mean": [
+   0.9394,
+   0.8699,
+   0.6422
+  ],
+  "std": 0.0171,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "earth_muddy": {
+  "cn": "泥泞路",
+  "mean": [
+   0.4682,
+   0.3943,
+   0.3059
+  ],
+  "std": 0.0498,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "earth_cracked": {
+  "cn": "干裂土面",
+  "mean": [
+   0.7162,
+   0.5244,
+   0.2945
+  ],
+  "std": 0.0788,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "earth_grassy-track": {
+  "cn": "草夹土路",
+  "mean": [
+   0.5447,
+   0.5191,
+   0.272
+  ],
+  "std": 0.0481,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "asphalt_fresh": {
+  "cn": "新柏油",
+  "mean": [
+   0.1967,
+   0.2116,
+   0.2219
+  ],
+  "std": 0.0323,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "asphalt_worn": {
+  "cn": "旧柏油",
+  "mean": [
+   0.4866,
+   0.501,
+   0.4896
+  ],
+  "std": 0.0305,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "asphalt_cracked": {
+  "cn": "裂缝柏油",
+  "mean": [
+   0.458,
+   0.4722,
+   0.4687
+  ],
+  "std": 0.0633,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "asphalt_patched": {
+  "cn": "补丁柏油",
+  "mean": [
+   0.3885,
+   0.3925,
+   0.3839
+  ],
+  "std": 0.0801,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "asphalt_porous": {
+  "cn": "透水柏油",
+  "mean": [
+   0.4193,
+   0.4297,
+   0.4334
+  ],
+  "std": 0.09,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "asphalt_red": {
+  "cn": "红色沥青",
+  "mean": [
+   0.7363,
+   0.3385,
+   0.2808
+  ],
+  "std": 0.0136,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "asphalt_concrete": {
+  "cn": "水泥路",
+  "mean": [
+   0.6233,
+   0.6272,
+   0.6177
+  ],
+  "std": 0.0134,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "asphalt_concrete-joints": {
+  "cn": "水泥伸缩缝",
+  "mean": [
+   0.7204,
+   0.7189,
+   0.6715
+  ],
+  "std": 0.0503,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "asphalt_tiebar": {
+  "cn": "水泥板拉杆缝",
+  "mean": [
+   0.7018,
+   0.7017,
+   0.6687
+  ],
+  "std": 0.0634,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.11
+  ]
+ },
+ "asphalt_edge-stripe": {
+  "cn": "带边线柏油",
+  "mean": [
+   0.4901,
+   0.4965,
+   0.4763
+  ],
+  "std": 0.115,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   5.4
+  ]
+ },
+ "wood_boardwalk": {
+  "cn": "木板路",
+  "mean": [
+   0.684,
+   0.5598,
+   0.3586
+  ],
+  "std": 0.072,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wood_plank-causeway": {
+  "cn": "木板栈道",
+  "mean": [
+   0.485,
+   0.4378,
+   0.3324
+  ],
+  "std": 0.1027,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wood_log-road": {
+  "cn": "圆木路",
+  "mean": [
+   0.5253,
+   0.3983,
+   0.2584
+  ],
+  "std": 0.1537,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   5.67
+  ]
+ },
+ "wood_block": {
+  "cn": "木砖",
+  "mean": [
+   0.7286,
+   0.572,
+   0.34
+  ],
+  "std": 0.0783,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wood_trunk-steps": {
+  "cn": "树墩踏石",
+  "mean": [
+   0.6743,
+   0.5615,
+   0.405
+  ],
+  "std": 0.1736,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wood_bamboo-mat": {
+  "cn": "竹排路",
+  "mean": [
+   0.853,
+   0.7071,
+   0.3818
+  ],
+  "std": 0.0612,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   6.8
+  ]
+ },
+ "wood_charred": {
+  "cn": "炭化木",
+  "mean": [
+   0.1239,
+   0.1417,
+   0.1528
+  ],
+  "std": 0.0306,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wood_railway-sleeper": {
+  "cn": "旧枕木",
+  "mean": [
+   0.5462,
+   0.4905,
+   0.3816
+  ],
+  "std": 0.0755,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.41
+  ]
+ },
+ "wood_bridge-decking": {
+  "cn": "木桥面",
+  "mean": [
+   0.5544,
+   0.5024,
+   0.404
+  ],
+  "std": 0.0989,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   6.07
+  ]
+ },
+ "wood_timber-steps": {
+  "cn": "木台阶",
+  "mean": [
+   0.5708,
+   0.45,
+   0.2935
+  ],
+  "std": 0.0977,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   7.08
+  ]
+ },
+ "metal_grating": {
+  "cn": "铁格栅",
+  "mean": [
+   0.2777,
+   0.2585,
+   0.245
+  ],
+  "std": 0.1122,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "metal_steel-plate": {
+  "cn": "钢板路",
+  "mean": [
+   0.5184,
+   0.5315,
+   0.5088
+  ],
+  "std": 0.075,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "metal_cast-iron-plate": {
+  "cn": "铸铁花纹板",
+  "mean": [
+   0.2856,
+   0.2667,
+   0.2492
+  ],
+  "std": 0.0446,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "metal_mesh": {
+  "cn": "金属网格板",
+  "mean": [
+   0.4356,
+   0.4213,
+   0.3923
+  ],
+  "std": 0.1062,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "metal_chequer-plate": {
+  "cn": "防滑钢板",
+  "mean": [
+   0.5595,
+   0.5376,
+   0.5016
+  ],
+  "std": 0.0458,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "metal_rusty": {
+  "cn": "锈蚀钢板",
+  "mean": [
+   0.4924,
+   0.357,
+   0.2358
+  ],
+  "std": 0.0394,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "metal_drain-grate": {
+  "cn": "排水沟盖",
+  "mean": [
+   0.4717,
+   0.4481,
+   0.3842
+  ],
+  "std": 0.2888,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "metal_manhole": {
+  "cn": "井盖",
+  "mean": [
+   0.5638,
+   0.5403,
+   0.4916
+  ],
+  "std": 0.3118,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "metal_tactile": {
+  "cn": "盲道砖",
+  "mean": [
+   0.9606,
+   0.8174,
+   0.3022
+  ],
+  "std": 0.0393,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "metal_speed-hump": {
+  "cn": "减速带",
+  "mean": [
+   0.5081,
+   0.4403,
+   0.1808
+  ],
+  "std": 0.2489,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "step_stepping-water": {
+  "cn": "水中汀步",
+  "mean": [
+   0.4752,
+   0.5228,
+   0.4682
+  ],
+  "std": 0.1415,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "step_stone-stepping": {
+  "cn": "石板汀步",
+  "mean": [
+   0.6931,
+   0.6563,
+   0.5668
+  ],
+  "std": 0.0966,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "step_log-stepping": {
+  "cn": "木汀步",
+  "mean": [
+   0.5945,
+   0.4778,
+   0.313
+  ],
+  "std": 0.1282,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "step_wide-stone": {
+  "cn": "宽石阶",
+  "mean": [
+   0.6242,
+   0.5936,
+   0.4872
+  ],
+  "std": 0.1107,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.46
+  ]
+ },
+ "step_narrow-stair": {
+  "cn": "窄石阶",
+  "mean": [
+   0.4459,
+   0.4296,
+   0.3447
+  ],
+  "std": 0.1048,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "step_concrete-ramp": {
+  "cn": "混凝土坡道",
+  "mean": [
+   0.8167,
+   0.801,
+   0.7372
+  ],
+  "std": 0.0142,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "step_kerb-ramp": {
+  "cn": "路缘坡道",
+  "mean": [
+   0.7323,
+   0.6986,
+   0.5892
+  ],
+  "std": 0.0809,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "step_gutter": {
+  "cn": "排水沟",
+  "mean": [
+   0.7267,
+   0.7187,
+   0.6538
+  ],
+  "std": 0.102,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.75
+  ]
+ },
+ "step_cobbled-gutter": {
+  "cn": "卵石排水沟",
+  "mean": [
+   0.5779,
+   0.5583,
+   0.507
+  ],
+  "std": 0.092,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "step_culvert": {
+  "cn": "石涵洞口",
+  "mean": [
+   0.494,
+   0.4791,
+   0.4048
+  ],
+  "std": 0.2326,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "trail_grass-path": {
+  "cn": "草地小径",
+  "mean": [
+   0.5269,
+   0.6656,
+   0.3524
+  ],
+  "std": 0.0614,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "trail_forest": {
+  "cn": "林间小径",
+  "mean": [
+   0.4988,
+   0.4159,
+   0.275
+  ],
+  "std": 0.1296,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "trail_leaf-litter": {
+  "cn": "落叶小径",
+  "mean": [
+   0.7114,
+   0.4679,
+   0.2039
+  ],
+  "std": 0.1327,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "trail_pine-needle": {
+  "cn": "松针小径",
+  "mean": [
+   0.3868,
+   0.3454,
+   0.2128
+  ],
+  "std": 0.0827,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "trail_setts-in-grass": {
+  "cn": "石板嵌草",
+  "mean": [
+   0.6065,
+   0.6299,
+   0.446
+  ],
+  "std": 0.0832,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "trail_bricks-in-grass": {
+  "cn": "砖嵌草",
+  "mean": [
+   0.6528,
+   0.5915,
+   0.3807
+  ],
+  "std": 0.0806,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "trail_trampled": {
+  "cn": "踩踏土斑",
+  "mean": [
+   0.583,
+   0.4536,
+   0.2885
+  ],
+  "std": 0.0652,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "trail_narrow-footpath": {
+  "cn": "羊肠小道",
+  "mean": [
+   0.4901,
+   0.6003,
+   0.3165
+  ],
+  "std": 0.1436,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "trail_stream-gravel": {
+  "cn": "溪边砾石",
+  "mean": [
+   0.5591,
+   0.5602,
+   0.5217
+  ],
+  "std": 0.1076,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "trail_paddy-bund": {
+  "cn": "田埂",
+  "mean": [
+   0.6038,
+   0.5267,
+   0.328
+  ],
+  "std": 0.0734,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.37
+  ]
+ },
+ "urban_plaza-mosaic": {
+  "cn": "广场拼花",
+  "mean": [
+   0.7906,
+   0.7246,
+   0.6309
+  ],
+  "std": 0.0796,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   7.95
+  ]
+ },
+ "urban_marble-inlay": {
+  "cn": "大理石镶嵌",
+  "mean": [
+   0.8059,
+   0.7594,
+   0.6897
+  ],
+  "std": 0.1186,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.56
+  ]
+ },
+ "urban_terrazzo-inlay": {
+  "cn": "水磨石镶嵌",
+  "mean": [
+   0.88,
+   0.816,
+   0.7074
+  ],
+  "std": 0.0943,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   5.79
+  ]
+ },
+ "urban_running-track": {
+  "cn": "塑胶跑道",
+  "mean": [
+   0.7849,
+   0.305,
+   0.2392
+  ],
+  "std": 0.0272,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "urban_basketball-court": {
+  "cn": "篮球场地面",
+  "mean": [
+   0.3222,
+   0.6162,
+   0.4044
+  ],
+  "std": 0.0864,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.25
+  ]
+ },
+ "urban_car-park": {
+  "cn": "停车场",
+  "mean": [
+   0.4806,
+   0.488,
+   0.4718
+  ],
+  "std": 0.0513,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.27
+  ]
+ },
+ "urban_crossing": {
+  "cn": "人行横道",
+  "mean": [
+   0.7872,
+   0.7938,
+   0.7838
+  ],
+  "std": 0.1603,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.16
+  ]
+ },
+ "urban_cycle-lane": {
+  "cn": "自行车道",
+  "mean": [
+   0.5038,
+   0.5938,
+   0.494
+  ],
+  "std": 0.0408,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.11
+  ]
+ },
+ "urban_bus-lane": {
+  "cn": "公交车道",
+  "mean": [
+   0.7439,
+   0.3954,
+   0.3089
+  ],
+  "std": 0.0084,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.74
+  ]
+ },
+ "urban_tunnel-lining": {
+  "cn": "隧道内壁",
+  "mean": [
+   0.9506,
+   0.9345,
+   0.8419
+  ],
+  "std": 0.0175,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "pattern_mosaic-tile": {
+  "cn": "马赛克铺装",
+  "mean": [
+   0.7824,
+   0.74,
+   0.6757
+  ],
+  "std": 0.0803,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "pattern_concentric-ring": {
+  "cn": "同心圆铺装",
+  "mean": [
+   0.664,
+   0.6274,
+   0.5617
+  ],
+  "std": 0.0708,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "pattern_radial-fan": {
+  "cn": "放射铺装",
+  "mean": [
+   0.7622,
+   0.6998,
+   0.5953
+  ],
+  "std": 0.0666,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "pattern_arched-brick": {
+  "cn": "弧形砖铺",
+  "mean": [
+   0.6935,
+   0.4944,
+   0.3713
+  ],
+  "std": 0.0397,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   6.46
+  ]
+ },
+ "pattern_curving-border": {
+  "cn": "弧形砖带",
+  "mean": [
+   0.8746,
+   0.746,
+   0.6009
+  ],
+  "std": 0.1126,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.42
+  ]
+ },
+ "pattern_three-soil": {
+  "cn": "三合土",
+  "mean": [
+   0.5229,
+   0.4091,
+   0.2772
+  ],
+  "std": 0.0366,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "pattern_lime-stabilised": {
+  "cn": "石灰稳定土",
+  "mean": [
+   0.8859,
+   0.8877,
+   0.6189
+  ],
+  "std": 0.0096,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "pattern_stabilised-gravel": {
+  "cn": "稳定碎石",
+  "mean": [
+   0.6434,
+   0.601,
+   0.5115
+  ],
+  "std": 0.0856,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "pattern_micro-asphalt": {
+  "cn": "微表处沥青",
+  "mean": [
+   0.4038,
+   0.42,
+   0.4205
+  ],
+  "std": 0.0343,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "pattern_permeable-brick": {
+  "cn": "透水砖",
+  "mean": [
+   0.7328,
+   0.5878,
+   0.4637
+  ],
+  "std": 0.0771,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "heritage_grey-brick": {
+  "cn": "仿古青砖",
+  "mean": [
+   0.5401,
+   0.5471,
+   0.526
+  ],
+  "std": 0.0704,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "heritage_palace-stone": {
+  "cn": "宫殿石铺",
+  "mean": [
+   0.7037,
+   0.6494,
+   0.5259
+  ],
+  "std": 0.064,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.96
+  ]
+ },
+ "heritage_temple-flagstone": {
+  "cn": "寺庙石板",
+  "mean": [
+   0.5262,
+   0.5306,
+   0.3819
+  ],
+  "std": 0.0968,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "heritage_herringbone": {
+  "cn": "仿古人字砖",
+  "mean": [
+   0.6696,
+   0.4827,
+   0.3616
+  ],
+  "std": 0.0584,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   7.78
+  ]
+ },
+ "heritage_old-town-cobble": {
+  "cn": "老城石板路",
+  "mean": [
+   0.641,
+   0.5896,
+   0.4768
+  ],
+  "std": 0.0977,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.94
+  ]
+ },
+ "heritage_alley-stone": {
+  "cn": "胡同石板",
+  "mean": [
+   0.6469,
+   0.5988,
+   0.4718
+  ],
+  "std": 0.1312,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "heritage_mossy-step": {
+  "cn": "苔痕石阶",
+  "mean": [
+   0.4304,
+   0.472,
+   0.3201
+  ],
+  "std": 0.1349,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "heritage_water-worn-rock": {
+  "cn": "水磨岩床",
+  "mean": [
+   0.4927,
+   0.5077,
+   0.4362
+  ],
+  "std": 0.1107,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "heritage_dry-stone": {
+  "cn": "干砌石铺",
+  "mean": [
+   0.6421,
+   0.6056,
+   0.5032
+  ],
+  "std": 0.1388,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "heritage_lichen": {
+  "cn": "地衣苔染铺装",
+  "mean": [
+   0.4289,
+   0.504,
+   0.2954
+  ],
+  "std": 0.1025,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "industry_coal-dust": {
+  "cn": "煤尘场地",
+  "mean": [
+   0.1734,
+   0.1805,
+   0.1876
+  ],
+  "std": 0.0325,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "industry_cinder": {
+  "cn": "煤渣路",
+  "mean": [
+   0.4907,
+   0.4801,
+   0.4622
+  ],
+  "std": 0.0335,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "industry_slag": {
+  "cn": "矿渣砾石",
+  "mean": [
+   0.4265,
+   0.4215,
+   0.4061
+  ],
+  "std": 0.0811,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "industry_ballast": {
+  "cn": "道砟",
+  "mean": [
+   0.4842,
+   0.4862,
+   0.482
+  ],
+  "std": 0.1181,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "industry_sleeper-bed": {
+  "cn": "轨枕道床",
+  "mean": [
+   0.5419,
+   0.5258,
+   0.4787
+  ],
+  "std": 0.1594,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "industry_factory-concrete": {
+  "cn": "厂区混凝土",
+  "mean": [
+   0.6432,
+   0.6201,
+   0.5412
+  ],
+  "std": 0.0501,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "industry_oil-stained": {
+  "cn": "油污沥青",
+  "mean": [
+   0.3874,
+   0.3824,
+   0.3626
+  ],
+  "std": 0.0719,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "industry_scraped-yard": {
+  "cn": "刮平场地",
+  "mean": [
+   0.6623,
+   0.5287,
+   0.3501
+  ],
+  "std": 0.0299,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "industry_deep-ruts": {
+  "cn": "深车辙砾石",
+  "mean": [
+   0.5639,
+   0.5282,
+   0.4518
+  ],
+  "std": 0.126,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "industry_compacted-ash": {
+  "cn": "压实灰渣",
+  "mean": [
+   0.2813,
+   0.2825,
+   0.2858
+  ],
+  "std": 0.0594,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "nature_salt-flat": {
+  "cn": "盐碱地",
+  "mean": [
+   0.9539,
+   0.956,
+   0.944
+  ],
+  "std": 0.0288,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "nature_snow-path": {
+  "cn": "雪径",
+  "mean": [
+   0.9354,
+   0.9537,
+   0.9664
+  ],
+  "std": 0.0357,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "nature_icy-rock": {
+  "cn": "结冰岩面",
+  "mean": [
+   0.5769,
+   0.6951,
+   0.7787
+  ],
+  "std": 0.1139,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "nature_sand-dunes": {
+  "cn": "风纹沙丘",
+  "mean": [
+   0.8579,
+   0.7655,
+   0.577
+  ],
+  "std": 0.0512,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "nature_pebble-beach": {
+  "cn": "卵石滩",
+  "mean": [
+   0.639,
+   0.5945,
+   0.5203
+  ],
+  "std": 0.1184,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "nature_dune-grass": {
+  "cn": "沙丘草",
+  "mean": [
+   0.8583,
+   0.811,
+   0.6346
+  ],
+  "std": 0.1106,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "nature_lava-rock": {
+  "cn": "熔岩地表",
+  "mean": [
+   0.2163,
+   0.2106,
+   0.2089
+  ],
+  "std": 0.0629,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "nature_chalk-path": {
+  "cn": "白垩小径",
+  "mean": [
+   0.9567,
+   0.9516,
+   0.9347
+  ],
+  "std": 0.0121,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "nature_red-desert": {
+  "cn": "红沙漠土",
+  "mean": [
+   0.8235,
+   0.4062,
+   0.2433
+  ],
+  "std": 0.0493,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "nature_wet-shingle": {
+  "cn": "湿滩砾石",
+  "mean": [
+   0.4129,
+   0.4267,
+   0.39
+  ],
+  "std": 0.1265,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ }
+}

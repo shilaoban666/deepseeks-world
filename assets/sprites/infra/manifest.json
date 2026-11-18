@@ -1,0 +1,606 @@
+{
+ "source": "dashscope/qwen-image-3.0 图集页，本地自动切分",
+ "count": 100,
+ "items": [
+  {
+   "file": "park-bench-wood.png",
+   "w": 238,
+   "h": 185,
+   "sheet": "image-74e78910.png"
+  },
+  {
+   "file": "park-bench-iron.png",
+   "w": 232,
+   "h": 177,
+   "sheet": "image-74e78910.png"
+  },
+  {
+   "file": "stone-bench.png",
+   "w": 241,
+   "h": 137,
+   "sheet": "image-74e78910.png"
+  },
+  {
+   "file": "curved-bench.png",
+   "w": 233,
+   "h": 165,
+   "sheet": "image-74e78910.png"
+  },
+  {
+   "file": "concrete-bench.png",
+   "w": 243,
+   "h": 126,
+   "sheet": "image-74e78910.png"
+  },
+  {
+   "file": "swing-bench.png",
+   "w": 223,
+   "h": 223,
+   "sheet": "image-74e78910.png"
+  },
+  {
+   "file": "picnic-table.png",
+   "w": 254,
+   "h": 164,
+   "sheet": "image-74e78910.png"
+  },
+  {
+   "file": "log-bench.png",
+   "w": 227,
+   "h": 190,
+   "sheet": "image-74e78910.png"
+  },
+  {
+   "file": "plaza-bench.png",
+   "w": 226,
+   "h": 199,
+   "sheet": "image-74e78910.png"
+  },
+  {
+   "file": "double-bench.png",
+   "w": 242,
+   "h": 163,
+   "sheet": "image-74e78910.png"
+  },
+  {
+   "file": "tree-seat.png",
+   "w": 240,
+   "h": 141,
+   "sheet": "image-74e78910.png"
+  },
+  {
+   "file": "armrest-bench.png",
+   "w": 226,
+   "h": 189,
+   "sheet": "image-74e78910.png"
+  },
+  {
+   "file": "round-fountain.png",
+   "w": 260,
+   "h": 287,
+   "sheet": "image-338723a7.png"
+  },
+  {
+   "file": "tiered-fountain.png",
+   "w": 206,
+   "h": 303,
+   "sheet": "image-338723a7.png"
+  },
+  {
+   "file": "wall-fountain.png",
+   "w": 240,
+   "h": 280,
+   "sheet": "image-338723a7.png"
+  },
+  {
+   "file": "drinking-fountain.png",
+   "w": 200,
+   "h": 268,
+   "sheet": "image-338723a7.png"
+  },
+  {
+   "file": "water-pump.png",
+   "w": 225,
+   "h": 268,
+   "sheet": "image-338723a7.png"
+  },
+  {
+   "file": "stone-well.png",
+   "w": 223,
+   "h": 274,
+   "sheet": "image-338723a7.png"
+  },
+  {
+   "file": "lily-fountain.png",
+   "w": 265,
+   "h": 241,
+   "sheet": "image-338723a7.png"
+  },
+  {
+   "file": "lion-fountain.png",
+   "w": 225,
+   "h": 252,
+   "sheet": "image-338723a7.png"
+  },
+  {
+   "file": "modern-fountain.png",
+   "w": 229,
+   "h": 251,
+   "sheet": "image-338723a7.png"
+  },
+  {
+   "file": "trough-fountain.png",
+   "w": 247,
+   "h": 210,
+   "sheet": "image-338723a7.png"
+  },
+  {
+   "file": "splash-pad.png",
+   "w": 246,
+   "h": 257,
+   "sheet": "image-338723a7.png"
+  },
+  {
+   "file": "mist-fountain.png",
+   "w": 247,
+   "h": 244,
+   "sheet": "image-338723a7.png"
+  },
+  {
+   "file": "park-lamp.png",
+   "w": 89,
+   "h": 318,
+   "sheet": "image-f35beb7f.png"
+  },
+  {
+   "file": "twin-lamp.png",
+   "w": 212,
+   "h": 308,
+   "sheet": "image-f35beb7f.png"
+  },
+  {
+   "file": "globe-lamp.png",
+   "w": 124,
+   "h": 301,
+   "sheet": "image-f35beb7f.png"
+  },
+  {
+   "file": "bollard-light.png",
+   "w": 105,
+   "h": 217,
+   "sheet": "image-f35beb7f.png"
+  },
+  {
+   "file": "lantern-post.png",
+   "w": 111,
+   "h": 304,
+   "sheet": "image-f35beb7f.png"
+  },
+  {
+   "file": "stone-lantern.png",
+   "w": 154,
+   "h": 273,
+   "sheet": "image-f35beb7f.png"
+  },
+  {
+   "file": "street-light.png",
+   "w": 169,
+   "h": 299,
+   "sheet": "image-f35beb7f.png"
+  },
+  {
+   "file": "hanging-lantern.png",
+   "w": 152,
+   "h": 231,
+   "sheet": "image-f35beb7f.png"
+  },
+  {
+   "file": "candelabra-post.png",
+   "w": 156,
+   "h": 313,
+   "sheet": "image-f35beb7f.png"
+  },
+  {
+   "file": "wall-lamp.png",
+   "w": 112,
+   "h": 259,
+   "sheet": "image-f35beb7f.png"
+  },
+  {
+   "file": "path-light.png",
+   "w": 180,
+   "h": 261,
+   "sheet": "image-f35beb7f.png"
+  },
+  {
+   "file": "festoon-pole.png",
+   "w": 230,
+   "h": 313,
+   "sheet": "image-f35beb7f.png"
+  },
+  {
+   "file": "trash-bin.png",
+   "w": 163,
+   "h": 279,
+   "sheet": "image-28cbf86c.png"
+  },
+  {
+   "file": "recycling-bin.png",
+   "w": 219,
+   "h": 266,
+   "sheet": "image-28cbf86c.png"
+  },
+  {
+   "file": "bollard.png",
+   "w": 68,
+   "h": 237,
+   "sheet": "image-28cbf86c.png"
+  },
+  {
+   "file": "bike-rack.png",
+   "w": 215,
+   "h": 165,
+   "sheet": "image-28cbf86c.png"
+  },
+  {
+   "file": "notice-board.png",
+   "w": 236,
+   "h": 282,
+   "sheet": "image-28cbf86c.png"
+  },
+  {
+   "file": "info-kiosk.png",
+   "w": 158,
+   "h": 301,
+   "sheet": "image-28cbf86c.png"
+  },
+  {
+   "file": "newspaper-box.png",
+   "w": 120,
+   "h": 303,
+   "sheet": "image-28cbf86c.png"
+  },
+  {
+   "file": "phone-booth.png",
+   "w": 140,
+   "h": 304,
+   "sheet": "image-28cbf86c.png"
+  },
+  {
+   "file": "mailbox.png",
+   "w": 130,
+   "h": 298,
+   "sheet": "image-28cbf86c.png"
+  },
+  {
+   "file": "parcel-locker.png",
+   "w": 165,
+   "h": 294,
+   "sheet": "image-28cbf86c.png"
+  },
+  {
+   "file": "litter-bin.png",
+   "w": 143,
+   "h": 285,
+   "sheet": "image-28cbf86c.png"
+  },
+  {
+   "file": "sign-post.png",
+   "w": 76,
+   "h": 315,
+   "sheet": "image-28cbf86c.png"
+  },
+  {
+   "file": "bus-shelter.png",
+   "w": 250,
+   "h": 221,
+   "sheet": "image-41ef9908.png"
+  },
+  {
+   "file": "tram-shelter.png",
+   "w": 224,
+   "h": 224,
+   "sheet": "image-41ef9908.png"
+  },
+  {
+   "file": "pergola.png",
+   "w": 238,
+   "h": 248,
+   "sheet": "image-41ef9908.png"
+  },
+  {
+   "file": "gazebo.png",
+   "w": 209,
+   "h": 264,
+   "sheet": "image-41ef9908.png"
+  },
+  {
+   "file": "bandstand.png",
+   "w": 244,
+   "h": 286,
+   "sheet": "image-41ef9908.png"
+  },
+  {
+   "file": "awning-canopy.png",
+   "w": 218,
+   "h": 226,
+   "sheet": "image-41ef9908.png"
+  },
+  {
+   "file": "parasol.png",
+   "w": 233,
+   "h": 273,
+   "sheet": "image-41ef9908.png"
+  },
+  {
+   "file": "market-stall.png",
+   "w": 250,
+   "h": 229,
+   "sheet": "image-41ef9908.png"
+  },
+  {
+   "file": "kiosk.png",
+   "w": 192,
+   "h": 252,
+   "sheet": "image-41ef9908.png"
+  },
+  {
+   "file": "ticket-booth.png",
+   "w": 184,
+   "h": 274,
+   "sheet": "image-41ef9908.png"
+  },
+  {
+   "file": "waiting-shelter.png",
+   "w": 219,
+   "h": 253,
+   "sheet": "image-41ef9908.png"
+  },
+  {
+   "file": "taxi-rank-sign.png",
+   "w": 96,
+   "h": 277,
+   "sheet": "image-41ef9908.png"
+  },
+  {
+   "file": "statue.png",
+   "w": 165,
+   "h": 331,
+   "sheet": "image-174228ad.png"
+  },
+  {
+   "file": "obelisk.png",
+   "w": 157,
+   "h": 349,
+   "sheet": "image-174228ad.png"
+  },
+  {
+   "file": "memorial-arch.png",
+   "w": 257,
+   "h": 309,
+   "sheet": "image-174228ad.png"
+  },
+  {
+   "file": "clock-tower.png",
+   "w": 174,
+   "h": 343,
+   "sheet": "image-174228ad.png"
+  },
+  {
+   "file": "sundial.png",
+   "w": 153,
+   "h": 272,
+   "sheet": "image-174228ad.png"
+  },
+  {
+   "file": "milestone.png",
+   "w": 164,
+   "h": 265,
+   "sheet": "image-174228ad.png"
+  },
+  {
+   "file": "memorial-stone.png",
+   "w": 228,
+   "h": 262,
+   "sheet": "image-174228ad.png"
+  },
+  {
+   "file": "topiary.png",
+   "w": 216,
+   "h": 259,
+   "sheet": "image-174228ad.png"
+  },
+  {
+   "file": "flower-bed.png",
+   "w": 234,
+   "h": 182,
+   "sheet": "image-174228ad.png"
+  },
+  {
+   "file": "planter-box.png",
+   "w": 234,
+   "h": 217,
+   "sheet": "image-174228ad.png"
+  },
+  {
+   "file": "urn-planter.png",
+   "w": 216,
+   "h": 264,
+   "sheet": "image-174228ad.png"
+  },
+  {
+   "file": "hanging-basket.png",
+   "w": 209,
+   "h": 266,
+   "sheet": "image-174228ad.png"
+  },
+  {
+   "file": "pedestrian-gate.png",
+   "w": 204,
+   "h": 256,
+   "sheet": "image-54752d34.png"
+  },
+  {
+   "file": "iron-gate.png",
+   "w": 237,
+   "h": 248,
+   "sheet": "image-54752d34.png"
+  },
+  {
+   "file": "turnstile.png",
+   "w": 219,
+   "h": 217,
+   "sheet": "image-54752d34.png"
+  },
+  {
+   "file": "archway.png",
+   "w": 259,
+   "h": 267,
+   "sheet": "image-54752d34.png"
+  },
+  {
+   "file": "footbridge.png",
+   "w": 251,
+   "h": 177,
+   "sheet": "image-54752d34.png"
+  },
+  {
+   "file": "railing-fence.png",
+   "w": 222,
+   "h": 203,
+   "sheet": "image-54752d34.png"
+  },
+  {
+   "file": "picket-fence.png",
+   "w": 228,
+   "h": 189,
+   "sheet": "image-54752d34.png"
+  },
+  {
+   "file": "hedge-wall.png",
+   "w": 251,
+   "h": 230,
+   "sheet": "image-54752d34.png"
+  },
+  {
+   "file": "retaining-wall.png",
+   "w": 241,
+   "h": 206,
+   "sheet": "image-54752d34.png"
+  },
+  {
+   "file": "stone-steps.png",
+   "w": 239,
+   "h": 175,
+   "sheet": "image-54752d34.png"
+  },
+  {
+   "file": "handrail-ramp.png",
+   "w": 217,
+   "h": 234,
+   "sheet": "image-54752d34.png"
+  },
+  {
+   "file": "pier-steps.png",
+   "w": 225,
+   "h": 258,
+   "sheet": "image-54752d34.png"
+  },
+  {
+   "file": "swing-set.png",
+   "w": 231,
+   "h": 239,
+   "sheet": "image-9fd26eac.png"
+  },
+  {
+   "file": "slide.png",
+   "w": 173,
+   "h": 262,
+   "sheet": "image-9fd26eac.png"
+  },
+  {
+   "file": "seesaw.png",
+   "w": 249,
+   "h": 159,
+   "sheet": "image-9fd26eac.png"
+  },
+  {
+   "file": "sandbox.png",
+   "w": 259,
+   "h": 181,
+   "sheet": "image-9fd26eac.png"
+  },
+  {
+   "file": "climbing-frame.png",
+   "w": 244,
+   "h": 221,
+   "sheet": "image-9fd26eac.png"
+  },
+  {
+   "file": "merry-go-round.png",
+   "w": 224,
+   "h": 162,
+   "sheet": "image-9fd26eac.png"
+  },
+  {
+   "file": "rocking-horse.png",
+   "w": 223,
+   "h": 214,
+   "sheet": "image-9fd26eac.png"
+  },
+  {
+   "file": "basketball-hoop.png",
+   "w": 180,
+   "h": 262,
+   "sheet": "image-9fd26eac.png"
+  },
+  {
+   "file": "football-goal.png",
+   "w": 246,
+   "h": 183,
+   "sheet": "image-9fd26eac.png"
+  },
+  {
+   "file": "outdoor-gym.png",
+   "w": 183,
+   "h": 242,
+   "sheet": "image-9fd26eac.png"
+  },
+  {
+   "file": "ping-pong-table.png",
+   "w": 252,
+   "h": 149,
+   "sheet": "image-9fd26eac.png"
+  },
+  {
+   "file": "skate-ramp.png",
+   "w": 228,
+   "h": 197,
+   "sheet": "image-9fd26eac.png"
+  },
+  {
+   "file": "flagpole.png",
+   "w": 91,
+   "h": 466,
+   "sheet": "image-b964316d.png"
+  },
+  {
+   "file": "weather-vane.png",
+   "w": 318,
+   "h": 441,
+   "sheet": "image-b964316d.png"
+  },
+  {
+   "file": "fire-hydrant.png",
+   "w": 263,
+   "h": 439,
+   "sheet": "image-b964316d.png"
+  },
+  {
+   "file": "street-clock.png",
+   "w": 189,
+   "h": 490,
+   "sheet": "image-b964316d.png"
+  }
+ ]
+}

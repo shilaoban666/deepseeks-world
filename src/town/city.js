@@ -7,7 +7,7 @@ import { createGrove } from '../valley/trees.js';
 import { createLake, createTrees, createCrops, createRocks, createFlowerClumps, createPigeons, createCritters, roadGeometry, plazaGeometry, roadMaterial, roadMaterialTextured } from './props.js';
 import { createPlantBatch } from './billboard.js';
 import { paintMaterial, getAlbedo } from './paint.js';
-import { DISTRICTS, ROADS, SEGS, STREET_HALF, PLAZA, HOME, LAKE, SEA, GATE, CITY_R, RIVER, BRIDGES, BUS_ROUTE, BUS_STOPS, RIVER_HALF, riverAt, riverLevel, coastX, plotAt, heightAt, forestAt, fieldsAt, mountainAt, lakeDistance, roadDistance, roadEdge, plazaDistance, cityDistance, fbm, HALF } from './plan.js';
+import { DISTRICTS, ROADS, SEGS, STREET_HALF, PLAZA, HOME, LAKE, SEA, GATE, CITY_R, RIVER, BRIDGES, BUS_ROUTE, BUS_STOPS, RIVER_HALF, GARDENS, riverAt, riverLevel, coastX, plotAt, heightAt, forestAt, fieldsAt, mountainAt, lakeDistance, roadDistance, roadEdge, plazaDistance, cityDistance, fbm, HALF } from './plan.js';
 
 /** 一个固定的随机数发生器：地图每次都长一样。 */
 export function rng(seed = 1) {
@@ -135,6 +135,9 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
       b.add(new THREE.CylinderGeometry(0.36, 0.36, 0.06, 10), 'iron#0', front(2.3, 0.6, 0.5));
     }
   };
+  let lighthouseLamp = null;
+  // 菜地（种植系统）：家门口、田园小镇各一片
+  const gardenPlots = [];
   // 地图上写着的那些铺子
   const SHOPS = ['面馆', '蔬菜铺', '茶铺', '书店', '裁缝', '杂货', '豆腐', '酱菜', '糕点', '药铺', '花店', '米铺'];
 
@@ -172,8 +175,10 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     fence(b, hx - 8, hz + 6, hx - 2.2, hz + 6);
     fence(b, hx + 2.2, hz + 6, hx + 8, hz + 6);
     lamp(b, hx - 5, hz + 5);
-    // 院子里的小菜园（种植交互）
-    add({ id: 'home-field', name: '门前的菜地', kind: 'plant', x: hx + 4.5, z: hz + 1, r: 3.4, hint: 'E 种点什么' });
+    // 院子里的小菜园：西半边（东半边是出门那条石板路）两列四排，八块地（种植系统，见 farming.js）
+    for (let row = 0; row < 4; row++) {
+      for (let col = 0; col < 2; col++) gardenPlots.push({ x: GARDENS[0].x + 1.3 - col * 2.6, z: GARDENS[0].z - 2.4 + row * 1.6, where: '门前的菜地' });
+    }
     add({ id: 'home-door', name: '小鲸鱼的家', kind: 'door', x: hx, z: z + 10.5, r: 2.8, hint: 'E 进屋' });
     add({ id: 'home-mailbox', name: '信箱', kind: 'mail', x: hx - 3, z: hz + 4.4, r: 1.8, hint: 'E 看看信箱' });
   }
@@ -362,6 +367,18 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     hall(b, { x: d.x + 18, z: d.z - 26, rotY: 0.4, w: 14, d: 9, h: 6, floors: 1, wall: 3, roof: 4, windows: 4, sign: '种子铺' });
     add({ id: 'farm', name: '农村', kind: 'farm', x: d.x, z: d.z + 30, r: 26, hint: 'E 找农夫聊天' });
     add({ id: 'farm-seeds', name: '种子铺', kind: 'seed', x: d.x + 18, z: d.z - 20, r: 9, hint: 'E 买种子' });
+    // 租的菜地：plan.GARDENS 里定好的那块（那里不长草），三排四列，一圈矮篱笆，插块牌子
+    {
+      const { x: cx, z: cz } = GARDENS[1];
+      for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 4; col++) gardenPlots.push({ x: cx - 3.9 + col * 2.6, z: cz - 2 + row * 2, where: '租的菜地' });
+      }
+      fence(b, cx - 6, cz - 3.6, cx + 6, cz - 3.6, 0.8);
+      fence(b, cx - 6, cz + 3.6, cx + 6, cz + 3.6, 0.8);
+      fence(b, cx - 6, cz - 3.6, cx - 6, cz + 3.6, 0.8);
+      banner(b, cx + 7.5, cz, '租的菜地', Math.PI / 2, 3);
+      claim(cx, cz, 9);
+    }
   }
 
   // ===== 河鲜集市：一圈摊位，摊上摆着鱼、虾、鱼干 =================================
@@ -426,6 +443,7 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     b.add(new THREE.CylinderGeometry(2.7, 2.7, 0.3, 20), 'iron#0', [L.x, top + 0.15, L.z]);
     for (let k = 0; k < 10; k++) b.add(new THREE.CylinderGeometry(0.05, 0.05, 1.0, 5), 'iron#0', [L.x + Math.cos((k / 10) * 6.283) * 2.6, top + 0.8, L.z + Math.sin((k / 10) * 6.283) * 2.6]);
     b.add(new THREE.CylinderGeometry(1.5, 1.5, 2.2, 12), 'glow#0', [L.x, top + 1.4, L.z]);
+    lighthouseLamp = [L.x, top + 1.4, L.z];
     b.add(new THREE.ConeGeometry(2.0, 1.8, 12), 'cloth#0', [L.x, top + 3.4, L.z]);
     b.add(new THREE.BoxGeometry(1.2, 2.2, 0.2), 'wood#0', [L.x, gy + 2.2, L.z + 4.3]);
     b.collide(L.x, L.z, 4.6, 4.6, 26);
@@ -730,9 +748,13 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     for (const p of pines) card(p.x, p.z, 13 + Math.floor(random() * 12), 7 + p.s * 4.5);
   } else if (pines.length) group.add(createTrees(shared, pines));
 
-  // 田是"长"出来的（plan.paint：麦田是干草色的高草），这里只摆家门口那一小畦菜
-  const plots = [{ x: HOME[0] + 4.5, z: HOME[1] + 1, w: 5, d: 4, rotY: 0 }];
-  group.add(createCrops(shared, plots));
+  // 菜地：每块一个交互点（地和作物的样子交给 farming.js）
+  gardenPlots.forEach((p, i) => {
+    p.id = i;
+    p.y = heightAt(p.x, p.z);
+    claim(p.x, p.z, 1.1);
+    add({ id: `plot-${i}`, name: p.where, kind: 'plot', plot: i, x: p.x, z: p.z, r: 1.15, hint: 'E 看看菜地' });
+  });
 
   // 石头：山上和湖边
   const rockPlaces = [];
@@ -836,7 +858,7 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
       card(s0[0] + s0[2] * side * (RIVER_HALF + 7 + random() * 6), s0[1] + s0[3] * side * (RIVER_HALF + 7 + random() * 6), random() < 0.6 ? 49 + Math.floor(random() * 2) : 57 + Math.floor(random() * 3), 6 + random() * 3);
     }
     // 沙滩：棕榈
-    for (let z = -200; z < 320; z += 26 + random() * 30) {
+    for (let z = -780; z < -170; z += 22 + random() * 26) {
       const x = coastX(z) - 62 - random() * 26;
       if (free(x, z, 3)) card(x, z, 37 + Math.floor(random() * 3), 7.5 + random() * 2.5);
     }
@@ -878,13 +900,6 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
         }
       }
       add({ id: 'pick-fields', name: '菜地', kind: 'pick', x: d.x, z: d.z, r: 40, hint: 'E 摘点菜' });
-      // 家门口那一畦
-      for (let i = 0; i < 6; i++) {
-        const idx = farmIdx.get(i % 2 ? 'plant-radish' : 'plant-napa-cabbage');
-        const card = { x: HOME[0] + 2.6 + (i % 3) * 1.4, z: HOME[1] + 2.4 + Math.floor(i / 3) * 1.2, y: heightAt(HOME[0] + 4, HOME[1] + 2) - 0.02, h: 0.6 };
-        if (idx != null) farmCards.push({ ...card, sprite: idx });
-        else goods.push({ ...card, sprite: names.get('turnip') });
-      }
     }
     // 果园：田园小镇北边，一排排结果的树；树下掉了几个果子
     {
@@ -978,6 +993,162 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     };
   }
 
+  // ===== 街景小物（素材库 life 图集）：花坛、信箱、电话亭、串灯杆、石灯笼、游乐场、阳伞、车 =====
+  // 都是手绘的透明立牌，alpha 0.16（笔触不刷、墨线自动描一圈），不随风摆。
+  const festoons = []; // 串灯杆的位置：发光特效在杆顶挂一串小灯泡
+  if (plants?.life?.length) {
+    const lifeNames = new Map(plants.life[0].sprites.map((sp, i) => [sp.name, i]));
+    const decor = [];
+    const put = (name, x, z, h, { force = false, r = 0.8, y = null } = {}) => {
+      const sprite = lifeNames.get(name);
+      if (sprite == null) return false;
+      if (!force && (!free(x, z, r) || roadEdge(x, z) < 0.4)) return false;
+      decor.push({ x, z, y: y ?? heightAt(x, z), h, sprite });
+      if (name === 'infra-stone-lantern') (b.lanterns ??= []).push([x, (y ?? heightAt(x, z)) + h * 0.62, z]);
+      claim(x, z, r);
+      return true;
+    };
+    // 家门口
+    {
+      const [hx, hz] = HOME;
+      put('infra-mailbox', hx - 3, hz + 4.4, 1.35, { force: true });
+      put('infra-flower-bed', hx + 3.2, hz + 5.0, 0.8, { force: true });
+      put('infra-planter-box', hx - 6.6, hz + 4.4, 0.9, { force: true });
+      put('transport-city-bicycle', hx + 6.6, hz - 5.5, 1.1, { force: true });
+    }
+    // 中央广场：一圈花坛、钟、告示板、电话亭、信箱、串灯杆、自行车
+    {
+      const [px, pz] = PLAZA;
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2 + 0.2 + Math.PI / 8;
+        put(i % 2 ? 'infra-flower-bed' : 'infra-urn-planter', px + Math.cos(a) * 20.5, pz + Math.sin(a) * 20.5, i % 2 ? 0.85 : 1.3, { force: true });
+      }
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2 + 0.6;
+        const x = px + Math.cos(a) * 29;
+        const z = pz + Math.sin(a) * 29;
+        if (put('infra-festoon-pole', x, z, 4.6, { force: true, r: 0.4 })) festoons.push([x, heightAt(x, z) + 4.3, z]);
+      }
+      put('infra-street-clock', px + 25, pz - 9, 3.4, { force: true });
+      put('infra-notice-board', px - 25, pz + 9, 2.2, { force: true });
+      put('infra-phone-booth', px + 14, pz + 25, 2.7, { force: true });
+      put('infra-mailbox', px - 16, pz - 24, 1.35, { force: true });
+      put('infra-fire-hydrant', px + 31, pz + 3, 0.85, { force: true });
+      put('infra-litter-bin', px - 31, pz - 3, 1.0, { force: true });
+      put('infra-bike-rack', px + 4, pz - 31, 0.8, { force: true });
+      for (let i = 0; i < 3; i++) put('transport-city-bicycle', px + 1.5 + i * 2.4, pz - 32.5, 1.1, { force: true, r: 0.3 });
+      put('transport-scooter', px + 10, pz - 32, 1.1, { force: true });
+    }
+    // 小吃街：两边串灯杆，夜里一路亮着
+    {
+      const line = [[110, 60], [40, 120], [-30, 160]];
+      for (let i = 0; i + 1 < line.length; i++) {
+        const [ax, az] = line[i];
+        const [bx, bz] = line[i + 1];
+        const len = Math.hypot(bx - ax, bz - az);
+        const nx = -(bz - az) / len;
+        const nz = (bx - ax) / len;
+        for (let d = 36; d < len; d += 16) {
+          for (const side of [-1, 1]) {
+            const x = ax + ((bx - ax) * d) / len + nx * side * 5.2;
+            const z = az + ((bz - az) * d) / len + nz * side * 5.2;
+            if (put('infra-festoon-pole', x, z, 4.6, { r: 0.4 })) festoons.push([x, heightAt(x, z) + 4.3, z]);
+          }
+        }
+      }
+      const fd = DISTRICTS.find((d) => d.id === 'food');
+      put('infra-market-stall', fd.x + 12, fd.z - 8, 2.4);
+      put('infra-parasol', fd.x - 10, fd.z + 10, 2.4);
+      put('infra-picnic-table', fd.x - 10, fd.z + 10.2, 0.9, { force: true, r: 0.2 });
+      put('infra-kiosk', fd.x + 4, fd.z + 16, 2.6);
+    }
+    // 游乐场：居民区·东边上找一块空地
+    for (const [cx, cz] of [[178, 262], [250, 160], [160, 300], [280, 260]]) {
+      if (!free(cx, cz, 14) || roadEdge(cx, cz) < 10) continue;
+      const pieces = [['infra-swing-set', -6, -4, 2.4], ['infra-slide', 5, -5, 2.4], ['infra-seesaw', -6, 5, 1.0], ['infra-merry-go-round', 4, 4, 1.4], ['infra-sandbox', 0, 9, 0.7], ['infra-rocking-horse', -1, -1, 1.0], ['infra-picnic-table', 10, 2, 0.9], ['infra-gazebo', -11, 2, 4.0]];
+      for (const [n, dx, dz, h] of pieces) put(n, cx + dx, cz + dz, h, { force: true, r: 1.2 });
+      claim(cx, cz, 14);
+      add({ id: 'playground', name: '游乐场', kind: 'play', x: cx, z: cz, r: 10, hint: 'E 荡一会儿秋千' });
+      break;
+    }
+    // 夫子庙：一圈石灯笼
+    {
+      const t = DISTRICTS.find((d) => d.id === 'temple');
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2 + 0.3;
+        put('infra-stone-lantern', t.x + Math.cos(a) * 21, t.z + Math.sin(a) * 21, 1.8, { r: 0.6 });
+      }
+    }
+    // 沙滩：一排阳伞，沙上倒扣着小船
+    {
+      for (let z = -380; z < -200; z += 22) {
+        const x = coastX(z) - 34 + Math.sin(z) * 4;
+        put('infra-parasol', x, z, 2.5, { r: 1.5 });
+      }
+      put('transport-rowboat', coastX(-300) - 22, -306, 1.0, { r: 2 });
+      put('transport-kayak', coastX(-250) - 24, -246, 0.6, { r: 2 });
+      put('transport-canoe', coastX(-340) - 22, -334, 0.7, { r: 2 });
+    }
+    // 田园小镇：独轮车、板车、牛车、压水井、石井
+    {
+      const f = DISTRICTS.find((d) => d.id === 'farm');
+      put('transport-ox-cart', f.x - 22, f.z + 44, 2.0, { r: 2.5 });
+      put('transport-wheelbarrow', f.x + 26, f.z - 14, 0.8);
+      put('transport-handcart', f.x - 8, f.z - 30, 1.0);
+      put('infra-water-pump', f.x + 6, f.z + 18, 1.3);
+      put('infra-stone-well', f.x - 30, f.z - 4, 2.0, { r: 1.4 });
+      put('infra-weather-vane', f.x + 18, f.z - 26, 1.4, { force: true, y: heightAt(f.x + 18, f.z - 26) + 7.6 });
+      const o = DISTRICTS.find((d) => d.id === 'orchard');
+      put('transport-wheelbarrow', o.x + 44, o.z + 6, 0.8);
+      put('transport-handcart', o.x + 46, o.z - 12, 1.0);
+      const sn = DISTRICTS.find((d) => d.id === 'snowtown');
+      put('infra-stone-well', sn.x + 6, sn.z + 4, 2.0, { r: 1.4 });
+    }
+    // 高铁站前：车棚、售货亭
+    {
+      const st = interactables.find((i) => i.id === 'station');
+      if (st) {
+        put('infra-kiosk', st.x + 6, st.z + 14, 2.6);
+        put('infra-bike-rack', st.x - 2, st.z + 16, 0.8);
+        for (let i = 0; i < 4; i++) put('transport-city-bicycle', st.x - 4 + i * 2.2, st.z + 17.5, 1.1, { force: true, r: 0.3 });
+        put('transport-cargo-bike', st.x + 12, st.z + 17, 1.1);
+      }
+    }
+    // 街上：店门口零星的花箱、吊篮
+    for (let i = 0; i < 70; i++) {
+      const s0 = SEGS[Math.floor(random() * SEGS.length)];
+      if (s0.lane) continue;
+      const t = random();
+      const len = Math.hypot(s0.bx - s0.ax, s0.bz - s0.az) || 1;
+      const side = random() < 0.5 ? -1 : 1;
+      const x = s0.ax + (s0.bx - s0.ax) * t - ((s0.bz - s0.az) / len) * side * 5.4;
+      const z = s0.az + (s0.bz - s0.az) * t + ((s0.bx - s0.ax) / len) * side * 5.4;
+      if (cityDistance(x, z) > 360) continue;
+      put(pick(random, ['infra-planter-box', 'infra-flower-bed', 'infra-urn-planter', 'infra-litter-bin', 'infra-topiary']), x, z, 0.9 + random() * 0.4, { r: 1.2 });
+    }
+    group.add(createPlantBatch(shared, plants.life, decor, { alpha: 0.16, sway: 0 }));
+    group.userData.decor = decor.length;
+  }
+  group.userData.festoons = festoons;
+  // 灯串：每根串灯杆和最近的一两根相连（广场一圈、小吃街两排）
+  const strings = [];
+  {
+    const used = new Map();
+    festoons.forEach((a, i) => {
+      const near = festoons
+        .map((b2, j) => [j, Math.hypot(b2[0] - a[0], b2[2] - a[2])])
+        .filter(([j, d]) => j !== i && d < 26)
+        .sort((p, q) => p[1] - q[1])
+        .slice(0, 2);
+      for (const [j] of near) {
+        const key = i < j ? `${i}-${j}` : `${j}-${i}`;
+        if (used.has(key) || (used.get(i) ?? 0) > 2) continue;
+        used.set(key, 1);
+        strings.push([a, festoons[j]]);
+      }
+    });
+  }
+
   // 树丛里的小径旁：采花点
   for (let i = 0; i < 8; i++) {
     const a = (i / 8) * Math.PI * 2 + 0.4;
@@ -997,7 +1168,11 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     get bus() {
       return bus;
     },
-    stats: { buildings: buildingMeshes.length, houses: painted.length, trees: treePlaces.length, pines: pines.length, rocks: rockPlaces.length, flowers: flowerPlaces.length, crops: plots.length },
+    /** 菜地 [{ id, x, z, y, where }] */
+    gardenPlots,
+    /** 会亮的东西（glow.js） */
+    lights: { lamps: b.lamps ?? [], lanterns: b.lanterns ?? [], festoons, strings, lighthouse: lighthouseLamp },
+    stats: { buildings: buildingMeshes.length, houses: painted.length, trees: treePlaces.length, pines: pines.length, rocks: rockPlaces.length, flowers: flowerPlaces.length, crops: gardenPlots.length },
     update(dt, playerPos, camera) {
       if (camera) woods.update(camera);
       pigeons.userData.update(dt, playerPos);

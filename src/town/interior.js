@@ -17,7 +17,7 @@
 // 大门在东墙上（x=8, z=4），进门站在玄关，不是站在客厅中间。
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { paintMaterial, outlineMaterial } from './paint.js';
+import { paintMaterial, outlineMaterial, getAlbedo } from './paint.js';
 import { plain } from './buildings.js';
 
 export const WALL_H = 2.6;
@@ -499,7 +499,9 @@ export function createInterior(shared) {
     geo.computeBoundingSphere();
     const pal = PAL[key] ?? { lit: [0.8, 0.8, 0.8], shade: [0.4, 0.4, 0.4], kind: 'flat' };
     const cut = CUT.has(key);
-    group.add(new THREE.Mesh(geo, paintMaterial(shared, { ...pal, indoor: true, cut, side: key === 'wall' ? THREE.DoubleSide : THREE.FrontSide })));
+    // 墙纸、瓷砖、地砖：素材库的室内贴图（public/textures/house/），只取笔触和花纹，颜色还是调色板的
+    const tex = { wall: 'indoorWall', tile: 'indoorTile', stone: 'indoorFloor' }[key];
+    group.add(new THREE.Mesh(geo, paintMaterial(shared, { ...pal, indoor: true, cut, side: key === 'wall' ? THREE.DoubleSide : THREE.FrontSide, albedo: tex ? getAlbedo(tex) : null })));
     if (key === 'outside') continue;
     const ink = new THREE.Mesh(geo, outlineMaterial(shared, INK, 0.018, { cut, indoor: true }));
     ink.renderOrder = -1;

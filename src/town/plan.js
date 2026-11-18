@@ -3,7 +3,7 @@
 //
 // 布局（世界坐标，x 向东，z 向南，米）：
 //   家在城市西北的路口，往东南 120 m 是中心广场；广场放射出四条街：
-//   北去清镇市城门，西去学校区，东去体育馆，南去湖。
+//   北去清镇市城门（再往北是月亮湖），西去学校区，东去体育馆和高铁站，东南去高铁新城。
 //   城市半径约 420 m，外面是农田、森林、湖、最后是山。
 
 const TAU = Math.PI * 2;
@@ -56,15 +56,27 @@ export const PLAZA = [110, 60];
 /** 家：小鲸鱼的房子在城的西北角，也就是开局站的地方。 */
 export const HOME = [0, 0];
 /** 湖。 */
-// 地理照《鱼的小镇地图》：月亮湖在镇子正北的山脚，清溪河从湖的西口出来沿镇西一路往南，
-// 东边是大海，海边有海滨小镇和灯塔；镇东是高铁站，东南是高铁新城，西北雪山小镇，西南田园小镇。
-export const LAKE = { x: -150, z: -600, rx: 150, rz: 100, level: 12, bed: 5 };
+// 地理照《鱼的小镇地图》（public/maps/town.jpg，图上 1 像素 ≈ 2 米，镇中心在图的正中）：
+//   月亮湖在镇子北边偏西的山脚；清溪河从湖的西口出来，过石板桥，沿镇西一路往西南流出图去；
+//   河西是麦田和蔬菜田园，河东、镇子西南是田园小镇；西北是雪山小镇，再往北是高山森林和雪山；
+//   大海只在东北角，海边是海滨小镇、灯塔和沙滩；镇东是高铁站（通往各地），正南偏东是高铁新城。
+export const LAKE = { x: -130, z: -490, rx: 190, rz: 90, level: 9, bed: 2 };
 /** 海：东边。海面比镇子（-6 m）低一点。 */
 export const SEA = { level: -9 };
-/** 海岸线在 z 处的 x（往东是海）。 */
-export const coastX = (z) => 790 + 55 * Math.sin(z / 210 + 0.7) + 30 * Math.sin(z / 83);
+/** 海岸线在 z 处的 x（往东是海）：北边海岸靠西，往南一路斜向东北，过了灯塔南边就出了地图——东南是陆地。 */
+const COAST = [[-1400, 520], [-1100, 520], [-820, 500], [-640, 585], [-520, 690], [-380, 800], [-300, 905], [-230, 1000], [-190, 1100], [-140, 1350], [0, 2400], [1400, 3600]];
+export const coastX = (z) => {
+  let i = 0;
+  while (i < COAST.length - 2 && z > COAST[i + 1][0]) i++;
+  const [z0, x0] = COAST[i];
+  const [z1, x1] = COAST[i + 1];
+  const t = Math.min(1, Math.max(0, (z - z0) / (z1 - z0)));
+  return x0 + (x1 - x0) * t + 16 * Math.sin(z / 83) + 9 * Math.sin(z / 31 + 1.3);
+};
+/** 海边：x 大于这个数才可能是海（河和湖都在西边）。 */
+export const SEA_WEST = 380;
 /** 清溪河：从月亮湖西口到地图南边。 */
-export const RIVER = [[-262, -560], [-340, -470], [-410, -420], [-440, -280], [-430, -140], [-440, 0], [-470, 140], [-500, 280], [-500, 420], [-480, 560], [-470, 700], [-480, 860], [-490, 1100]];
+export const RIVER = [[-305, -482], [-350, -440], [-385, -380], [-410, -290], [-430, -180], [-445, -60], [-448, 80], [-455, 200], [-470, 300], [-525, 410], [-640, 560], [-800, 720], [-940, 860], [-1100, 1010]];
 const RSEGS = [];
 {
   let along = 0;
@@ -102,8 +114,8 @@ export const riverLevel = (t) => LAKE.level - 0.4 + (-8.2 - LAKE.level) * Math.p
 export const RIVER_HALF = 7;
 /** 桥：路跨河的地方。x,z 桥心；rot 桥身方向（弧度，局部 +z 沿桥）；len 桥长；w 桥宽。 */
 export const BRIDGES = [
-  { name: '石板桥', x: -414, z: -429, rot: Math.atan2(-260, -10), len: 34, w: 6 },
-  { name: '东溪桥', x: -477, z: 627, rot: Math.atan2(80, 50), len: 32, w: 5 },
+  { name: '石板桥', x: -378, z: -398, rot: Math.atan2(-160, -15), len: 34, w: 6 },
+  { name: '东溪桥', x: -560, z: 455, rot: Math.atan2(-180, -110), len: 34, w: 5 },
 ];
 for (const b of BRIDGES) b.deck = riverLevel(riverAt(b.x, b.z).t) + 1.5;
 /** 在不在桥面上；在的话返回桥。 */
@@ -147,16 +159,16 @@ export const ROADS = [
   // 广场 → 体育馆（东）
   [[110, 60], [200, 70], [290, 80], [330, 90]],
   // 广场 → 高铁新城（东南）
-  [[110, 60], [140, 180], [220, 300], [290, 430], [330, 530]],
+  [[110, 60], [140, 180], [220, 300], [262, 480], [290, 630]],
   // 小吃街（广场西南）
   [[110, 60], [40, 120], [-30, 160]],
   // 居民区 A 环线
   [[110, 60], [180, 160], [230, 230]],
-  // 城门外的乡道 → 农村
-  [[110, -330], [-140, -420], [-400, -430], [-560, -380]],
-  // 农村 → 农田
-  [[-560, -380], [-640, -160], [-650, 60]],
-  // 湖 → 花鸟市场
+  // 城门外的乡道：沿湖南岸往西，过石板桥 → 雪山小镇
+  [[110, -330], [-20, -370], [-160, -372], [-300, -405], [-378, -398], [-460, -420], [-560, -440]],
+  // 雪山小镇 → 果园 → 麦田 → 蔬菜田园（河西）
+  [[-560, -440], [-610, -300], [-640, -150], [-690, 30], [-730, 170]],
+  // 东南街 → 花鸟市场
   [[220, 300], [120, 250], [-10, 250]],
   // 10 北街 → 电玩厅 → 教堂 → 夫子庙
   [[110, -40], [62, -72], [12, -84], [-70, -104], [-138, -118], [-200, -168], [-250, -208]],
@@ -168,27 +180,25 @@ export const ROADS = [
   [[-90, 30], [-128, 76], [-164, 100], [-226, 176], [-286, 236]],
   // 14 北街 → 居民区·北
   [[110, -260], [84, -280], [64, -288]],
-  // 15 田园小镇的小路（过东溪桥到蔬菜田园）
-  [[-650, 60], [-640, 300], [-620, 470], [-520, 600], [-440, 650]],
+  // 15 居民区·西 → 田园小镇 → 东溪桥 → 蔬菜田园
+  [[-286, 236], [-300, 400], [-330, 560], [-470, 510], [-560, 455], [-650, 400], [-710, 300], [-730, 170]],
   // 16 东街 → 高铁站
-  [[330, 90], [440, 118], [530, 140]],
+  [[330, 90], [440, 118], [560, 150], [704, 186]],
   // 17 高铁站 → 海滨小镇 → 灯塔
-  [[530, 140], [596, -60], [628, -250], [640, -320], [700, -356], [736, -370]],
+  [[704, 186], [690, 40], [660, -130], [632, -300], [616, -420], [690, -440], [740, -436]],
   // 18 北街 → 河鲜集市
   [[110, -100], [150, -100], [170, -98]],
-  // 19 城门 → 月亮湖
-  [[110, -330], [40, -420], [-30, -480]],
-  // 20 高铁站 → 沙滩
-  [[530, 140], [640, 110], [720, 80]],
-  // 21 雪山小镇的岔路
-  [[-640, -160], [-624, -230]],
+  // 19 城门 → 月亮湖南岸
+  [[110, -330], [40, -372], [-40, -392]],
+  // 20 海滨路 → 沙滩
+  [[660, -130], [760, -200], [836, -262]],
 ];
 /** 1 路公交：广场 → 高铁站 → 海滨小镇（沿着上面的路） */
-export const BUS_ROUTE = [[124, 62], [200, 70], [290, 80], [330, 90], [440, 118], [530, 140], [596, -60], [628, -250], [640, -320]];
+export const BUS_ROUTE = [[124, 62], [200, 70], [290, 80], [330, 90], [440, 118], [560, 150], [704, 186], [690, 40], [660, -130], [632, -300], [616, -420]];
 export const BUS_STOPS = [
   { name: 'AI 小镇站', x: 150, z: 70 },
-  { name: '高铁站', x: 520, z: 146 },
-  { name: '海滨小镇站', x: 634, z: -300 },
+  { name: '高铁站', x: 690, z: 176 },
+  { name: '海滨小镇站', x: 640, z: -300 },
 ];
 
 /** 缓存每一段的包围盒，别每次 O(n) 算全图。出了城的那几段是土路（lane），窄，没有石板。 */
@@ -267,17 +277,17 @@ export const DISTRICTS = [
   { id: 'resC', name: '居民区·北', x: 60, z: -300, r: 62, kind: 'residential' },
   { id: 'gate', yard: 9, name: '清镇市', x: 110, z: -336, r: 40, kind: 'gate' },
   { id: 'fishmarket', yard: 15, name: '河鲜集市', x: 178, z: -98, r: 30, kind: 'fishmarket' },
-  { id: 'farm', name: '田园小镇', x: -620, z: 520, r: 130, kind: 'farm' },
-  { id: 'orchard', name: '果园', x: -700, z: 300, r: 60, kind: 'orchard' },
-  { id: 'fields', name: '蔬菜田园', x: -430, z: 660, r: 170, kind: 'fields' },
-  { id: 'snowtown', name: '雪山小镇', x: -620, z: -250, r: 80, kind: 'snowtown' },
-  { id: 'seaside', name: '海滨小镇', x: 640, z: -330, r: 90, kind: 'seaside' },
-  { id: 'lighthouse', name: '灯塔', x: 742, z: -372, r: 26, kind: 'lighthouse' },
-  { id: 'station', yard: 30, name: '高铁站', x: 560, z: 150, r: 60, kind: 'station' },
-  { id: 'newtown', name: '高铁新城', x: 340, z: 560, r: 90, kind: 'newtown' },
-  { id: 'beach', name: '沙滩', x: 760, z: 60, r: 120, kind: 'beach' },
-  { id: 'forestW', name: '西林', x: -760, z: -480, r: 200, kind: 'forest' },
-  { id: 'forestN', name: '高山森林', x: 330, z: -660, r: 250, kind: 'forest' },
+  { id: 'farm', name: '田园小镇', x: -330, z: 560, r: 110, kind: 'farm' },
+  { id: 'orchard', name: '果园', x: -640, z: -120, r: 60, kind: 'orchard' },
+  { id: 'fields', name: '蔬菜田园', x: -760, z: 180, r: 230, kind: 'fields' },
+  { id: 'snowtown', name: '雪山小镇', x: -560, z: -440, r: 80, kind: 'snowtown' },
+  { id: 'seaside', name: '海滨小镇', x: 610, z: -460, r: 90, kind: 'seaside' },
+  { id: 'lighthouse', name: '灯塔', x: 752, z: -430, r: 26, kind: 'lighthouse' },
+  { id: 'station', yard: 30, name: '高铁站', x: 740, z: 190, r: 60, kind: 'station' },
+  { id: 'newtown', name: '高铁新城', x: 290, z: 700, r: 90, kind: 'newtown' },
+  { id: 'beach', name: '沙滩', x: 850, z: -290, r: 100, kind: 'beach' },
+  { id: 'forestW', name: '西山林', x: -820, z: -720, r: 230, kind: 'forest' },
+  { id: 'forestN', name: '高山森林', x: -260, z: -770, r: 240, kind: 'forest' },
   { id: 'lake', name: '月亮湖', x: LAKE.x, z: LAKE.z, r: 170, kind: 'lake' },
   { id: 'peak', name: '雪山', x: 0, z: -900, r: 240, kind: 'mountain' },
 ];
@@ -316,12 +326,13 @@ function land(x, z) {
   h += (flat - h) * pad;
   // 城门外沿着乡道压一压，别一出门就是陡坡
   h += (flat - h) * smooth(-250, -400, -z) * 0.5 * (1 - smooth(600, 820, r)) * (1 - pad);
-  // 农村那一片是缓坡台地
-  const farmPad = smooth(250, 90, Math.hypot(x + 600, z - 540));
+  // 田园小镇那一片是缓坡台地
+  const farmPad = smooth(250, 90, Math.hypot(x + 330, z - 560));
   const farmH = -5 + (fbm(x / 90 + 1, z / 90 + 2, 2, 19) - 0.5) * 5;
   h += (farmH - h) * farmPad;
   // 一圈林山：不高（几十米到一百来米），有豁口，豁口里露出天边画的远山
-  const ring = smooth(640, 1080, r) * (1 - smooth(330, 600, x));
+  // （东边：北段是海，没有山；东南是陆地，远处也起一圈矮丘）
+  const ring = smooth(640, 1080, r) * (1 - smooth(330, 600, x) * (1 - smooth(-200, 300, z)));
   const gaps = 0.35 + 1.0 * fbm(x / 520 + 5, z / 520 + 1, 3, 41);
   h += 115 * ring * gaps * (0.72 + 0.28 * ridged(x / 260, z / 260, 43));
   // 正北的雪山：一道主脊加几条支脊
@@ -339,8 +350,19 @@ function land(x, z) {
     const cx = coastX(z);
     h += (-15 - h) * smooth(cx - 110, cx + 50, x);
     // 灯塔站的那块岬角
-    const lh = Math.hypot(x - 742, z + 372);
+    const lh = Math.hypot(x - 752, z + 430);
     if (lh < 46) h += (-4.5 - h) * smooth(46, 20, lh);
+  }
+  // 离海岸远的东边低洼：垫到海面以上（不然海面会从地底下透出来，像一个个水塘）
+  if (x > 300) {
+    const cx = coastX(z);
+    const inland = smooth(cx - 120, cx - 240, x) * smooth(300, 380, x);
+    if (inland > 0) h += (Math.max(h, -7.4) - h) * inland;
+  }
+  // 高铁站、高铁新城、河西的蔬菜田园：压成平地（站房、铁轨、新楼、一块块的田都要站得住）
+  for (const [px, pz, r0, r1, lv] of [[740, 190, 150, 260, -5.2], [290, 700, 130, 230, -5], [-770, 170, 210, 330, -1.5]]) {
+    const k = smooth(r1, r0, Math.hypot(x - px, z - pz));
+    if (k > 0) h += (lv + (fbm(x / 120, z / 120, 2, 23) - 0.5) * 1.5 - h) * k;
   }
   // 清溪河：两岸压成平缓的河滩，中间是两米多深的河床
   const rv = riverAt(x, z);
@@ -374,7 +396,7 @@ export function inLake(x, z) {
   // 河：水深过膝就不让走（桥上例外）；海：同理
   const rv = riverAt(x, z);
   if (rv.d < RIVER_HALF + 1 && !bridgeAt(x, z) && heightAt(x, z) < riverLevel(rv.t) - 0.45) return true;
-  if (x > 560 && heightAt(x, z) < SEA.level - 0.5) return true;
+  if (x > SEA_WEST && heightAt(x, z) < SEA.level - 0.5) return true;
   return lakeDistance(x, z) < 1.05 && heightAt(x, z) < LAKE.level - 0.3;
 }
 
@@ -391,7 +413,7 @@ export function pavedAt(x, z) {
   // 河床和河滩的卵石、海边的沙滩
   const rv = riverAt(x, z);
   if (rv.d < RIVER_HALF + 4) return 1;
-  if (x > 600 && heightAt(x, z) < SEA.level + 2.4) return 1;
+  if (x > SEA_WEST && x > coastX(z) - 200 && heightAt(x, z) < SEA.level + 2.4) return 1;
   const ragged = (fbm(x / 3.1 + 4, z / 3.1 - 2, 2, 71) - 0.5) * 1.6;
   let p = 1 - smooth(-0.5, 0.9, roadEdge(x, z) + ragged);
   p = Math.max(p, 1 - smooth(29.5, 31.5, plazaDistance(x, z) + ragged));
@@ -402,8 +424,19 @@ export function pavedAt(x, z) {
   return p;
 }
 
+/** 菜地：家门口院子西半边、田园小镇南边租的那片。地是翻过的土，不长草（城里的菜地就摆在这两块里）。 */
+export const GARDENS = [
+  { x: -5.2, z: -2, hw: 3.3, hd: 3.4, where: '门前的菜地', cols: 2, rows: 4 },
+  { x: -330, z: 676, hw: 6.2, hd: 3.8, where: '租的菜地', cols: 4, rows: 3 },
+];
+export function gardenAt(x, z) {
+  for (const g of GARDENS) if (Math.abs(x - g.x) < g.hw && Math.abs(z - g.z) < g.hd) return g;
+  return null;
+}
+
 /** 给 createField 的 paint：dry/growth/wet/flowers。 */
 export function paint(x, z) {
+  if (gardenAt(x, z)) return { dry: 0.55, growth: 0, wet: 0, flowers: 0 };
   const pav = pavedAt(x, z);
   const r = Math.hypot(x, z);
   const forest = forestAt(x, z);
@@ -481,13 +514,13 @@ export function waterAt(x, z) {
     const L = riverLevel(rv.t);
     if (h < L) return L;
   }
-  if (x > 480 && h < SEA.level) return SEA.level;
+  if (x > SEA_WEST && h < SEA.level) return SEA.level;
   return null;
 }
 
 /** 这片水是湖、河还是海（钓鱼和水下的鱼按它来）。 */
 export function waterKind(x, z) {
   if (lakeDistance(x, z) < 1.5) return 'lake';
-  if (x > 480) return 'sea';
+  if (x > SEA_WEST) return 'sea';
   return 'river';
 }

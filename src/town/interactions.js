@@ -2,12 +2,12 @@
 // 一个朴素的状态机 + 一点时间推进；面板都由 hud 弹出来。
 import { DISTRICTS } from './plan.js';
 import { rollFish, BY_ID, RARITY, WATER_NAME, spriteStyle } from './fishdex.js';
+import { CROPS, CROP, STAGES, stageOf, produceSprite } from './farming.js';
 
 const ITEMS = {
   rice: { name: '白米饭', icon: '🍚', price: 6, sell: 3 },
   fish: { name: '鱼', icon: '🐟', price: 22, sell: 12 },
   veg: { name: '青菜', icon: '🥬', price: 9, sell: 5 },
-  seed: { name: '菜种', icon: '🌱', price: 8, sell: 2 },
   flower: { name: '野花', icon: '🌼', price: 14, sell: 7 },
   cooked: { name: '料理', icon: '🍱', price: 34, sell: 16 },
   tea: { name: '奶茶', icon: '🧋', price: 12, sell: 5 },
@@ -22,19 +22,34 @@ const RECIPES = [
   { name: '清炒时蔬配鱼', need: { fish: 1, veg: 2 }, hunger: 42, desc: '一个人吃有点多，但她能吃。' },
 ];
 
-export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, onMap, busStops = [], fishSprites = null, fishAtlas = './textures/plants/fish.png' }) {
+// 每种作物两样东西：种子（seed-xxx）和收获物（xxx）
+for (const c of CROPS) {
+  ITEMS[`seed-${c.id}`] = { name: `${c.name}种子`, icon: '🌱', price: c.seed, sell: 1, seedOf: c.id };
+  ITEMS[c.id] = { name: c.name, icon: '🥕', price: c.sell * 2, sell: c.sell, crop: c.id };
+}
+
+export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, onMap, busStops = [], fishSprites = null, farmSprites = null, fishAtlas = './textures/plants/fish.png' }) {
+  // 作物的图标：手绘的收获物，种子用作物本身的小图
+  if (farmSprites) {
+    for (const c of CROPS) {
+      const sp = farmSprites[produceSprite(c.id)];
+      const pl = farmSprites[`plant-${c.id}`];
+      if (sp) ITEMS[c.id].icon = `<span style="${spriteStyle(sp, './textures/plants/farm.png', 22)}"></span>`;
+      if (pl) ITEMS[`seed-${c.id}`].icon = `<span class="seedpack"><span style="${spriteStyle(pl, './textures/plants/farm.png', 18)}"></span></span>`;
+    }
+  }
+  let farm = null;
   const state = {
     coins: 180,
     hunger: 74,
     stamina: 100,
     day: 1,
     minutes: 8 * 60 + 20,
-    bag: { rice: 2, fish: 0, veg: 1, seed: 3, flower: 0, cooked: 0, tea: 0, pearl: 0, fruit: 0 },
+    bag: { rice: 2, fish: 0, veg: 1, 'seed-napa-cabbage': 3, 'seed-radish': 2, 'seed-tomato': 1, flower: 0, cooked: 0, tea: 0, pearl: 0, fruit: 0 },
     /** 图鉴：钓到过的鱼 { id: 条数 } */
     dex: {},
     /** 今天摘过的地方 { id: 第几天 } */
     picked: {},
-    plots: [],
     quests: [],
     stats: { fish: 0, cooked: 0, planted: 0, harvested: 0, shopped: 0, played: 0, read: 0 },
     luck: 0,
@@ -71,13 +86,24 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
     state.bag[key] = (state.bag[key] ?? 0) + n;
     syncBag();
   };
+  // "青菜"：买来的青菜，加上自己种的、能下锅的菜（白菜、萝卜、番茄……）都算
+  const VEG = CROPS.filter((c) => c.veg).map((c) => c.id);
+  const count = (key) => (key === 'veg' ? (state.bag.veg ?? 0) + VEG.reduce((n, k) => n + (state.bag[k] ?? 0), 0) : (state.bag[key] ?? 0));
   const take = (key, n = 1) => {
-    if ((state.bag[key] ?? 0) < n) return false;
-    state.bag[key] -= n;
+    if (count(key) < n) return false;
+    if (key === 'veg') {
+      // 先用买来的青菜，再用自己种的
+      for (const k of ['veg', ...VEG]) {
+        const m = Math.min(n, state.bag[k] ?? 0);
+        state.bag[k] = (state.bag[k] ?? 0) - m;
+        n -= m;
+        if (!n) break;
+      }
+    } else state.bag[key] -= n;
     syncBag();
     return true;
   };
-  const has = (need) => Object.entries(need).every(([k, n]) => (state.bag[k] ?? 0) >= n);
+  const has = (need) => Object.entries(need).every(([k, n]) => count(k) >= n);
 
   // ---- 钓鱼 --------------------------------------------------------------------------------------------------
   const startFishing = () => {
@@ -129,26 +155,118 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
   };
 
   // ---- 种植 --------------------------------------------------------------------------------------------------
-  const openPlant = (it) => {
+  const cropIcon = (c, size = 40) => {
+    const sp = farmSprites?.[`plant-${c.id}`];
+    return sp ? `<span style="${spriteStyle(sp, './textures/plants/farm.png', size)}"></span>` : '🌱';
+  };
+  const hoursLeft = (p) => {
+    const c = CROP[p.crop];
+    const h = ((1 - p.growth) * c.hours) / (p.water > 0.05 ? 1 : 0.35);
+    return h < 1 ? `${Math.max(1, Math.round(h * 60))} 分钟` : `${h.toFixed(h < 10 ? 1 : 0)} 小时`;
+  };
+  const openPlot = (it) => {
+    if (!farm) return;
+    const i = it.plot;
+    const p = farm.plot(i);
+    if (!p) return;
+    // 熟了：直接收
+    if (p.crop && p.growth >= 1) {
+      const got = farm.harvest(i, state.luck);
+      add(got.crop.id, got.n);
+      state.stats.harvested++;
+      const back = Math.random() < 0.35;
+      if (back) add(`seed-${got.crop.id}`, 1);
+      syncStats();
+      return void hud.toast(`收了 ${got.n} 个${got.crop.name}${back ? '，还留下一包种子' : ''}`);
+    }
+    if (!p.crop) {
+      const seeds = CROPS.filter((c) => (state.bag[`seed-${c.id}`] ?? 0) > 0);
+      hud.open(
+        it.name,
+        `<p>翻好的地，空着。种点什么？</p>` +
+          (seeds.length
+            ? `<div class="bag-grid">${seeds.map((c) => `<button class="slot" data-seed="${c.id}"><span class="ic">${cropIcon(c)}</span><b>${c.name}</b><i>×${state.bag[`seed-${c.id}`]} · ${c.hours} 小时熟</i></button>`).join('')}</div><p class="dim">浇过水的长得快（不浇只有三成速度），下雨天不用浇。熟了地里会亮晶晶的。</p>`
+            : `<p class="dim">手上没有种子。田园小镇的种子铺、花鸟市场都有卖。</p>`),
+        [{ label: '走了', onClick: () => hud.close() }],
+      );
+      for (const el of document.querySelectorAll('[data-seed]')) {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const id = el.dataset.seed;
+          if (!take(`seed-${id}`, 1)) return;
+          farm.plant(i, id, state.day * 1440 + state.minutes);
+          state.stats.planted++;
+          hud.close();
+          hud.toast(`种下了${CROP[id].name}。${p.water > 0.05 ? '地是湿的' : '记得浇水'}，大约 ${hoursLeft(farm.plot(i))}后能收`);
+        });
+      }
+      return;
+    }
+    const c = CROP[p.crop];
+    const st = stageOf(p.growth);
+    const wetNow = p.water > 0.05;
+    // 地干了：E 一下就是浇水（身边几块一起浇），再按 E 才看长势
+    if (!wetNow) {
+      const n = waterAround();
+      return void hud.toast(n > 1 ? `提着水壶浇了 ${n} 块地` : `给${c.name}浇了水`);
+    }
     hud.open(
-      '门前的菜地',
-      `<p>这块地空着。要种点什么？</p><p class="dim">手上的种子：${state.bag.seed ?? 0} 包 · 已经种下 ${state.plots.length} 块</p>`,
+      `${it.name} · ${c.name}`,
+      `<div class="catch"><div class="pic">${cropIcon(c, 72)}</div><div>` +
+        `<p><b>${STAGES[st]}</b> · ${Math.round(p.growth * 100)}%</p>` +
+        `<div class="meter grow"><i style="width:${Math.round(p.growth * 100)}%"></i></div>` +
+        `<p>${wetNow ? '<span class="ok">地是湿的</span>' : '<span class="no">地有点干了</span>'} · 还要 ${hoursLeft(p)}</p>` +
+        `<p class="dim">${c.note}。熟了能收 ${c.yield[0]}–${c.yield[1]} 个，卖 ${c.sell} 金币一个。</p></div></div>`,
       [
         {
-          label: '种一包菜种（🌱×1）',
-          primary: true,
-          disabled: (state.bag.seed ?? 0) < 1,
+          label: wetNow ? '浇过水了' : '浇水',
+          primary: !wetNow,
+          disabled: wetNow,
           onClick: () => {
-            if (!take('seed', 1)) return;
-            state.plots.push({ x: it.x, z: it.z, t: 0, name: '青菜' });
-            state.stats.planted++;
+            farm.water(i);
             hud.close();
-            hud.toast('种下了。过 20 秒再来看看');
+            hud.toast(`给${c.name}浇了水`);
           },
         },
-        { label: '算了', onClick: () => hud.close() },
+        {
+          label: '铲掉',
+          onClick: () => {
+            farm.clear(i);
+            hud.close();
+            hud.toast('铲掉了，地空出来了');
+          },
+        },
+        { label: '走了', onClick: () => hud.close() },
       ],
     );
+  };
+  /** 一键浇水：身边几米内的地都浇上 */
+  const waterAround = () => {
+    if (!farm) return 0;
+    let n = 0;
+    farm.plots.forEach((p, i) => {
+      if (p.crop && p.water <= 0.05 && Math.hypot(p.x - player.x, p.z - player.z) < 7) {
+        farm.water(i);
+        n++;
+      }
+    });
+    return n;
+  };
+  /** 卖菜：把自己种的收获物全卖掉 */
+  const sellCrops = () => {
+    let coins = 0;
+    let n = 0;
+    for (const c of CROPS) {
+      const k = state.bag[c.id] ?? 0;
+      if (!k) continue;
+      coins += k * c.sell;
+      n += k;
+      state.bag[c.id] = 0;
+    }
+    state.coins += coins;
+    syncBag();
+    syncStats();
+    return { coins, n };
   };
 
   // ---- 做饭 --------------------------------------------------------------------------------------------------
@@ -177,8 +295,9 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
   };
 
   // ---- 商店 --------------------------------------------------------------------------------------------------
-  const shop = (title, list, blurb) => {
-    const rows = list.map((k) => `<tr><td>${ITEMS[k].icon} ${ITEMS[k].name}</td><td class="need">${ITEMS[k].price} 金币</td></tr>`).join('');
+  const shop = (title, list, blurb, buysCrops = false) => {
+    const rows = list.map((k) => `<tr><td>${ITEMS[k].icon} ${ITEMS[k].name}${ITEMS[k].seedOf ? ` <span class="dim">· ${CROP[ITEMS[k].seedOf].hours} 小时熟，卖 ${CROP[ITEMS[k].seedOf].sell}/个</span>` : ''}</td><td class="need">${ITEMS[k].price} 金币</td></tr>`).join('');
+    const mine = CROPS.reduce((n, c) => n + (state.bag[c.id] ?? 0), 0);
     hud.open(
       title,
       `<p>${blurb}</p><p class="dim">钱：${state.coins} 金币</p><table class="recipes"><tbody>${rows}</tbody></table>`,
@@ -191,9 +310,25 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
             add(k, 1);
             state.stats.shopped++;
             syncStats();
-            shop(title, list, blurb);
+            shop(title, list, blurb, buysCrops);
           },
         }))
+        .concat(
+          buysCrops
+            ? [
+                {
+                  label: `卖掉自己种的菜（${mine} 个）`,
+                  primary: mine > 0,
+                  disabled: !mine,
+                  onClick: () => {
+                    const r = sellCrops();
+                    shop(title, list, blurb, buysCrops);
+                    hud.toast(`卖了 ${r.n} 个菜，得了 ${r.coins} 金币`);
+                  },
+                },
+              ]
+            : [],
+        )
         .concat([{ label: '走了', onClick: () => hud.close() }]),
     );
   };
@@ -239,17 +374,6 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
     return true;
   };
 
-  const harvest = (it) => {
-    const plot = state.plots.find((p) => p.t >= 20 && Math.hypot(p.x - it.x, p.z - it.z) < 6);
-    if (!plot) return false;
-    add('veg', 2);
-    state.stats.harvested++;
-    if (Math.random() < 0.5) add('seed', 1);
-    hud.toast('收了 2 颗青菜');
-    state.plots.splice(state.plots.indexOf(plot), 1);
-    return true;
-  };
-
   // ---- 分发 --------------------------------------------------------------------------------------------------
   const interact = (it) => {
     if (!it) return;
@@ -266,21 +390,21 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
         if (!player.nearWater) return void hud.toast('离水太远了，往岸边站一点');
         startFishing();
         break;
-      case 'plant':
-        if (harvest(it)) break;
-        openPlant(it);
+      case 'plot':
+        openPlot(it);
         break;
       case 'farm':
         hud.toast('农夫：「今年的稻子长得不错。要种子的话，旁边铺子里有。」');
         break;
       case 'seed':
-        shop('花鸟市场', ['seed', 'flower', 'veg'], '花苗、菜种，还有一笼会咕咕叫的鸽子。');
+        if (it.id === 'farm-seeds') shop('种子铺', CROPS.map((c) => `seed-${c.id}`), '一排排小纸包，每包上面画着长大以后的样子。老板说：「浇了水的长得快。」');
+        else shop('花鸟市场', ['seed-napa-cabbage', 'seed-radish', 'seed-tomato', 'seed-sunflower', 'flower', 'veg'], '花苗、菜种，还有一笼会咕咕叫的鸽子。');
         break;
       case 'market':
-        shop('菜市场', ['veg', 'fish', 'rice'], '早上的青菜还带着露水。');
+        shop('菜市场', ['veg', 'fish', 'rice'], '早上的青菜还带着露水。收菜的阿姨说：自己种的菜也收。', true);
         break;
       case 'shop':
-        shop('超市', ['rice', 'tea', 'veg', 'fish', 'seed'], '灯管嗡嗡响，冷气很足。');
+        shop('超市', ['rice', 'tea', 'veg', 'fish'], '灯管嗡嗡响，冷气很足。');
         break;
       case 'eat':
         shop('小吃街', ['rice', 'tea', 'fish'], '油锅的声音从街那头传过来。');
@@ -460,6 +584,12 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
           hud.toast('采到一朵野花');
         } else hud.toast('这丛还没开');
         break;
+      case 'play':
+        state.stamina = Math.min(100, state.stamina + 12);
+        state.minutes += 10;
+        syncStats();
+        hud.toast(['荡了一会儿秋千，风从耳边过去（体力 +12）', '从滑梯上溜下来，裙子沾了点沙（体力 +12）', '转了几圈旋转木马，有点晕（体力 +12）'][Math.floor(Math.random() * 3)]);
+        break;
       case 'home':
         hud.toast(`${it.name}：窗口亮着灯，有人在做饭`);
         break;
@@ -538,7 +668,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
     state.hunger = Math.max(0, state.hunger - dt * 0.32);
     if (state.hunger > 12) state.stamina = Math.min(100, state.stamina + dt * 1.1);
     else state.stamina = Math.max(0, state.stamina - dt * 0.6);
-    for (const plot of state.plots) plot.t += dt;
+    farm?.update(dt * 2, player.raining);
     if (fishing) {
       fishing.t += dt;
       if (fishing.phase === 'cast' && fishing.t > fishing.wait) {
@@ -593,6 +723,15 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
       syncBag();
     },
     syncStats,
+    /** 种地：main.js 建好 farming 之后交进来 */
+    setFarm(f) {
+      farm = f;
+    },
+    get farm() {
+      return farm;
+    },
+    waterAround,
+    sellCrops,
     /** 背包里的东西：[{ key, name, icon, count, food }] */
     bagList,
     /** 用一样东西（吃掉 / 看看） */
@@ -600,7 +739,14 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
       const FOOD = { rice: 18, fish: 0, veg: 6, cooked: 45, tea: 10, flower: 0, fruit: 12 };
       if (!(state.bag[key] > 0)) return '没有了';
       if (key === 'fish') return '生鱼……还是拿去厨房做了再吃吧';
-      if (key === 'seed') return '种子要种到菜地里（家门口那块，E 种点什么）';
+      if (ITEMS[key]?.seedOf) return `种子要种到菜地里（家门口有八块，田园小镇还能租十二块）：走到地边按 E`;
+      if (ITEMS[key]?.crop) {
+        const c = CROP[key];
+        take(key, 1);
+        state.hunger = Math.min(100, state.hunger + c.food);
+        syncStats();
+        return `吃掉了一个${c.name}，饱食 +${c.food}`;
+      }
       if (key === 'pearl') return '圆圆的，亮晶晶的。舍不得卖';
       if (key === 'flower') return '一把野花，闻起来是太阳的味道';
       if (FOOD[key]) {

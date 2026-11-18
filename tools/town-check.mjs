@@ -83,7 +83,7 @@ const report = await page.evaluate(async () => {
   tg.whale.state.x = 40; tg.whale.state.z = 25; step(3);
   const y0 = tg.whale.state.y; A.act('jump'); step(6); act.jump = +(tg.whale.state.y - y0).toFixed(2); step(30); act.landed = Math.abs(tg.whale.state.y - y0) < 0.05;
   // 游泳 → 潜水
-  tg.whale.state.x = -150; tg.whale.state.z = -600; step(4); act.swim = A.mode;
+  tg.whale.state.x = -130; tg.whale.state.z = -490; step(4); act.swim = A.mode;
   A.act('dive'); step(60); act.dive = A.mode; act.oxygen = Math.round(A.oxygen);
   A.act('jump'); step(30); act.surface = A.mode;
   tg.whale.state.x = 40; tg.whale.state.z = 25; step(10); act.ashore = A.mode;
@@ -116,7 +116,7 @@ const report = await page.evaluate(async () => {
   document.querySelector('#bigmap-side [data-act="wp"]')?.click();
   act.waypoint = tg.bigmap.waypoint?.name;
   document.querySelector('#bigmap-side [data-act="go"]')?.click();
-  act.traveled = Math.round(Math.hypot(tg.whale.state.x - 560, tg.whale.state.z - 164));
+  { const st = tg.city.interactables.find((i) => i.id === 'station'); act.traveled = Math.round(Math.hypot(tg.whale.state.x - st.x, tg.whale.state.z - st.z)); }
   act.mapClosedAfterTravel = !tg.bigmap.isOpen;
   window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyM' }));
   window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyM' }));
@@ -124,7 +124,7 @@ const report = await page.evaluate(async () => {
   // 钓鱼：三种水各钓一条，进图鉴
   tg.weather.set('clear', { immediate: true });
   const r0 = Math.random;
-  for (const [x, z, yaw] of [[-150, -513, Math.PI], [-449, 0, Math.PI / 2], [804, 60, Math.PI / 2]]) {
+  for (const [x, z, yaw] of [[-130, -410, Math.PI], [-434, 0, -Math.PI / 2], [868, -300, Math.PI / 2]]) {
     tg.whale.state.x = x; tg.whale.state.z = z; tg.whale.state.yaw = yaw; step(2);
     tg.game.interact({ kind: 'fish', name: 'x' });
     if (!tg.game.fishing) continue;
@@ -144,6 +144,54 @@ const report = await page.evaluate(async () => {
   out.state = { coins: tg.game.state.coins ?? tg.game.state.gold, day: tg.game.state.day };
   out.stats = tg.city.stats;
   return out;
+});
+// 种地：种下 → 浇水 → 长 → 收 → 卖；下雨自己湿；青菜能下锅；新素材都摆上了
+report.farm = await page.evaluate(() => {
+  const tg = window.__tg;
+  const f = tg.farming;
+  const g = tg.game;
+  const r = {};
+  tg.hud.close();
+  r.plots = f.plots.length;
+  r.lifeThings = tg.life?.count ?? 0;
+  r.glowItems = tg.glow?.count ?? 0;
+  r.decor = tg.city.group.userData.decor ?? 0;
+  r.lights = Object.fromEntries(Object.entries(tg.city.lights).map(([k, v]) => [k, Array.isArray(v) ? v.length : !!v]));
+  const it = tg.city.interactables.find((i) => i.id === 'plot-0');
+  tg.whale.state.x = it.x; tg.whale.state.z = it.z + 0.5;
+  g.state.bag['seed-radish'] = 2;
+  g.interact(it);
+  document.querySelector('[data-seed="radish"]')?.click();
+  r.planted = f.plot(0).crop;
+  tg.hud.close();
+  f.plot(0).water = 0;
+  g.interact(it); // 地干：E 就是浇水
+  r.watered = f.plot(0).water > 0.9;
+  tg.hud.close();
+  f.update(60 * 3); // 3 小时
+  r.halfway = Math.round(f.plot(0).growth * 100);
+  f.update(60 * 4);
+  r.ripe = f.plot(0).growth >= 1 && f.ripe().length >= 1;
+  const before = g.state.bag.radish ?? 0;
+  tg.hud.close();
+  g.interact(it);
+  r.harvested = (g.state.bag.radish ?? 0) - before;
+  r.emptyAfter = !f.plot(0).crop;
+  f.plant(1, 'tomato');
+  f.update(1, true);
+  r.rainWaters = f.plot(1).water > 0.9;
+  const c0 = g.state.coins;
+  const sold = g.sellCrops();
+  r.sold = `${sold.n} 个 → ${g.state.coins - c0} 金币`;
+  // 自己种的白菜能当青菜：青菜粥（青菜 1 + 米饭 1）应该能做
+  g.state.bag.veg = 0; g.state.bag.rice = 1; g.state.bag['napa-cabbage'] = 1;
+  g.indoorMenu(); [...document.querySelectorAll('#panel-foot button')].find((b) => b.textContent.includes('厨房'))?.click();
+  const porridge = [...document.querySelectorAll('#panel-foot button')].find((b) => b.textContent.includes('青菜粥'));
+  r.cookWithOwnVeg = !!porridge && !porridge.disabled;
+  porridge?.click();
+  r.cabbageUsed = (g.state.bag['napa-cabbage'] ?? 0) === 0;
+  tg.hud.close();
+  return r;
 });
 // 相机：V 拿起、按键归相机、拍一张（尺寸对、存进相册）、放下后镜头还原
 report.camera = await page.evaluate(async () => {

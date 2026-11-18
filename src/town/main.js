@@ -21,6 +21,9 @@ import { createPanels } from './panels.js';
 import { spriteStyle } from './fishdex.js';
 import { createBigMap } from './bigmap.js';
 import { createPhoto } from './photo.js';
+import { createLife } from './life.js';
+import { createFarming, CROP } from './farming.js';
+import { createGlow } from './glow.js';
 
 const params = new URLSearchParams(location.search);
 // 画质档和原作一样：high / medium / low。?lite=1 是 low 的别名（给核显用）。
@@ -173,7 +176,17 @@ if (params.get('tex') !== '0') {
       }
     }),
   );
-  configureAlbedo(loaded, { mix: Number(params.get('texmix') ?? 0.85) });
+  // 屋里的墙纸、瓷砖、地砖（素材库 assets/textures/house 里挑的三张）
+  await Promise.all(
+    Object.entries({ indoorWall: 'wallpaper-stripe-fine', indoorTile: 'tile-subway', indoorFloor: 'tile-hex' }).map(async ([kind, file]) => {
+      try {
+        loaded[kind] = await loadAlbedo(`./textures/house/${file}.webp`);
+      } catch (e) {
+        console.warn('室内贴图缺失', file, e);
+      }
+    }),
+  );
+  configureAlbedo(loaded, { mix: Number(params.get('texmix') ?? 0.85), scales: { indoorWall: 1.4, indoorTile: 1.1, indoorFloor: 0.9 } });
 }
 await setProgress(0.48, '正在铺野花…');
 // 手绘植物图集（139 种花 / 110 种树 / 8 个物件）。?plants=0 退回程序化花丛。
@@ -197,6 +210,21 @@ const city = createCity(field.uniforms, field, {
   density: high ? 1 : medium ? 0.85 : 0.6,
 });
 scene.add(city.group);
+// 鸟、鸭子、船（素材库 life 图集）
+const life = plants?.life
+  ? createLife(field.uniforms, plants, {
+      random: (() => {
+        let a = 20261118;
+        return () => {
+          a = (a + 0x6d2b79f5) | 0;
+          let t = Math.imul(a ^ (a >>> 15), 1 | a);
+          t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+      })(),
+    })
+  : null;
+if (life) scene.add(life.mesh);
 scene.add(createFarGround(field.uniforms, { centre: CENTRE, half: EXTENT / 2 }));
 
 await setProgress(0.62, '正在种树…');
@@ -250,6 +278,7 @@ const farmSprites = Object.fromEntries((plants?.farm?.[0]?.sprites ?? []).map((s
 const game = createGame({
   hud,
   fishSprites,
+  farmSprites,
   player: {
     /** 面朝的那片水是湖、河还是海 */
     get waterKind() {
@@ -341,6 +370,54 @@ const game = createGame({
   },
 });
 
+// 种地：家门口和田园小镇的菜地
+const farming = createFarming(field.uniforms, plants, city.gardenPlots);
+scene.add(farming.group);
+game.setFarm(farming);
+
+// 发光：路灯、石灯笼、灯串、灯塔光柱、萤火虫、熟了的菜上的小星
+const glow = (() => {
+  const flies = [];
+  let s = 7;
+  const rnd = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+  // 河边
+  for (let i = 0; i + 1 < plan.RIVER.length; i++) {
+    const [ax, az] = plan.RIVER[i];
+    const [bx, bz] = plan.RIVER[i + 1];
+    const len = Math.hypot(bx - ax, bz - az);
+    for (let k = 0; k < len / 9; k++) {
+      const t = rnd();
+      const side = rnd() < 0.5 ? -1 : 1;
+      const off = plan.RIVER_HALF + 2 + rnd() * 9;
+      const x = ax + (bx - ax) * t - ((bz - az) / len) * side * off;
+      const z = az + (bz - az) * t + ((bx - ax) / len) * side * off;
+      if (Math.abs(x) < plan.HALF && Math.abs(z) < plan.HALF) flies.push([x, plan.heightAt(x, z) + 0.6 + rnd() * 1.6, z]);
+    }
+  }
+  // 湖边
+  for (let i = 0; i < 90; i++) {
+    const a = rnd() * Math.PI * 2;
+    const k = 1.08 + rnd() * 0.35;
+    const x = plan.LAKE.x + Math.cos(a) * plan.LAKE.rx * k;
+    const z = plan.LAKE.z + Math.sin(a) * plan.LAKE.rz * k;
+    flies.push([x, plan.heightAt(x, z) + 0.6 + rnd() * 1.6, z]);
+  }
+  // 田边、果园、家门口的菜地
+  for (const id of ['fields', 'orchard', 'farm']) {
+    const d = plan.DISTRICTS.find((q) => q.id === id);
+    for (let i = 0; i < 40; i++) {
+      const a = rnd() * Math.PI * 2;
+      const r = d.r * (0.4 + rnd() * 0.7);
+      const x = d.x + Math.cos(a) * r;
+      const z = d.z + Math.sin(a) * r;
+      flies.push([x, plan.heightAt(x, z) + 0.6 + rnd() * 1.4, z]);
+    }
+  }
+  for (let i = 0; i < 12; i++) flies.push([2 + rnd() * 8, plan.heightAt(4, 0) + 0.7 + rnd(), -6 + rnd() * 10]);
+  return createGlow(field.uniforms, { ...city.lights, fireflies: flies, ground: plan.heightAt });
+})();
+scene.add(glow.group);
+
 /** 从座位上站起来 */
 const standUp = () => {
   if (!seated) return false;
@@ -391,6 +468,8 @@ const syncSky = () => {
   }
   if (sky) {
     frame.exposure = sky.exposure * (1 - 0.25 * night);
+    // 夜里泛光开大一点：灯、灯串、萤火虫会晕开
+    frame.bloom = 0.1 + 0.16 * night;
     frame.grade.set(1 - 0.8 * night, 1 - 0.68 * night, 1 - 0.36 * night);
     field.uniforms.uNight.value = night;
     nightNow = night;
@@ -647,6 +726,16 @@ canvas.addEventListener('click', () => {
   cam.lock();
 });
 
+/** 交互提示：菜地按长势变 */
+function hintOf(it) {
+  if (it.kind !== 'plot') return it.hint ?? 'E 互动';
+  const p = farming.plot(it.plot);
+  if (!p?.crop) return 'E 种点什么';
+  const c = CROP[p.crop];
+  if (p.growth >= 1) return `E 收${c.name}`;
+  return p.water > 0.05 ? `E 看看${c.name}（${Math.round(p.growth * 100)}%）` : `E 给${c.name}浇水`;
+}
+
 // ---- 主循环 ----------------------------------------------------------------------------------------------------
 let last = performance.now();
 let mapAccum = 0;
@@ -698,6 +787,9 @@ function tick(dt) {
 
   field.update(dt, camera);
   city.update(dt, [whale.state.x, whale.state.z], camera);
+  if (!indoor) life?.update(dt, camera, nightNow);
+  glow.setGrade(frame.grade);
+  glow.update(dt, farming.ripe());
   if (!indoor) field.uniforms.uWalker.value.set(whale.state.x, whale.state.z, 0.55, 2.2);
   else interior.update(dt);
   game.update(dt);
@@ -714,7 +806,7 @@ function tick(dt) {
   frame.render(indoor ? indoorScene : scene, camera);
 
   nearest = seated ? null : findNearest();
-  if (!hud.isOpen) hud.prompt(seated ? '站起身' : nearest ? nearest.hint ?? 'E 互动' : !indoor && actions.canFish() ? 'E 钓鱼' : null);
+  if (!hud.isOpen) hud.prompt(seated ? '站起身' : nearest ? hintOf(nearest) : !indoor && actions.canFish() ? 'E 钓鱼' : null);
 
   mapAccum += dt;
   if (mapAccum > 0.1) {
@@ -793,6 +885,9 @@ window.__tg = {
   panels,
   bigmap,
   photo,
+  life,
+  farming,
+  glow,
   fishdex: await import('./fishdex.js'),
   setPaint(v) {
     paintNow = v;

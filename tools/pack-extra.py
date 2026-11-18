@@ -56,9 +56,24 @@ for sub, prefix in (('farm/crops/plant', 'plant-'), ('farm/crops/produce', 'prod
     d = os.path.join(ASSETS, sub)
     farm += [(prefix + f[:-4], os.path.join(d, f)) for f in sorted(os.listdir(d)) if f.endswith('.png')]
 
+# 生活：鸟（天上飞的、湖上游的、广场上走的）、街景小物、车和船。都是手绘风的透明精灵，挑和小镇搭的。
+LIFE = {
+    'birds': ['house-sparrow', 'tree-sparrow', 'great-tit', 'robin', 'magpie', 'barn-swallow', 'common-swift', 'kingfisher',
+              'mallard', 'mute-swan', 'mandarin-duck', 'greylag-goose', 'grey-heron', 'little-egret', 'black-headed-gull',
+              'herring-gull', 'rock-pigeon', 'collared-dove', 'carrion-crow'],
+    'infra': ['flower-bed', 'planter-box', 'urn-planter', 'hanging-basket', 'mailbox', 'phone-booth', 'notice-board', 'festoon-pole',
+              'stone-lantern', 'parasol', 'swing-set', 'slide', 'seesaw', 'merry-go-round', 'street-clock', 'weather-vane',
+              'fire-hydrant', 'topiary', 'gazebo', 'pergola', 'picnic-table', 'sundial', 'stone-well', 'water-pump', 'market-stall',
+              'kiosk', 'lantern-post', 'hanging-lantern', 'bike-rack', 'litter-bin', 'sandbox', 'rocking-horse'],
+    'transport': ['city-bicycle', 'cargo-bike', 'scooter', 'vintage-motorbike', 'rowboat', 'sailboat', 'fishing-boat', 'sampan',
+                  'junk-boat', 'small-ferry', 'kayak', 'canoe', 'wheelbarrow', 'handcart', 'ox-cart'],
+}
+life = [(f'{group}-{name}', os.path.join(ASSETS, group, name + '.png')) for group, names in LIFE.items() for name in names]
+
 manifest_path = os.path.join(OUT, 'plants.json')
 manifest = json.load(open(manifest_path, encoding='utf-8'))
 manifest['fish'] = [pack(fish, 'fish', 11)]
 manifest['farm'] = [pack(farm, 'farm', 11)]
-json.dump(manifest, open(manifest_path, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
-print('fish', len(fish), 'farm', len(farm))
+manifest['life'] = [pack(life, 'life', 9)]
+json.dump(manifest, open(manifest_path, 'w', encoding='utf-8', newline=chr(10)), ensure_ascii=False, indent=1)
+print('fish', len(fish), 'farm', len(farm), 'life', len(life))

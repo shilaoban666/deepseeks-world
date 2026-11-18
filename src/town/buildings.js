@@ -572,6 +572,8 @@ export function lamp(b, x, z, rotY = 0) {
   const az = Math.cos(rotY) * 0.3;
   b.add(box(0.05, 0.05, 0.7), `lamp#0`, [x + ax, gy + 3.26, z + az], rotY);
   b.add(box(0.26, 0.34, 0.26), `lamp#1`, [x + ax * 2, gy + 2.95, z + az * 2], rotY);
+  // （记下灯头在哪：夜里的光晕和地上的光斑，见 glow.js）
+  (b.lamps ??= []).push([x + ax * 2, gy + 2.92, z + az * 2]);
   const cap = new THREE.ConeGeometry(0.26, 0.2, 4);
   cap.rotateY(Math.PI / 4);
   b.add(cap, `lamp#0`, [x + ax * 2, gy + 3.2, z + az * 2], rotY);
@@ -592,6 +594,7 @@ export function stoneLantern(b, x, z) {
   b.add(cylinder(0.42, 0.3, 8), `stone#1`, [x, gy + 0.15, z]);
   b.add(cylinder(0.2, 1.0, 8), `stone#0`, [x, gy + 0.8, z]);
   b.add(box(0.62, 0.5, 0.62), `stone#1`, [x, gy + 1.55, z]);
+  (b.lanterns ??= []).push([x, gy + 1.55, z]);
   b.add(box(0.8, 0.16, 0.8), `stone#0`, [x, gy + 1.86, z]);
 }
 

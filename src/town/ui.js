@@ -1,6 +1,6 @@
 // 界面：左上角的状态、底下的提示、右下角的小地图、还有各种面板（商店、烹饪、上网……）。
 // 全部是 DOM，风格走吉卜力：奶油纸、墨蓝字、手写的圆角。
-import { riverAt, RIVER_HALF, riverLevel, SEA, heightAt, lakeDistance, pavedAt, forestAt, fieldsAt, mountainAt, DISTRICTS, ROADS, PLAZA, LAKE, HALF, districtAt } from './plan.js';
+import { riverAt, RIVER_HALF, riverLevel, SEA, SEA_WEST, heightAt, lakeDistance, pavedAt, forestAt, fieldsAt, mountainAt, DISTRICTS, ROADS, PLAZA, LAKE, HALF, districtAt } from './plan.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -148,7 +148,7 @@ export function bakeMinimap() {
       bl = bl * (1 - p) + 172 * p;
       // 水
       const rv = riverAt(x, z);
-      if (lakeDistance(x, z) < 1.0 || (rv.d < RIVER_HALF + 2) || (x > 560 && heightAt(x, z) < SEA.level)) {
+      if (lakeDistance(x, z) < 1.0 || (rv.d < RIVER_HALF + 2) || (x > SEA_WEST && heightAt(x, z) < SEA.level)) {
         r = 96;
         gr = 150;
         bl = 184;

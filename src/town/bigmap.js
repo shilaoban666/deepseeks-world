@@ -4,7 +4,7 @@
 // 走过的地方才看得清（探索），没去过的地方蒙着一层纸。滚轮缩放、拖动平移、点地标看详情，
 // 能把它设为目标（小地图上会指方向），公交站、家和高铁站可以直接"坐车过去"。
 // 上面的页签还能翻到两张手绘的纸地图（小镇图、世界图）。
-import { DISTRICTS, ROADS, SEGS, PLAZA, HALF, LAKE, BUS_ROUTE, heightAt, lakeDistance, riverAt, RIVER_HALF, SEA, coastX, forestAt, fieldsAt, plotAt, pavedAt, mountainAt, fbm } from './plan.js';
+import { DISTRICTS, ROADS, SEGS, PLAZA, HALF, LAKE, BUS_ROUTE, heightAt, lakeDistance, riverAt, RIVER_HALF, SEA, SEA_WEST, coastX, forestAt, fieldsAt, plotAt, pavedAt, mountainAt, fbm } from './plan.js';
 
 const $ = (id) => document.getElementById(id);
 const BAKE = 1024;
@@ -90,7 +90,7 @@ function bake() {
       // 水
       const rv = riverAt(x, z);
       const ld = lakeDistance(x, z);
-      const isSea = x > 480 && h < SEA.level;
+      const isSea = x > SEA_WEST && h < SEA.level;
       const isWater = ld < 1.0 || rv.d < RIVER_HALF + 1.5 || isSea;
       if (isWater) {
         const depth = isSea ? Math.min(1, (SEA.level - h) / 8) : ld < 1 ? Math.min(1, 1 - ld) : 0.4;
@@ -98,7 +98,7 @@ function bake() {
         shade = 1;
         // 水面的细波纹
         if (Math.sin((x + z * 0.3) * 0.25 + fbm(x / 40, z / 40, 2, 9) * 6) > 0.96) col = mix3(col, [230, 244, 248], 0.5);
-      } else if (ld < 1.08 || (x > 480 && h < SEA.level + 1.2) || rv.d < RIVER_HALF + 4) {
+      } else if (ld < 1.08 || (x > SEA_WEST && h < SEA.level + 1.2) || rv.d < RIVER_HALF + 4) {
         col = mix3(col, [228, 214, 172], 0.8); // 沙滩
       }
       let r = col[0] * shade * wash;
@@ -150,6 +150,7 @@ function bake() {
   g.lineWidth = 1.2;
   g.beginPath();
   for (let z = -HALF; z <= HALF; z += 8) {
+    if (coastX(z) > HALF + 120) break;
     const [px, py] = w2p(coastX(z) - 30, z);
     if (z === -HALF) g.moveTo(px, py);
     else g.lineTo(px, py);
@@ -640,7 +641,45 @@ export function createBigMap({ city, getPlayer, onTravel, hud, minutes }) {
         if (open) renderSide();
       }
       draw();
+      placeHere(p);
     },
   };
+  // 手绘纸地图上的"你在这儿"：小镇图上 1 像素 ≈ 2 米、镇中心在图正中（plan.js 就是照它摆的）；
+  // 世界图上整个可走的范围只是 AI 小镇那一小块（1 公里 ≈ 110 像素），画一个虚线框
+  const here = document.createElement('div');
+  here.className = 'bm-here';
+  here.innerHTML = '<i></i><span>小鲸鱼在这儿</span>';
+  const area = document.createElement('div');
+  area.className = 'bm-area';
+  area.innerHTML = '<span>能走到的地方</span>';
+  $('bigmap-paper').parentElement.append(area, here);
+  function placeHere(p) {
+    const show = open && tab !== 'map';
+    here.style.display = area.style.display = show ? '' : 'none';
+    if (!show) return;
+    const view = $('bigmap-paper').parentElement;
+    const w = view.clientWidth;
+    const h = view.clientHeight;
+    const side = Math.min(w, h);
+    const ox = (w - side) / 2;
+    const oy = (h - side) / 2;
+    const k = side / 1024;
+    let px;
+    let py;
+    if (tab === 'town') {
+      px = 512 + p.x / 2;
+      py = 512 + p.z / 2;
+      area.style.display = 'none';
+    } else {
+      const s0 = 0.11;
+      px = 288 + p.x * s0;
+      py = 293 + p.z * s0;
+      Object.assign(area.style, { left: `${ox + (288 - HALF * s0) * k}px`, top: `${oy + (293 - HALF * s0) * k}px`, width: `${HALF * 2 * s0 * k}px`, height: `${HALF * 2 * s0 * k}px` });
+    }
+    here.classList.toggle('below', tab === 'world');
+    here.style.left = `${ox + px * k}px`;
+    here.style.top = `${oy + py * k}px`;
+    here.style.setProperty('--yaw', `${-p.yaw}rad`);
+  }
   return api;
 }

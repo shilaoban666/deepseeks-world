@@ -1,7 +1,7 @@
 // 小鲸鱼的世界：截图。
 //   node tools/town-shots.mjs [names...] [--out shots/town] [--query "lite=1"] [--size 1600x900]
 // 每个机位：人站在哪 (x,z)、镜头绕到哪 (yaw 度)、俯仰 (pitch 度)、离多远 (dist)。indoor: true 先进屋。
-import { mkdirSync, createReadStream, existsSync, statSync } from 'node:fs';
+import { mkdirSync, createReadStream, existsSync, statSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -61,6 +61,12 @@ export const VIEWS = {
   crops: { x: -430, z: 664, yaw: 200, pitch: 18, dist: 8 },
   orchard: { x: -704, z: 262, yaw: 160, pitch: 10, dist: 9 },
   diveSea: { x: 900, z: 0, yaw: 120, pitch: 2, dist: 4.5, setup: "tg.actions.step(0.016, tg.plan.walkAt); tg.actions.act('dive'); for (let i = 0; i < 90; i++) tg.actions.step(1/30, tg.plan.walkAt);" },
+  camera: { x: 96, z: 44, yaw: 235, pitch: 12, dist: 9, setup: "tg.photo.enter(); tg.photo.setFocal(30);" },
+  cameraSelfie: { x: -704, z: 262, yaw: 160, pitch: 8, dist: 9, face: 340, setup: "tg.photo.enter(); tg.photo.setMode('selfie'); tg.cam.yaw += 0.5; tg.photo.prefs.filter = 'warm'; tg.photo.refresh();" },
+  cameraEye: { x: 716, z: 70, yaw: 250, pitch: -2, dist: 6, clock: 18.9, setup: "tg.photo.enter(); tg.photo.setMode('eye'); tg.cam.yaw = 250 * Math.PI / 180; tg.cam.pitch = -0.03; tg.photo.setFocal(28); tg.photo.prefs.filter = 'film'; tg.photo.prefs.stamp = true; tg.photo.refresh();" },
+  cameraPortrait: { x: 40, z: 25, yaw: 230, pitch: 8, dist: 6, setup: "tg.photo.enter(); tg.photo.prefs.aspect = '9:16'; tg.photo.prefs.filter = 'warm'; tg.photo.setFocal(40); tg.photo.refresh();" },
+  album: { x: 96, z: 44, yaw: 235, pitch: 12, dist: 9, async: "tg.photo.enter(); for (const [x, z, y, h, f, a, m] of [[96,44,235,10.5,'none','16:9','follow'],[-150,-478,180,17.8,'warm','3:2','follow'],[716,70,250,18.9,'film','16:9','eye'],[-704,262,160,9,'morning','1:1','selfie'],[-430,664,200,16,'dusk','9:16','follow'],[40,25,230,11,'ink','3:2','follow']]) { tg.photo.exit(); tg.setClock(h); tg.whale.state.x = x; tg.whale.state.z = z; tg.cam.yaw = y * Math.PI / 180; tg.cam.pitch = m === 'eye' ? -0.03 : 0.2; tg.whale.state.yaw = m === 'selfie' ? tg.cam.yaw : tg.cam.yaw + Math.PI; tg.photo.enter(); tg.photo.setMode(m); if (m === 'eye') { tg.cam.yaw = y * Math.PI / 180; tg.cam.pitch = -0.03; } tg.photo.prefs.filter = f; tg.photo.prefs.aspect = a; tg.photo.prefs.res = '1080p'; for (let i = 0; i < 40; i++) tg.tick(1/30); await tg.photo.shoot({ download: false }); } Object.assign(tg.photo.prefs, { res: '4K', filter: 'none', aspect: '16:9' }); tg.photo.album.open(); await new Promise((r) => setTimeout(r, 500));" },
+  albumView: { x: 96, z: 44, yaw: 235, pitch: 12, dist: 9, async: "if (!tg.photo.photos.length) { tg.photo.enter(); for (let i = 0; i < 40; i++) tg.tick(1/30); await tg.photo.shoot({ download: false }); } tg.photo.enter(); tg.photo.album.open(tg.photo.photos.length - 1); await new Promise((r) => setTimeout(r, 600));" },
   living: { indoor: true, x: -2.5, z: 2.5, yaw: 30, pitch: 40, dist: 7 },
   kitchen: { indoor: true, x: 4, z: 3.5, yaw: 200, pitch: 40, dist: 7 },
   bedroom: { indoor: true, x: -5, z: -3.5, yaw: 150, pitch: 40, dist: 7 },
@@ -82,6 +88,7 @@ for (let i = 0; i < args.length; i++) {
 const out = resolve(here, flag('out', 'shots/town'));
 const [width, height] = flag('size', '1600x900').split('x').map(Number);
 const hour = flag('hour', null);
+const photoRes = flag('photo', null);
 mkdirSync(out, { recursive: true });
 
 const root = resolve(here, 'dist');
@@ -129,6 +136,7 @@ for (const name of names.length ? names : Object.keys(VIEWS)) {
       if (!!v.indoor !== tg.indoor()) v.indoor ? tg.enter() : tg.exit();
       if (tg.hud.isOpen) tg.hud.close();
       tg.bigmap?.close();
+      tg.photo?.exit();
       tg.setClock(v.clock ?? (hour != null ? Number(hour) : 10.5));
       tg.whale.state.x = v.x;
       tg.whale.state.z = v.z;
@@ -160,8 +168,38 @@ for (const name of names.length ? names : Object.keys(VIEWS)) {
     },
     [view, hour],
   );
+  if (view.async) await page.evaluate(async (code) => new (Object.getPrototypeOf(async () => {}).constructor)('tg', code)(window.__tg), view.async);
   await page.screenshot({ path: join(out, `${name}.png`) });
   console.log(`shot ${name} (${ms.toFixed(1)} ms a frame)`);
+  // --photo 4K：同一个机位再用游戏里的相机拍一张原尺寸的照片
+  if (photoRes) {
+    const got = await page.evaluate(async (res) => {
+      const tg = window.__tg;
+      tg.photo.album.close();
+      const was = tg.photo.on;
+      if (!was) tg.photo.enter();
+      const keep = tg.photo.prefs.res;
+      tg.photo.prefs.res = res;
+      tg.tick(1 / 60);
+      const t = performance.now();
+      const rec = await tg.photo.shoot({ download: false, save: false });
+      const ms = performance.now() - t;
+      tg.photo.prefs.res = keep;
+      if (!was) tg.photo.exit();
+      if (!rec) return null;
+      const url = await new Promise((r) => {
+        const f = new FileReader();
+        f.onload = () => r(f.result);
+        f.readAsDataURL(rec.blob);
+      });
+      return { url, w: rec.w, h: rec.h, size: rec.size, ms, timing: tg.photo.timing, ext: rec.type === 'image/png' ? 'png' : 'jpg' };
+    }, photoRes);
+    if (!got) console.log(`photo ${name}: failed`);
+    else {
+      writeFileSync(join(out, `${name}-photo.${got.ext}`), Buffer.from(got.url.split(',')[1], 'base64'));
+      console.log(`photo ${name}: ${got.w}x${got.h} ${(got.size / 1048576).toFixed(1)} MB in ${got.ms.toFixed(0)} ms ${JSON.stringify(Object.fromEntries(Object.entries(got.timing ?? {}).map(([k, v]) => [k, Math.round(v)])))}`);
+    }
+  }
 }
 if (problems.length) console.log([...new Set(problems)].slice(0, 12).join('\n'));
 await browser.close();

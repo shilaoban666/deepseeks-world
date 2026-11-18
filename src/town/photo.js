@@ -15,7 +15,7 @@ export const FILTERS = [
   { id: 'morning', name: '清晨', css: 'saturate(0.88) brightness(1.07) contrast(0.93) hue-rotate(6deg)' },
   { id: 'film', name: '胶片', css: 'contrast(1.05) saturate(0.84) sepia(0.14) brightness(1.02)', grain: true },
   { id: 'dusk', name: '黄昏', css: 'sepia(0.32) saturate(1.28) hue-rotate(-12deg) contrast(1.04) brightness(0.98)' },
-  { id: 'ink', name: '墨白', css: 'grayscale(1) sepia(0.16) contrast(1.1) brightness(1.04)' },
+  { id: 'ink', name: '墨白', css: 'grayscale(1) sepia(0.12) contrast(1.22) brightness(0.95)' },
 ];
 /** 画幅：4K 档的像素；2K、1080p 按比例缩 */
 export const ASPECTS = [
@@ -80,6 +80,48 @@ const mb = (n) => (n > 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.roun
 const hourText = (h) => `${pad(Math.floor(h) % 24)}:${pad(Math.round((h % 1) * 60) % 60)}`;
 const blobOf = (canvas, type, q) => new Promise((r) => canvas.toBlob(r, type, q));
 
+// 压图的后台线程：OffscreenCanvas 在 worker 里 convertToBlob，和游戏并行（页面上的 toBlob 要等页面空闲，
+// 而游戏每帧都在画，几乎没有空闲——一张 4K PNG 在页面上要七秒）
+let worker = null;
+let jobs = 0;
+const waiting = new Map();
+const WORKER = `self.onmessage = async (e) => {
+  const { id, bitmap, type, quality } = e.data;
+  try {
+    const c = new OffscreenCanvas(bitmap.width, bitmap.height);
+    c.getContext('2d').drawImage(bitmap, 0, 0);
+    bitmap.close();
+    self.postMessage({ id, blob: await c.convertToBlob({ type, quality }) });
+  } catch (err) {
+    self.postMessage({ id, error: String(err) });
+  }
+};`;
+const encode = async (bitmap, type, quality) => {
+  try {
+    if (!worker) {
+      worker = new Worker(URL.createObjectURL(new Blob([WORKER], { type: 'text/javascript' })));
+      worker.onmessage = (e) => {
+        const job = waiting.get(e.data.id);
+        waiting.delete(e.data.id);
+        if (e.data.blob) job.resolve(e.data.blob);
+        else job.reject(new Error(e.data.error));
+      };
+    }
+    const id = ++jobs;
+    return await new Promise((resolve, reject) => {
+      waiting.set(id, { resolve, reject });
+      worker.postMessage({ id, bitmap, type, quality }, [bitmap]);
+    });
+  } catch {
+    // 没有 worker / OffscreenCanvas 的浏览器：退回页面上压
+    const c = document.createElement('canvas');
+    c.width = bitmap.width;
+    c.height = bitmap.height;
+    c.getContext('2d').drawImage(bitmap, 0, 0);
+    return blobOf(c, type, quality);
+  }
+};
+
 /** 胶片颗粒：一小块噪点，平铺着叠上去 */
 let grainTile = null;
 const grain = () => {
@@ -132,9 +174,9 @@ export function createPhoto({ renderer, frame, camera, cam, whale, canvas, hud, 
   let roll = 0;
   let hidePlayer = false;
   let busy = false;
+  let developing = 0; // 后台还在压的张数
   let saved = null; // 拿起相机前的镜头设置，放下时还回去
   let photos = [];
-  let lastThumb = '';
   const urls = new Map(); // id → 小图的 object URL
 
   const aspect = () => ASPECTS.find((a) => a.id === prefs.aspect) ?? ASPECTS[0];
@@ -217,10 +259,11 @@ export function createPhoto({ renderer, frame, camera, cam, whale, canvas, hud, 
       `<label class="vf-slider"><span>焦距</span><input id="vf-focal" type="range" min="0" max="1000" value="${Math.round((Math.log(focal / FOCAL_MIN) / Math.log(FOCAL_MAX / FOCAL_MIN)) * 1000)}"><i>${Math.round(focal)}mm</i></label>` +
       `<label class="vf-slider"><span>光线</span><input id="vf-light" type="range" min="5" max="21.5" step="0.25" value="${h}"><i>${hourText(h)}</i></label>` +
       `</div>` +
-      `<div class="vf-filters">${FILTERS.map((x, i) => `<button class="vf-filter${prefs.filter === x.id ? ' on' : ''}" data-k="filter:${x.id}"><kbd>${i + 1}</kbd>${x.name}</button>`).join('')}</div>` +
       `<button class="vf-shutter${busy ? ' busy' : ''}" data-k="shoot" title="拍照（空格）"><i></i></button>` +
-      `<button class="vf-roll" data-k="album" title="相册">${thumb ? `<img src="${thumb}" alt="">` : '<span>相册</span>'}<b>${photos.length}</b></button>`;
-    lastThumb = thumb;
+      `<div class="vf-right">` +
+      `<div class="vf-filters">${FILTERS.map((x, i) => `<button class="vf-filter${prefs.filter === x.id ? ' on' : ''}" data-k="filter:${x.id}"><kbd>${i + 1}</kbd>${x.name}</button>`).join('')}</div>` +
+      `<button class="vf-roll${developing ? ' dev' : ''}" data-k="album" title="相册（L）">${thumb ? `<img src="${thumb}" alt="">` : '<span>相册</span>'}<b>${developing ? `冲洗 ${developing}` : photos.length}</b></button>` +
+      `</div>`;
   };
   // 底栏的滑块拖动时不重画整栏（不然滑块会被换掉、拖不动）
   const quick = () => {
@@ -251,6 +294,7 @@ export function createPhoto({ renderer, frame, camera, cam, whale, canvas, hud, 
       cam.minPitch = saved.minPitch;
       cam.maxPitch = saved.maxPitch;
     }
+    draw();
   };
 
   const onClick = (e) => {
@@ -422,6 +466,8 @@ export function createPhoto({ renderer, frame, camera, cam, whale, canvas, hud, 
       h = Math.floor((h * k) / 2) * 2;
     }
     const look = { filter: filter(), stamp: prefs.stamp, underwater: info().underwater, when: new Date() };
+    const t0 = performance.now();
+    const timing = (photo.timing = {});
     let px = null;
     const rt = new THREE.WebGLRenderTarget(w, h, { type: THREE.UnsignedByteType, format: THREE.RGBAFormat, depthBuffer: false, generateMipmaps: false });
     const keep = { aspect: camera.aspect, fov: camera.fov };
@@ -435,6 +481,7 @@ export function createPhoto({ renderer, frame, camera, cam, whale, canvas, hud, 
       frame.render(scene(), camera, rt);
       px = new Uint8Array(w * h * 4);
       renderer.readRenderTargetPixels(rt, 0, 0, w, h, px);
+      timing.render = performance.now() - t0;
     } catch (e) {
       console.warn('拍照失败', e);
     } finally {
@@ -452,26 +499,17 @@ export function createPhoto({ renderer, frame, camera, cam, whale, canvas, hud, 
     }
     const out = develop(px, w, h, look);
     px = null;
+    timing.develop = performance.now() - t0 - timing.render;
     const type = prefs.format === 'jpg' ? 'image/jpeg' : 'image/png';
-    const blob = await blobOf(out, type, 0.95);
-    // 相册里的小图
-    const tw = 480;
-    const th = Math.round((tw * h) / w);
-    const tc = document.createElement('canvas');
-    tc.width = tw;
-    tc.height = th;
-    tc.getContext('2d').drawImage(out, 0, 0, tw, th);
-    const thumb = await blobOf(tc, 'image/jpeg', 0.86);
-    out.width = out.height = 0;
     const meta = info();
     const rec = {
       id: look.when.getTime(),
-      blob,
-      thumb,
+      blob: null,
+      thumb: null,
       w,
       h,
       type,
-      size: blob.size,
+      size: 0,
       place: meta.place,
       clock: meta.clock,
       weather: meta.weather,
@@ -480,17 +518,35 @@ export function createPhoto({ renderer, frame, camera, cam, whale, canvas, hud, 
       mode: MODES.find((m) => m[0] === mode)[1],
       when: look.when.toISOString(),
     };
+    // 相册里的小图
+    const tw = 480;
+    const tc = document.createElement('canvas');
+    tc.width = tw;
+    tc.height = Math.round((tw * h) / w);
+    tc.getContext('2d').drawImage(out, 0, 0, tc.width, tc.height);
+    const thumbing = blobOf(tc, 'image/jpeg', 0.86);
+    // 原图交给后台线程去压（PNG 一张 4K 要好几秒，放在页面上会卡住游戏）；快门这时就可以再按了
+    const bitmap = await createImageBitmap(out);
+    out.width = out.height = 0;
+    busy = false;
+    developing++;
+    draw();
+    rec.blob = await encode(bitmap, type, 0.95);
+    rec.thumb = await thumbing;
+    rec.size = rec.blob.size;
+    timing.encode = performance.now() - t0 - timing.render - timing.develop;
+    developing--;
     if (save) {
       photos.push(rec);
-      urls.set(rec.id, URL.createObjectURL(thumb));
+      photos.sort((a, b) => a.id - b.id);
+      urls.set(rec.id, URL.createObjectURL(rec.thumb));
       store.put(rec).catch((e) => console.warn('相册没存上', e));
     }
     if (download) saveFile(rec);
-    busy = false;
     draw();
     // 小图飞进右下角的相册
     ui.root.querySelector('.vf-roll')?.classList.add('pop');
-    hud.toast(`拍好了：${w}×${h} ${type === 'image/png' ? 'PNG' : 'JPG'}，${mb(blob.size)}${download ? '，已存到电脑的下载文件夹' : '，在相册里'}`, 3200);
+    hud.toast(`拍好了：${w}×${h} ${type === 'image/png' ? 'PNG' : 'JPG'}，${mb(rec.size)}${download ? '，已存到电脑的下载文件夹' : '，在相册里'}`, 3200);
     return rec;
   };
 
@@ -610,6 +666,8 @@ export function createPhoto({ renderer, frame, camera, cam, whale, canvas, hud, 
     prefs,
     apply,
     shoot,
+    /** 改了 prefs 之后重画取景框 */
+    refresh: () => draw(),
     setMode,
     setFocal(f) {
       focal = Math.min(FOCAL_MAX, Math.max(FOCAL_MIN, f));
@@ -626,6 +684,13 @@ export function createPhoto({ renderer, frame, camera, cam, whale, canvas, hud, 
       // 取景的时候天光停住（风和草照样在动），光线滑块可以把它拨到别的时刻
       light.set(light.get());
       roll = 0;
+      // 起手的焦距让取景框里看到的和刚才屏幕上一样，拿起相机画面不会突然一缩
+      {
+        const r = frameRect();
+        const a = aspect().a;
+        const t = (Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * r.h) / r.H;
+        focal = Math.min(FOCAL_MAX, Math.max(FOCAL_MIN, Math.round(21.63 / (t * Math.sqrt(1 + a * a)))));
+      }
       setMode('follow');
       cam.unlock();
       document.body.classList.add('photo');

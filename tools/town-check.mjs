@@ -145,6 +145,47 @@ const report = await page.evaluate(async () => {
   out.stats = tg.city.stats;
   return out;
 });
+// 相机：V 拿起、按键归相机、拍一张（尺寸对、存进相册）、放下后镜头还原
+report.camera = await page.evaluate(async () => {
+  const tg = window.__tg;
+  const key = (code) => window.dispatchEvent(new KeyboardEvent('keydown', { code }));
+  const c = {};
+  tg.hud.close();
+  tg.bigmap.close();
+  tg.whale.state.x = 96; tg.whale.state.z = 44;
+  const fov0 = tg.camera.fov;
+  key('KeyV');
+  c.open = tg.photo.on && document.getElementById('camera').classList.contains('on');
+  c.hudHidden = getComputedStyle(document.getElementById('status')).display === 'none';
+  key('KeyE'); // 相机里 E 是歪镜头，不能去开门
+  c.eDidNotInteract = !tg.hud.isOpen;
+  key('KeyR');
+  key('Tab'); c.modeAfterTab = tg.photo.mode;
+  key('Tab'); c.eyeHidesHer = (tg.tick(1 / 30), !tg.whale.group.visible);
+  key('Tab');
+  key('Digit4'); c.filter = tg.photo.prefs.filter;
+  key('Digit1');
+  for (const [aspect, res, w, h] of [['16:9', '1080p', 1920, 1080], ['9:16', '2K', 1440, 2560]]) {
+    Object.assign(tg.photo.prefs, { aspect, res });
+    tg.tick(1 / 30);
+    const rec = await tg.photo.shoot({ download: false });
+    c[`shot_${aspect}_${res}`] = rec && rec.w === w && rec.h === h && rec.blob.size > 100000 ? `${rec.w}x${rec.h} ${(rec.blob.size / 1048576).toFixed(1)}MB` : 'FAIL';
+  }
+  Object.assign(tg.photo.prefs, { aspect: '16:9', res: '4K' });
+  tg.tick(1 / 30);
+  const t = performance.now();
+  const big = await tg.photo.shoot({ download: false, save: false });
+  c.shot4K = big ? `${big.w}x${big.h} ${(big.blob.size / 1048576).toFixed(1)}MB ${Math.round(performance.now() - t)}ms (render ${Math.round(tg.photo.timing.render)}ms)` : 'FAIL';
+  c.album = tg.photo.photos.length;
+  key('KeyL'); c.albumOpen = tg.photo.album.isOpen && document.querySelectorAll('.al-cell').length;
+  key('Escape'); c.albumClosed = !tg.photo.album.isOpen && tg.photo.on;
+  key('KeyV');
+  tg.tick(1 / 30);
+  c.closed = !tg.photo.on && !document.body.classList.contains('photo');
+  c.fovRestored = Math.abs(tg.camera.fov - fov0) < 0.01;
+  c.herBack = tg.whale.group.visible;
+  return c;
+});
 console.log(JSON.stringify(report, null, 1));
 console.log(problems.length ? [...new Set(problems)].join('\n') : 'no page errors');
 await browser.close();

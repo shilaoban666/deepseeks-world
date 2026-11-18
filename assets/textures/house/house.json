@@ -1,0 +1,1302 @@
+{
+ "wallpaper-floral-small": {
+  "mean": [
+   0.8221,
+   0.1667,
+   0.4565
+  ],
+  "std": 0.1477,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wallpaper-damask": {
+  "mean": [
+   0.9666,
+   0.9388,
+   0.8642
+  ],
+  "std": 0.0566,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wallpaper-stripe-fine": {
+  "mean": [
+   0.8266,
+   0.8343,
+   0.736
+  ],
+  "std": 0.0864,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.78
+  ]
+ },
+ "wallpaper-stripe-wide": {
+  "mean": [
+   0.7872,
+   0.8157,
+   0.7727
+  ],
+  "std": 0.1008,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.76
+  ]
+ },
+ "wallpaper-dot": {
+  "mean": [
+   0.9074,
+   0.7464,
+   0.4535
+  ],
+  "std": 0.1106,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wallpaper-trellis": {
+  "mean": [
+   0.987,
+   0.9569,
+   0.8981
+  ],
+  "std": 0.0294,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wallpaper-toile": {
+  "mean": [
+   0.8388,
+   0.8813,
+   0.7569
+  ],
+  "std": 0.1479,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wallpaper-chinoiserie": {
+  "mean": [
+   0.7025,
+   0.7235,
+   0.7348
+  ],
+  "std": 0.2412,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wallpaper-geometric": {
+  "mean": [
+   0.8415,
+   0.7622,
+   0.586
+  ],
+  "std": 0.0964,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wallpaper-art-nouveau": {
+  "mean": [
+   0.9026,
+   0.6962,
+   0.5245
+  ],
+  "std": 0.1412,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wallpaper-victorian": {
+  "mean": [
+   0.7892,
+   0.7575,
+   0.5461
+  ],
+  "std": 0.1941,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wallpaper-checker": {
+  "mean": [
+   0.834,
+   0.548,
+   0.3501
+  ],
+  "std": 0.1923,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wallpaper-plaid": {
+  "mean": [
+   0.7998,
+   0.8242,
+   0.6808
+  ],
+  "std": 0.1017,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.79
+  ]
+ },
+ "wallpaper-botanical": {
+  "mean": [
+   0.5867,
+   0.324,
+   0.2539
+  ],
+  "std": 0.0477,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wallpaper-birds": {
+  "mean": [
+   0.6371,
+   0.7351,
+   0.6118
+  ],
+  "std": 0.2458,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wallpaper-clouds": {
+  "mean": [
+   0.9553,
+   0.9362,
+   0.8783
+  ],
+  "std": 0.0524,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wallpaper-koi": {
+  "mean": [
+   0.8038,
+   0.9042,
+   0.9099
+  ],
+  "std": 0.051,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wallpaper-bamboo": {
+  "mean": [
+   0.4891,
+   0.6418,
+   0.599
+  ],
+  "std": 0.1122,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wallpaper-scenic": {
+  "mean": [
+   0.7952,
+   0.8242,
+   0.6152
+  ],
+  "std": 0.0957,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wallpaper-childrens": {
+  "mean": [
+   0.5403,
+   0.6607,
+   0.5224
+  ],
+  "std": 0.0965,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wallpaper-linen": {
+  "mean": [
+   0.9189,
+   0.8666,
+   0.7306
+  ],
+  "std": 0.1486,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wallpaper-grasscloth": {
+  "mean": [
+   0.9717,
+   0.9418,
+   0.8569
+  ],
+  "std": 0.0141,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.6
+  ]
+ },
+ "wallpaper-faded-rose": {
+  "mean": [
+   0.8243,
+   0.6725,
+   0.4275
+  ],
+  "std": 0.0519,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wallpaper-two-tone": {
+  "mean": [
+   0.8846,
+   0.8212,
+   0.7469
+  ],
+  "std": 0.0613,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wallpaper-terracotta": {
+  "mean": [
+   0.3315,
+   0.4998,
+   0.6253
+  ],
+  "std": 0.0463,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wallpaper-olive": {
+  "mean": [
+   0.7904,
+   0.4855,
+   0.3093
+  ],
+  "std": 0.0982,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wallpaper-cream-gold": {
+  "mean": [
+   0.6615,
+   0.6425,
+   0.4076
+  ],
+  "std": 0.1019,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wallpaper-pinstripe": {
+  "mean": [
+   0.9836,
+   0.9518,
+   0.8329
+  ],
+  "std": 0.0217,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.87
+  ]
+ },
+ "wallpaper-embossed": {
+  "mean": [
+   0.7803,
+   0.7762,
+   0.7479
+  ],
+  "std": 0.2213,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.33
+  ]
+ },
+ "paint-matte-cream": {
+  "mean": [
+   0.9525,
+   0.9199,
+   0.8466
+  ],
+  "std": 0.0175,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "paint-sage": {
+  "mean": [
+   0.9631,
+   0.9334,
+   0.8567
+  ],
+  "std": 0.0038,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "paint-dusty-blue": {
+  "mean": [
+   0.5387,
+   0.6131,
+   0.4737
+  ],
+  "std": 0.0074,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "paint-terracotta": {
+  "mean": [
+   0.4742,
+   0.6074,
+   0.6764
+  ],
+  "std": 0.0116,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "paint-ochre": {
+  "mean": [
+   0.7327,
+   0.399,
+   0.2293
+  ],
+  "std": 0.0176,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "paint-rose": {
+  "mean": [
+   0.8708,
+   0.6972,
+   0.2984
+  ],
+  "std": 0.009,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "paint-charcoal": {
+  "mean": [
+   0.8051,
+   0.634,
+   0.6099
+  ],
+  "std": 0.0102,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "paint-cold-grey": {
+  "mean": [
+   0.2855,
+   0.2906,
+   0.2921
+  ],
+  "std": 0.0113,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "paint-limewash": {
+  "mean": [
+   0.5919,
+   0.6155,
+   0.6255
+  ],
+  "std": 0.0075,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "paint-distemper": {
+  "mean": [
+   0.9338,
+   0.9236,
+   0.8922
+  ],
+  "std": 0.0128,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "paint-sponge": {
+  "mean": [
+   0.7983,
+   0.6526,
+   0.4622
+  ],
+  "std": 0.0218,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "paint-brush-streak": {
+  "mean": [
+   0.9446,
+   0.8801,
+   0.7509
+  ],
+  "std": 0.0238,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "paint-turquoise": {
+  "mean": [
+   0.8847,
+   0.7813,
+   0.5446
+  ],
+  "std": 0.0099,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "paint-plum": {
+  "mean": [
+   0.5097,
+   0.8186,
+   0.7877
+  ],
+  "std": 0.0086,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "paint-olive": {
+  "mean": [
+   0.4471,
+   0.3131,
+   0.5036
+  ],
+  "std": 0.0073,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "paint-sand": {
+  "mean": [
+   0.5549,
+   0.5679,
+   0.3264
+  ],
+  "std": 0.0133,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "paint-brick-red": {
+  "mean": [
+   0.8287,
+   0.7013,
+   0.4939
+  ],
+  "std": 0.0094,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.23
+  ]
+ },
+ "paint-slate-blue": {
+  "mean": [
+   0.671,
+   0.3392,
+   0.2337
+  ],
+  "std": 0.0106,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "paint-forest": {
+  "mean": [
+   0.4215,
+   0.5245,
+   0.5941
+  ],
+  "std": 0.0076,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "paint-warm-white": {
+  "mean": [
+   0.1779,
+   0.3094,
+   0.2074
+  ],
+  "std": 0.0049,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "panel-beadboard-white": {
+  "mean": [
+   0.9529,
+   0.9249,
+   0.8458
+  ],
+  "std": 0.0072,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   0.71
+  ]
+ },
+ "panel-shiplap": {
+  "mean": [
+   0.9595,
+   0.9589,
+   0.9421
+  ],
+  "std": 0.0303,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   0.67
+  ]
+ },
+ "panel-tongue-groove": {
+  "mean": [
+   0.9145,
+   0.8172,
+   0.634
+  ],
+  "std": 0.0566,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "panel-raised": {
+  "mean": [
+   0.862,
+   0.6645,
+   0.2727
+  ],
+  "std": 0.0587,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.68
+  ]
+ },
+ "panel-recessed": {
+  "mean": [
+   0.9594,
+   0.9296,
+   0.8303
+  ],
+  "std": 0.0351,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   0.57
+  ]
+ },
+ "panel-board-batten": {
+  "mean": [
+   0.1883,
+   0.1467,
+   0.1109
+  ],
+  "std": 0.0291,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.45
+  ]
+ },
+ "panel-coffered-ceiling": {
+  "mean": [
+   0.6217,
+   0.7206,
+   0.5292
+  ],
+  "std": 0.0457,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   0.92
+  ]
+ },
+ "panel-dark-stain": {
+  "mean": [
+   0.6624,
+   0.4432,
+   0.1734
+  ],
+  "std": 0.0758,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.36
+  ]
+ },
+ "panel-painted-white": {
+  "mean": [
+   0.234,
+   0.1728,
+   0.1264
+  ],
+  "std": 0.0158,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.0
+  ]
+ },
+ "panel-oak-wainscot": {
+  "mean": [
+   0.9559,
+   0.9336,
+   0.8696
+  ],
+  "std": 0.0385,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   0.57
+  ]
+ },
+ "panel-old-pine": {
+  "mean": [
+   0.6561,
+   0.4906,
+   0.2783
+  ],
+  "std": 0.0571,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.68
+  ]
+ },
+ "panel-mahogany": {
+  "mean": [
+   0.5581,
+   0.4649,
+   0.3292
+  ],
+  "std": 0.0543,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.34
+  ]
+ },
+ "panel-birch-plywood": {
+  "mean": [
+   0.3836,
+   0.1679,
+   0.0965
+  ],
+  "std": 0.0315,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.34
+  ]
+ },
+ "panel-fluted-column": {
+  "mean": [
+   0.9459,
+   0.8807,
+   0.7559
+  ],
+  "std": 0.0155,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.65
+  ]
+ },
+ "panel-rosette": {
+  "mean": [
+   0.9417,
+   0.9003,
+   0.7743
+  ],
+  "std": 0.0545,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "panel-moulding-stack": {
+  "mean": [
+   0.7581,
+   0.617,
+   0.4391
+  ],
+  "std": 0.218,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   5.74
+  ]
+ },
+ "panel-bolection": {
+  "mean": [
+   0.9304,
+   0.9078,
+   0.8565
+  ],
+  "std": 0.0556,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   6.93
+  ]
+ },
+ "panel-linenfold": {
+  "mean": [
+   0.7008,
+   0.5056,
+   0.2812
+  ],
+  "std": 0.0742,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.15
+  ]
+ },
+ "panel-dentil": {
+  "mean": [
+   0.5891,
+   0.455,
+   0.2796
+  ],
+  "std": 0.0623,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.2
+  ]
+ },
+ "panel-egg-dart": {
+  "mean": [
+   0.9766,
+   0.9427,
+   0.8492
+  ],
+  "std": 0.0266,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   0.39
+  ]
+ },
+ "panel-gadroon": {
+  "mean": [
+   0.8062,
+   0.6778,
+   0.4805
+  ],
+  "std": 0.1127,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.07
+  ]
+ },
+ "brick-interior-red": {
+  "mean": [
+   0.5483,
+   0.3798,
+   0.2228
+  ],
+  "std": 0.0597,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   5.1
+  ]
+ },
+ "brick-whitewash": {
+  "mean": [
+   0.6668,
+   0.3997,
+   0.2711
+  ],
+  "std": 0.1261,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "brick-arch": {
+  "mean": [
+   0.8673,
+   0.8208,
+   0.7711
+  ],
+  "std": 0.1042,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "brick-patched-mortar": {
+  "mean": [
+   0.801,
+   0.6178,
+   0.4433
+  ],
+  "std": 0.1386,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.63
+  ]
+ },
+ "stone-rubble": {
+  "mean": [
+   0.662,
+   0.5125,
+   0.3838
+  ],
+  "std": 0.0792,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   6.08
+  ]
+ },
+ "stone-ashlar": {
+  "mean": [
+   0.5809,
+   0.5454,
+   0.4758
+  ],
+  "std": 0.1184,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   7.61
+  ]
+ },
+ "stone-slate": {
+  "mean": [
+   0.5431,
+   0.5242,
+   0.4875
+  ],
+  "std": 0.0337,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "plaster-smooth": {
+  "mean": [
+   0.5184,
+   0.5482,
+   0.5657
+  ],
+  "std": 0.0828,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "plaster-rough": {
+  "mean": [
+   0.9538,
+   0.9098,
+   0.7984
+  ],
+  "std": 0.005,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "plaster-cracked": {
+  "mean": [
+   0.7455,
+   0.6659,
+   0.519
+  ],
+  "std": 0.0227,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "tile-subway": {
+  "mean": [
+   0.7656,
+   0.6794,
+   0.5487
+  ],
+  "std": 0.032,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.18
+  ]
+ },
+ "tile-square-mint": {
+  "mean": [
+   0.9471,
+   0.9325,
+   0.8875
+  ],
+  "std": 0.0709,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   0.82
+  ]
+ },
+ "tile-hex": {
+  "mean": [
+   0.7837,
+   0.888,
+   0.7776
+  ],
+  "std": 0.0382,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "tile-zellige": {
+  "mean": [
+   0.9723,
+   0.9376,
+   0.8289
+  ],
+  "std": 0.0382,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.66
+  ]
+ },
+ "tile-delft": {
+  "mean": [
+   0.23,
+   0.5191,
+   0.5295
+  ],
+  "std": 0.1285,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "tile-terracotta": {
+  "mean": [
+   0.6146,
+   0.7194,
+   0.8776
+  ],
+  "std": 0.2131,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "tile-encaustic": {
+  "mean": [
+   0.7238,
+   0.3432,
+   0.1906
+  ],
+  "std": 0.0364,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "tile-mosaic": {
+  "mean": [
+   0.7639,
+   0.6606,
+   0.5128
+  ],
+  "std": 0.0626,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "plaster-lime-bloom": {
+  "mean": [
+   0.68,
+   0.4927,
+   0.3049
+  ],
+  "std": 0.0726,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "plaster-patched": {
+  "mean": [
+   0.8822,
+   0.845,
+   0.7695
+  ],
+  "std": 0.0167,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "plaster-damp-bloom": {
+  "mean": [
+   0.6622,
+   0.5481,
+   0.4073
+  ],
+  "std": 0.1043,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "stucco-scratched": {
+  "mean": [
+   0.7265,
+   0.691,
+   0.602
+  ],
+  "std": 0.0435,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "plaster-sooted": {
+  "mean": [
+   0.6698,
+   0.5893,
+   0.4728
+  ],
+  "std": 0.0331,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "beam-dark-wood": {
+  "mean": [
+   0.212,
+   0.2139,
+   0.2103
+  ],
+  "std": 0.0611,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.92
+  ]
+ },
+ "ceiling-boards": {
+  "mean": [
+   0.1641,
+   0.1414,
+   0.119
+  ],
+  "std": 0.0254,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.9
+  ]
+ },
+ "cornice-plaster": {
+  "mean": [
+   0.9669,
+   0.935,
+   0.8427
+  ],
+  "std": 0.0389,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   0.55
+  ]
+ },
+ "picture-rail": {
+  "mean": [
+   0.8506,
+   0.7494,
+   0.6012
+  ],
+  "std": 0.1016,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.51
+  ]
+ },
+ "baseboard": {
+  "mean": [
+   0.9456,
+   0.9022,
+   0.7963
+  ],
+  "std": 0.0513,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.5
+  ]
+ },
+ "chair-rail": {
+  "mean": [
+   0.9537,
+   0.9403,
+   0.911
+  ],
+  "std": 0.0378,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.06
+  ]
+ },
+ "arch-keystone": {
+  "mean": [
+   0.6332,
+   0.4284,
+   0.2276
+  ],
+  "std": 0.0534,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.76
+  ]
+ }
+}

@@ -1,0 +1,3006 @@
+{
+ "source": "dashscope/qwen-image-3.0 图集页，本地自动切分",
+ "count": 500,
+ "items": [
+  {
+   "file": "bus-stop-sign.png",
+   "w": 161,
+   "h": 301,
+   "sheet": "image-9c95ccd5.png"
+  },
+  {
+   "file": "pole-sign.png",
+   "w": 113,
+   "h": 307,
+   "sheet": "image-9c95ccd5.png"
+  },
+  {
+   "file": "double-flag-sign.png",
+   "w": 199,
+   "h": 310,
+   "sheet": "image-9c95ccd5.png"
+  },
+  {
+   "file": "timetable-board.png",
+   "w": 238,
+   "h": 275,
+   "sheet": "image-9c95ccd5.png"
+  },
+  {
+   "file": "arrival-board.png",
+   "w": 136,
+   "h": 279,
+   "sheet": "image-9c95ccd5.png"
+  },
+  {
+   "file": "route-map-panel.png",
+   "w": 237,
+   "h": 250,
+   "sheet": "image-9c95ccd5.png"
+  },
+  {
+   "file": "stop-name-sign.png",
+   "w": 181,
+   "h": 265,
+   "sheet": "image-9c95ccd5.png"
+  },
+  {
+   "file": "flag-stop-sign.png",
+   "w": 127,
+   "h": 286,
+   "sheet": "image-9c95ccd5.png"
+  },
+  {
+   "file": "night-bus-sign.png",
+   "w": 134,
+   "h": 311,
+   "sheet": "image-9c95ccd5.png"
+  },
+  {
+   "file": "express-sign.png",
+   "w": 124,
+   "h": 313,
+   "sheet": "image-9c95ccd5.png"
+  },
+  {
+   "file": "school-stop-sign.png",
+   "w": 164,
+   "h": 310,
+   "sheet": "image-9c95ccd5.png"
+  },
+  {
+   "file": "bell-push-post.png",
+   "w": 150,
+   "h": 277,
+   "sheet": "image-9c95ccd5.png"
+  },
+  {
+   "file": "shelter-glass.png",
+   "w": 232,
+   "h": 204,
+   "sheet": "image-fe783948.png"
+  },
+  {
+   "file": "shelter-wood.png",
+   "w": 238,
+   "h": 210,
+   "sheet": "image-fe783948.png"
+  },
+  {
+   "file": "shelter-iron.png",
+   "w": 223,
+   "h": 215,
+   "sheet": "image-fe783948.png"
+  },
+  {
+   "file": "shelter-curved.png",
+   "w": 254,
+   "h": 218,
+   "sheet": "image-fe783948.png"
+  },
+  {
+   "file": "shelter-open.png",
+   "w": 235,
+   "h": 211,
+   "sheet": "image-fe783948.png"
+  },
+  {
+   "file": "shelter-back-to-back.png",
+   "w": 238,
+   "h": 206,
+   "sheet": "image-fe783948.png"
+  },
+  {
+   "file": "shelter-heated.png",
+   "w": 197,
+   "h": 212,
+   "sheet": "image-fe783948.png"
+  },
+  {
+   "file": "shelter-green-roof.png",
+   "w": 258,
+   "h": 251,
+   "sheet": "image-fe783948.png"
+  },
+  {
+   "file": "shelter-modern.png",
+   "w": 237,
+   "h": 221,
+   "sheet": "image-fe783948.png"
+  },
+  {
+   "file": "shelter-vintage.png",
+   "w": 221,
+   "h": 238,
+   "sheet": "image-fe783948.png"
+  },
+  {
+   "file": "shelter-with-bench.png",
+   "w": 230,
+   "h": 225,
+   "sheet": "image-fe783948.png"
+  },
+  {
+   "file": "shelter-with-vending.png",
+   "w": 239,
+   "h": 228,
+   "sheet": "image-fe783948.png"
+  },
+  {
+   "file": "bus-stop-bench.png",
+   "w": 299,
+   "h": 211,
+   "sheet": "image-76e2c94b.png"
+  },
+  {
+   "file": "bus-stop-bin.png",
+   "w": 145,
+   "h": 267,
+   "sheet": "image-76e2c94b.png"
+  },
+  {
+   "file": "bus-stop-clock.png",
+   "w": 159,
+   "h": 315,
+   "sheet": "image-76e2c94b.png"
+  },
+  {
+   "file": "bus-stop-lamp.png",
+   "w": 131,
+   "h": 325,
+   "sheet": "image-76e2c94b.png"
+  },
+  {
+   "file": "bus-stop-mirror.png",
+   "w": 181,
+   "h": 289,
+   "sheet": "image-76e2c94b.png"
+  },
+  {
+   "file": "bus-stop-bollard.png",
+   "w": 78,
+   "h": 263,
+   "sheet": "image-76e2c94b.png"
+  },
+  {
+   "file": "shelter-lamp.png",
+   "w": 245,
+   "h": 94,
+   "sheet": "image-76e2c94b.png"
+  },
+  {
+   "file": "bus-pass-machine.png",
+   "w": 141,
+   "h": 284,
+   "sheet": "image-76e2c94b.png"
+  },
+  {
+   "file": "information-pillar.png",
+   "w": 133,
+   "h": 330,
+   "sheet": "image-76e2c94b.png"
+  },
+  {
+   "file": "queue-rail.png",
+   "w": 250,
+   "h": 234,
+   "sheet": "image-76e2c94b.png"
+  },
+  {
+   "file": "stop-planter.png",
+   "w": 246,
+   "h": 317,
+   "sheet": "image-76e2c94b.png"
+  },
+  {
+   "file": "bus-notice-board.png",
+   "w": 228,
+   "h": 312,
+   "sheet": "image-76e2c94b.png"
+  },
+  {
+   "file": "bus-ticket-counter.png",
+   "w": 203,
+   "h": 251,
+   "sheet": "image-9ba3afc3.png"
+  },
+  {
+   "file": "waiting-hall-seat.png",
+   "w": 260,
+   "h": 136,
+   "sheet": "image-9ba3afc3.png"
+  },
+  {
+   "file": "departure-board.png",
+   "w": 192,
+   "h": 254,
+   "sheet": "image-9ba3afc3.png"
+  },
+  {
+   "file": "luggage-locker.png",
+   "w": 211,
+   "h": 242,
+   "sheet": "image-9ba3afc3.png"
+  },
+  {
+   "file": "station-clock.png",
+   "w": 200,
+   "h": 205,
+   "sheet": "image-9ba3afc3.png"
+  },
+  {
+   "file": "bus-info-desk.png",
+   "w": 240,
+   "h": 165,
+   "sheet": "image-9ba3afc3.png"
+  },
+  {
+   "file": "bus-queue-barrier.png",
+   "w": 215,
+   "h": 175,
+   "sheet": "image-9ba3afc3.png"
+  },
+  {
+   "file": "restroom-sign.png",
+   "w": 178,
+   "h": 222,
+   "sheet": "image-9ba3afc3.png"
+  },
+  {
+   "file": "station-kiosk.png",
+   "w": 220,
+   "h": 261,
+   "sheet": "image-9ba3afc3.png"
+  },
+  {
+   "file": "lost-property-window.png",
+   "w": 213,
+   "h": 226,
+   "sheet": "image-9ba3afc3.png"
+  },
+  {
+   "file": "wheelchair-lift.png",
+   "w": 219,
+   "h": 251,
+   "sheet": "image-9ba3afc3.png"
+  },
+  {
+   "file": "platform-door.png",
+   "w": 239,
+   "h": 266,
+   "sheet": "image-9ba3afc3.png"
+  },
+  {
+   "file": "metro-logo-sign.png",
+   "w": 195,
+   "h": 201,
+   "sheet": "image-b842b0a2.png"
+  },
+  {
+   "file": "platform-number-sign.png",
+   "w": 170,
+   "h": 232,
+   "sheet": "image-b842b0a2.png"
+  },
+  {
+   "file": "metro-exit-sign.png",
+   "w": 232,
+   "h": 160,
+   "sheet": "image-b842b0a2.png"
+  },
+  {
+   "file": "line-map-panel.png",
+   "w": 258,
+   "h": 164,
+   "sheet": "image-b842b0a2.png"
+  },
+  {
+   "file": "direction-pylon.png",
+   "w": 133,
+   "h": 298,
+   "sheet": "image-b842b0a2.png"
+  },
+  {
+   "file": "overhead-gantry.png",
+   "w": 271,
+   "h": 121,
+   "sheet": "image-b842b0a2.png"
+  },
+  {
+   "file": "metro-station-clock.png",
+   "w": 214,
+   "h": 223,
+   "sheet": "image-b842b0a2.png"
+  },
+  {
+   "file": "escalator-sign.png",
+   "w": 183,
+   "h": 193,
+   "sheet": "image-b842b0a2.png"
+  },
+  {
+   "file": "lift-sign.png",
+   "w": 172,
+   "h": 185,
+   "sheet": "image-b842b0a2.png"
+  },
+  {
+   "file": "no-entry-sign.png",
+   "w": 191,
+   "h": 201,
+   "sheet": "image-b842b0a2.png"
+  },
+  {
+   "file": "tactile-map.png",
+   "w": 220,
+   "h": 196,
+   "sheet": "image-b842b0a2.png"
+  },
+  {
+   "file": "platform-screen-door.png",
+   "w": 281,
+   "h": 190,
+   "sheet": "image-b842b0a2.png"
+  },
+  {
+   "file": "metro-bench.png",
+   "w": 219,
+   "h": 183,
+   "sheet": "image-758e74a5.png"
+  },
+  {
+   "file": "bench-with-charger.png",
+   "w": 224,
+   "h": 221,
+   "sheet": "image-758e74a5.png"
+  },
+  {
+   "file": "metro-ticket-gate.png",
+   "w": 110,
+   "h": 239,
+   "sheet": "image-758e74a5.png"
+  },
+  {
+   "file": "card-reader.png",
+   "w": 105,
+   "h": 242,
+   "sheet": "image-758e74a5.png"
+  },
+  {
+   "file": "metro-ticket-machine.png",
+   "w": 98,
+   "h": 228,
+   "sheet": "image-758e74a5.png"
+  },
+  {
+   "file": "metro-escalator.png",
+   "w": 139,
+   "h": 282,
+   "sheet": "image-758e74a5.png"
+  },
+  {
+   "file": "metro-lift.png",
+   "w": 245,
+   "h": 283,
+   "sheet": "image-758e74a5.png"
+  },
+  {
+   "file": "moving-walkway.png",
+   "w": 187,
+   "h": 271,
+   "sheet": "image-758e74a5.png"
+  },
+  {
+   "file": "platform-lamp.png",
+   "w": 235,
+   "h": 208,
+   "sheet": "image-758e74a5.png"
+  },
+  {
+   "file": "tunnel-light.png",
+   "w": 188,
+   "h": 209,
+   "sheet": "image-758e74a5.png"
+  },
+  {
+   "file": "fire-point.png",
+   "w": 221,
+   "h": 209,
+   "sheet": "image-758e74a5.png"
+  },
+  {
+   "file": "emergency-phone.png",
+   "w": 142,
+   "h": 228,
+   "sheet": "image-758e74a5.png"
+  },
+  {
+   "file": "tram-stop-sign.png",
+   "w": 101,
+   "h": 283,
+   "sheet": "image-1d8879da.png"
+  },
+  {
+   "file": "tram-shelter.png",
+   "w": 249,
+   "h": 272,
+   "sheet": "image-1d8879da.png"
+  },
+  {
+   "file": "tram-island-platform.png",
+   "w": 294,
+   "h": 120,
+   "sheet": "image-1d8879da.png"
+  },
+  {
+   "file": "overhead-wire-pole.png",
+   "w": 159,
+   "h": 309,
+   "sheet": "image-1d8879da.png"
+  },
+  {
+   "file": "tram-timetable.png",
+   "w": 157,
+   "h": 253,
+   "sheet": "image-1d8879da.png"
+  },
+  {
+   "file": "tram-ticket-machine.png",
+   "w": 149,
+   "h": 270,
+   "sheet": "image-1d8879da.png"
+  },
+  {
+   "file": "tram-bench.png",
+   "w": 267,
+   "h": 191,
+   "sheet": "image-1d8879da.png"
+  },
+  {
+   "file": "platform-hump.png",
+   "w": 252,
+   "h": 142,
+   "sheet": "image-1d8879da.png"
+  },
+  {
+   "file": "tram-crossing-sign.png",
+   "w": 122,
+   "h": 266,
+   "sheet": "image-1d8879da.png"
+  },
+  {
+   "file": "tram-stop-pylon.png",
+   "w": 144,
+   "h": 241,
+   "sheet": "image-1d8879da.png"
+  },
+  {
+   "file": "tram-bell-box.png",
+   "w": 125,
+   "h": 256,
+   "sheet": "image-1d8879da.png"
+  },
+  {
+   "file": "tram-route-map.png",
+   "w": 240,
+   "h": 256,
+   "sheet": "image-1d8879da.png"
+  },
+  {
+   "file": "platform-canopy.png",
+   "w": 320,
+   "h": 240,
+   "sheet": "image-c0e3960c.png"
+  },
+  {
+   "file": "platform-bench.png",
+   "w": 233,
+   "h": 151,
+   "sheet": "image-c0e3960c.png"
+  },
+  {
+   "file": "railway-platform-lamp.png",
+   "w": 59,
+   "h": 288,
+   "sheet": "image-c0e3960c.png"
+  },
+  {
+   "file": "platform-edge-marking.png",
+   "w": 296,
+   "h": 121,
+   "sheet": "image-c0e3960c.png"
+  },
+  {
+   "file": "railway-name-board.png",
+   "w": 218,
+   "h": 240,
+   "sheet": "image-c0e3960c.png"
+  },
+  {
+   "file": "station-footbridge.png",
+   "w": 319,
+   "h": 198,
+   "sheet": "image-c0e3960c.png"
+  },
+  {
+   "file": "station-subway.png",
+   "w": 213,
+   "h": 211,
+   "sheet": "image-c0e3960c.png"
+  },
+  {
+   "file": "railway-signal-post.png",
+   "w": 120,
+   "h": 302,
+   "sheet": "image-c0e3960c.png"
+  },
+  {
+   "file": "buffer-stop.png",
+   "w": 264,
+   "h": 220,
+   "sheet": "image-c0e3960c.png"
+  },
+  {
+   "file": "water-crane.png",
+   "w": 194,
+   "h": 293,
+   "sheet": "image-c0e3960c.png"
+  },
+  {
+   "file": "railway-turntable.png",
+   "w": 288,
+   "h": 154,
+   "sheet": "image-c0e3960c.png"
+  },
+  {
+   "file": "coaling-stage.png",
+   "w": 238,
+   "h": 304,
+   "sheet": "image-c0e3960c.png"
+  },
+  {
+   "file": "taxi-rank-sign.png",
+   "w": 131,
+   "h": 296,
+   "sheet": "image-51028cc4.png"
+  },
+  {
+   "file": "taxi-stand-shelter.png",
+   "w": 260,
+   "h": 251,
+   "sheet": "image-51028cc4.png"
+  },
+  {
+   "file": "taxi-queue-rail.png",
+   "w": 218,
+   "h": 211,
+   "sheet": "image-51028cc4.png"
+  },
+  {
+   "file": "taxi-call-button.png",
+   "w": 151,
+   "h": 246,
+   "sheet": "image-51028cc4.png"
+  },
+  {
+   "file": "taxi-dispatcher-booth.png",
+   "w": 224,
+   "h": 246,
+   "sheet": "image-51028cc4.png"
+  },
+  {
+   "file": "cab-rank-post.png",
+   "w": 84,
+   "h": 203,
+   "sheet": "image-51028cc4.png"
+  },
+  {
+   "file": "phone-for-cab-box.png",
+   "w": 163,
+   "h": 274,
+   "sheet": "image-51028cc4.png"
+  },
+  {
+   "file": "taxi-roof-light.png",
+   "w": 132,
+   "h": 228,
+   "sheet": "image-51028cc4.png"
+  },
+  {
+   "file": "taxi-queue-barrier.png",
+   "w": 248,
+   "h": 199,
+   "sheet": "image-51028cc4.png"
+  },
+  {
+   "file": "taxi-waiting-seat.png",
+   "w": 244,
+   "h": 182,
+   "sheet": "image-51028cc4.png"
+  },
+  {
+   "file": "taxi-fare-board.png",
+   "w": 172,
+   "h": 285,
+   "sheet": "image-51028cc4.png"
+  },
+  {
+   "file": "rickshaw-stand.png",
+   "w": 157,
+   "h": 307,
+   "sheet": "image-51028cc4.png"
+  },
+  {
+   "file": "pelican-cab-sign.png",
+   "w": 255,
+   "h": 181,
+   "sheet": "image-41f339b4.png"
+  },
+  {
+   "file": "tuk-tuk-stand-sign.png",
+   "w": 199,
+   "h": 295,
+   "sheet": "image-41f339b4.png"
+  },
+  {
+   "file": "cab-shelter-canopy.png",
+   "w": 294,
+   "h": 253,
+   "sheet": "image-41f339b4.png"
+  },
+  {
+   "file": "taxi-rank-bollard.png",
+   "w": 100,
+   "h": 266,
+   "sheet": "image-41f339b4.png"
+  },
+  {
+   "file": "taxi-waiting-bench.png",
+   "w": 299,
+   "h": 208,
+   "sheet": "image-41f339b4.png"
+  },
+  {
+   "file": "taxi-rank-clock.png",
+   "w": 125,
+   "h": 343,
+   "sheet": "image-41f339b4.png"
+  },
+  {
+   "file": "taxi-notice-board.png",
+   "w": 232,
+   "h": 275,
+   "sheet": "image-41f339b4.png"
+  },
+  {
+   "file": "kerbside-light.png",
+   "w": 79,
+   "h": 343,
+   "sheet": "image-41f339b4.png"
+  },
+  {
+   "file": "taxi-rank-map.png",
+   "w": 176,
+   "h": 278,
+   "sheet": "image-41f339b4.png"
+  },
+  {
+   "file": "rank-marking-plate.png",
+   "w": 201,
+   "h": 171,
+   "sheet": "image-41f339b4.png"
+  },
+  {
+   "file": "hand-cart-stand.png",
+   "w": 189,
+   "h": 247,
+   "sheet": "image-41f339b4.png"
+  },
+  {
+   "file": "porter-shelter.png",
+   "w": 249,
+   "h": 280,
+   "sheet": "image-41f339b4.png"
+  },
+  {
+   "file": "bike-dock-rack.png",
+   "w": 231,
+   "h": 232,
+   "sheet": "image-e1528b32.png"
+  },
+  {
+   "file": "smart-lock-bike.png",
+   "w": 254,
+   "h": 240,
+   "sheet": "image-e1528b32.png"
+  },
+  {
+   "file": "bike-shelter.png",
+   "w": 257,
+   "h": 251,
+   "sheet": "image-e1528b32.png"
+  },
+  {
+   "file": "bike-repair-stand.png",
+   "w": 217,
+   "h": 263,
+   "sheet": "image-e1528b32.png"
+  },
+  {
+   "file": "bike-pump-station.png",
+   "w": 159,
+   "h": 296,
+   "sheet": "image-e1528b32.png"
+  },
+  {
+   "file": "e-bike-dock.png",
+   "w": 241,
+   "h": 261,
+   "sheet": "image-e1528b32.png"
+  },
+  {
+   "file": "bike-share-kiosk.png",
+   "w": 140,
+   "h": 308,
+   "sheet": "image-e1528b32.png"
+  },
+  {
+   "file": "bike-lane-sign.png",
+   "w": 127,
+   "h": 308,
+   "sheet": "image-e1528b32.png"
+  },
+  {
+   "file": "bike-parking-sign.png",
+   "w": 113,
+   "h": 296,
+   "sheet": "image-e1528b32.png"
+  },
+  {
+   "file": "bike-locker.png",
+   "w": 235,
+   "h": 271,
+   "sheet": "image-e1528b32.png"
+  },
+  {
+   "file": "bike-hoop.png",
+   "w": 168,
+   "h": 227,
+   "sheet": "image-e1528b32.png"
+  },
+  {
+   "file": "scooter-rack.png",
+   "w": 278,
+   "h": 210,
+   "sheet": "image-e1528b32.png"
+  },
+  {
+   "file": "motorbike-bay.png",
+   "w": 249,
+   "h": 230,
+   "sheet": "image-35843e88.png"
+  },
+  {
+   "file": "scooter-parking.png",
+   "w": 170,
+   "h": 251,
+   "sheet": "image-35843e88.png"
+  },
+  {
+   "file": "motorbike-rack.png",
+   "w": 211,
+   "h": 256,
+   "sheet": "image-35843e88.png"
+  },
+  {
+   "file": "helmet-locker.png",
+   "w": 222,
+   "h": 238,
+   "sheet": "image-35843e88.png"
+  },
+  {
+   "file": "delivery-bike-stand.png",
+   "w": 210,
+   "h": 208,
+   "sheet": "image-35843e88.png"
+  },
+  {
+   "file": "tricycle-parking.png",
+   "w": 220,
+   "h": 172,
+   "sheet": "image-35843e88.png"
+  },
+  {
+   "file": "cargo-bike-dock.png",
+   "w": 231,
+   "h": 199,
+   "sheet": "image-35843e88.png"
+  },
+  {
+   "file": "e-moped-charger.png",
+   "w": 147,
+   "h": 263,
+   "sheet": "image-35843e88.png"
+  },
+  {
+   "file": "parking-meter.png",
+   "w": 114,
+   "h": 284,
+   "sheet": "image-35843e88.png"
+  },
+  {
+   "file": "bike-repair-shed.png",
+   "w": 234,
+   "h": 251,
+   "sheet": "image-35843e88.png"
+  },
+  {
+   "file": "air-pump.png",
+   "w": 176,
+   "h": 269,
+   "sheet": "image-35843e88.png"
+  },
+  {
+   "file": "parking-barrier.png",
+   "w": 250,
+   "h": 175,
+   "sheet": "image-35843e88.png"
+  },
+  {
+   "file": "hsr-departure-board.png",
+   "w": 218,
+   "h": 241,
+   "sheet": "image-b58ce173.png"
+  },
+  {
+   "file": "hsr-platform-sign.png",
+   "w": 195,
+   "h": 186,
+   "sheet": "image-b58ce173.png"
+  },
+  {
+   "file": "hsr-track-sign.png",
+   "w": 102,
+   "h": 212,
+   "sheet": "image-b58ce173.png"
+  },
+  {
+   "file": "gantry-sign.png",
+   "w": 264,
+   "h": 239,
+   "sheet": "image-b58ce173.png"
+  },
+  {
+   "file": "wayfinding-pylon.png",
+   "w": 89,
+   "h": 296,
+   "sheet": "image-b58ce173.png"
+  },
+  {
+   "file": "hsr-station-clock.png",
+   "w": 141,
+   "h": 289,
+   "sheet": "image-b58ce173.png"
+  },
+  {
+   "file": "hsr-escalator.png",
+   "w": 223,
+   "h": 283,
+   "sheet": "image-b58ce173.png"
+  },
+  {
+   "file": "hsr-elevator.png",
+   "w": 182,
+   "h": 265,
+   "sheet": "image-b58ce173.png"
+  },
+  {
+   "file": "moving-walkway-hsr.png",
+   "w": 248,
+   "h": 160,
+   "sheet": "image-b58ce173.png"
+  },
+  {
+   "file": "hsr-screen-door.png",
+   "w": 203,
+   "h": 226,
+   "sheet": "image-b58ce173.png"
+  },
+  {
+   "file": "luggage-trolley.png",
+   "w": 169,
+   "h": 216,
+   "sheet": "image-b58ce173.png"
+  },
+  {
+   "file": "bench-row.png",
+   "w": 268,
+   "h": 179,
+   "sheet": "image-b58ce173.png"
+  },
+  {
+   "file": "platform-edge-strip.png",
+   "w": 179,
+   "h": 279,
+   "sheet": "image-27964614.png"
+  },
+  {
+   "file": "waiting-seat-row.png",
+   "w": 272,
+   "h": 167,
+   "sheet": "image-27964614.png"
+  },
+  {
+   "file": "hsr-luggage-rack.png",
+   "w": 216,
+   "h": 235,
+   "sheet": "image-27964614.png"
+  },
+  {
+   "file": "platform-vending.png",
+   "w": 192,
+   "h": 274,
+   "sheet": "image-27964614.png"
+  },
+  {
+   "file": "platform-clock.png",
+   "w": 195,
+   "h": 202,
+   "sheet": "image-27964614.png"
+  },
+  {
+   "file": "direction-arrow-plate.png",
+   "w": 208,
+   "h": 149,
+   "sheet": "image-27964614.png"
+  },
+  {
+   "file": "train-number-pillar.png",
+   "w": 94,
+   "h": 286,
+   "sheet": "image-27964614.png"
+  },
+  {
+   "file": "no-smoking-plate.png",
+   "w": 169,
+   "h": 180,
+   "sheet": "image-27964614.png"
+  },
+  {
+   "file": "help-phone.png",
+   "w": 124,
+   "h": 290,
+   "sheet": "image-27964614.png"
+  },
+  {
+   "file": "platform-bin.png",
+   "w": 140,
+   "h": 249,
+   "sheet": "image-27964614.png"
+  },
+  {
+   "file": "footbridge-stair.png",
+   "w": 264,
+   "h": 252,
+   "sheet": "image-27964614.png"
+  },
+  {
+   "file": "lift-lobby-door.png",
+   "w": 221,
+   "h": 278,
+   "sheet": "image-27964614.png"
+  },
+  {
+   "file": "check-in-counter.png",
+   "w": 208,
+   "h": 275,
+   "sheet": "image-aa16e845.png"
+  },
+  {
+   "file": "baggage-carousel.png",
+   "w": 261,
+   "h": 150,
+   "sheet": "image-aa16e845.png"
+  },
+  {
+   "file": "security-lane.png",
+   "w": 251,
+   "h": 199,
+   "sheet": "image-aa16e845.png"
+  },
+  {
+   "file": "airport-departure-screen.png",
+   "w": 159,
+   "h": 275,
+   "sheet": "image-aa16e845.png"
+  },
+  {
+   "file": "airport-luggage-cart.png",
+   "w": 152,
+   "h": 256,
+   "sheet": "image-aa16e845.png"
+  },
+  {
+   "file": "airport-seat-row.png",
+   "w": 260,
+   "h": 156,
+   "sheet": "image-aa16e845.png"
+  },
+  {
+   "file": "airport-info-desk.png",
+   "w": 233,
+   "h": 209,
+   "sheet": "image-aa16e845.png"
+  },
+  {
+   "file": "check-in-kiosk.png",
+   "w": 132,
+   "h": 278,
+   "sheet": "image-aa16e845.png"
+  },
+  {
+   "file": "luggage-wrap-machine.png",
+   "w": 180,
+   "h": 280,
+   "sheet": "image-aa16e845.png"
+  },
+  {
+   "file": "cafe-kiosk.png",
+   "w": 232,
+   "h": 265,
+   "sheet": "image-aa16e845.png"
+  },
+  {
+   "file": "airport-queue-barrier.png",
+   "w": 209,
+   "h": 204,
+   "sheet": "image-aa16e845.png"
+  },
+  {
+   "file": "flight-board.png",
+   "w": 231,
+   "h": 249,
+   "sheet": "image-aa16e845.png"
+  },
+  {
+   "file": "boarding-gate.png",
+   "w": 209,
+   "h": 218,
+   "sheet": "image-645c799a.png"
+  },
+  {
+   "file": "boarding-stairs.png",
+   "w": 192,
+   "h": 257,
+   "sheet": "image-645c799a.png"
+  },
+  {
+   "file": "runway-sign.png",
+   "w": 163,
+   "h": 186,
+   "sheet": "image-645c799a.png"
+  },
+  {
+   "file": "control-tower.png",
+   "w": 143,
+   "h": 302,
+   "sheet": "image-645c799a.png"
+  },
+  {
+   "file": "taxiway-light.png",
+   "w": 78,
+   "h": 197,
+   "sheet": "image-645c799a.png"
+  },
+  {
+   "file": "windsock.png",
+   "w": 71,
+   "h": 238,
+   "sheet": "image-645c799a.png"
+  },
+  {
+   "file": "apron-bus.png",
+   "w": 201,
+   "h": 207,
+   "sheet": "image-645c799a.png"
+  },
+  {
+   "file": "baggage-cart.png",
+   "w": 251,
+   "h": 179,
+   "sheet": "image-645c799a.png"
+  },
+  {
+   "file": "ground-power-unit.png",
+   "w": 183,
+   "h": 177,
+   "sheet": "image-645c799a.png"
+  },
+  {
+   "file": "boarding-bridge.png",
+   "w": 202,
+   "h": 232,
+   "sheet": "image-645c799a.png"
+  },
+  {
+   "file": "marshalling-wand-stand.png",
+   "w": 158,
+   "h": 237,
+   "sheet": "image-645c799a.png"
+  },
+  {
+   "file": "fuel-bowser.png",
+   "w": 210,
+   "h": 223,
+   "sheet": "image-645c799a.png"
+  },
+  {
+   "file": "ferry-pier.png",
+   "w": 263,
+   "h": 271,
+   "sheet": "image-ad3bb377.png"
+  },
+  {
+   "file": "gangway.png",
+   "w": 225,
+   "h": 242,
+   "sheet": "image-ad3bb377.png"
+  },
+  {
+   "file": "floating-pontoon.png",
+   "w": 252,
+   "h": 170,
+   "sheet": "image-ad3bb377.png"
+  },
+  {
+   "file": "mooring-bollard.png",
+   "w": 230,
+   "h": 230,
+   "sheet": "image-ad3bb377.png"
+  },
+  {
+   "file": "pier-ticket-booth.png",
+   "w": 232,
+   "h": 272,
+   "sheet": "image-ad3bb377.png"
+  },
+  {
+   "file": "waiting-pavilion.png",
+   "w": 270,
+   "h": 289,
+   "sheet": "image-ad3bb377.png"
+  },
+  {
+   "file": "ferry-timetable.png",
+   "w": 209,
+   "h": 290,
+   "sheet": "image-ad3bb377.png"
+  },
+  {
+   "file": "life-ring-post.png",
+   "w": 159,
+   "h": 301,
+   "sheet": "image-ad3bb377.png"
+  },
+  {
+   "file": "buoy.png",
+   "w": 170,
+   "h": 293,
+   "sheet": "image-ad3bb377.png"
+  },
+  {
+   "file": "jetty-lamp.png",
+   "w": 68,
+   "h": 319,
+   "sheet": "image-ad3bb377.png"
+  },
+  {
+   "file": "boarding-ramp.png",
+   "w": 293,
+   "h": 248,
+   "sheet": "image-ad3bb377.png"
+  },
+  {
+   "file": "ferry-sign.png",
+   "w": 229,
+   "h": 285,
+   "sheet": "image-ad3bb377.png"
+  },
+  {
+   "file": "wooden-jetty.png",
+   "w": 279,
+   "h": 227,
+   "sheet": "image-05b743b0.png"
+  },
+  {
+   "file": "rowboat-mooring.png",
+   "w": 115,
+   "h": 267,
+   "sheet": "image-05b743b0.png"
+  },
+  {
+   "file": "cleat-post.png",
+   "w": 218,
+   "h": 187,
+   "sheet": "image-05b743b0.png"
+  },
+  {
+   "file": "dock-ladder.png",
+   "w": 132,
+   "h": 276,
+   "sheet": "image-05b743b0.png"
+  },
+  {
+   "file": "dock-box.png",
+   "w": 227,
+   "h": 232,
+   "sheet": "image-05b743b0.png"
+  },
+  {
+   "file": "fish-cleaning-table.png",
+   "w": 227,
+   "h": 234,
+   "sheet": "image-05b743b0.png"
+  },
+  {
+   "file": "dock-lamp.png",
+   "w": 97,
+   "h": 317,
+   "sheet": "image-05b743b0.png"
+  },
+  {
+   "file": "rowboat-rack.png",
+   "w": 226,
+   "h": 261,
+   "sheet": "image-05b743b0.png"
+  },
+  {
+   "file": "boathouse-door.png",
+   "w": 237,
+   "h": 276,
+   "sheet": "image-05b743b0.png"
+  },
+  {
+   "file": "slipway.png",
+   "w": 284,
+   "h": 216,
+   "sheet": "image-05b743b0.png"
+  },
+  {
+   "file": "dock-crane.png",
+   "w": 193,
+   "h": 296,
+   "sheet": "image-05b743b0.png"
+  },
+  {
+   "file": "rowboat-sign.png",
+   "w": 228,
+   "h": 224,
+   "sheet": "image-05b743b0.png"
+  },
+  {
+   "file": "station-ticket-machine.png",
+   "w": 183,
+   "h": 304,
+   "sheet": "image-a24e191c.png"
+  },
+  {
+   "file": "ticket-window.png",
+   "w": 219,
+   "h": 302,
+   "sheet": "image-a24e191c.png"
+  },
+  {
+   "file": "turnstile.png",
+   "w": 215,
+   "h": 211,
+   "sheet": "image-a24e191c.png"
+  },
+  {
+   "file": "fare-gate.png",
+   "w": 113,
+   "h": 257,
+   "sheet": "image-a24e191c.png"
+  },
+  {
+   "file": "card-reader-post.png",
+   "w": 196,
+   "h": 269,
+   "sheet": "image-a24e191c.png"
+  },
+  {
+   "file": "inspector-podium.png",
+   "w": 175,
+   "h": 213,
+   "sheet": "image-a24e191c.png"
+  },
+  {
+   "file": "coin-gate.png",
+   "w": 124,
+   "h": 197,
+   "sheet": "image-a24e191c.png"
+  },
+  {
+   "file": "wheelchair-gate.png",
+   "w": 131,
+   "h": 213,
+   "sheet": "image-a24e191c.png"
+  },
+  {
+   "file": "luggage-gate.png",
+   "w": 231,
+   "h": 241,
+   "sheet": "image-a24e191c.png"
+  },
+  {
+   "file": "service-counter.png",
+   "w": 235,
+   "h": 197,
+   "sheet": "image-a24e191c.png"
+  },
+  {
+   "file": "information-desk.png",
+   "w": 235,
+   "h": 265,
+   "sheet": "image-a24e191c.png"
+  },
+  {
+   "file": "self-check-in-kiosk.png",
+   "w": 137,
+   "h": 313,
+   "sheet": "image-a24e191c.png"
+  },
+  {
+   "file": "sliding-gate.png",
+   "w": 275,
+   "h": 235,
+   "sheet": "image-21392671.png"
+  },
+  {
+   "file": "swing-barrier.png",
+   "w": 134,
+   "h": 192,
+   "sheet": "image-21392671.png"
+  },
+  {
+   "file": "retractable-bollard.png",
+   "w": 102,
+   "h": 248,
+   "sheet": "image-21392671.png"
+  },
+  {
+   "file": "boom-gate.png",
+   "w": 280,
+   "h": 183,
+   "sheet": "image-21392671.png"
+  },
+  {
+   "file": "platform-gate.png",
+   "w": 263,
+   "h": 242,
+   "sheet": "image-21392671.png"
+  },
+  {
+   "file": "security-arch.png",
+   "w": 168,
+   "h": 288,
+   "sheet": "image-21392671.png"
+  },
+  {
+   "file": "luggage-scanner.png",
+   "w": 276,
+   "h": 244,
+   "sheet": "image-21392671.png"
+  },
+  {
+   "file": "metal-detector-post.png",
+   "w": 107,
+   "h": 276,
+   "sheet": "image-21392671.png"
+  },
+  {
+   "file": "manual-gate.png",
+   "w": 235,
+   "h": 299,
+   "sheet": "image-21392671.png"
+  },
+  {
+   "file": "staff-gate.png",
+   "w": 132,
+   "h": 311,
+   "sheet": "image-21392671.png"
+  },
+  {
+   "file": "emergency-gate.png",
+   "w": 220,
+   "h": 244,
+   "sheet": "image-21392671.png"
+  },
+  {
+   "file": "access-control-post.png",
+   "w": 111,
+   "h": 311,
+   "sheet": "image-21392671.png"
+  },
+  {
+   "file": "station-bench.png",
+   "w": 275,
+   "h": 232,
+   "sheet": "image-82446177.png"
+  },
+  {
+   "file": "back-to-back-seat.png",
+   "w": 219,
+   "h": 223,
+   "sheet": "image-82446177.png"
+  },
+  {
+   "file": "armrest-chair.png",
+   "w": 228,
+   "h": 267,
+   "sheet": "image-82446177.png"
+  },
+  {
+   "file": "plastic-seat.png",
+   "w": 174,
+   "h": 236,
+   "sheet": "image-82446177.png"
+  },
+  {
+   "file": "iron-station-bench.png",
+   "w": 257,
+   "h": 225,
+   "sheet": "image-82446177.png"
+  },
+  {
+   "file": "plank-seat.png",
+   "w": 227,
+   "h": 146,
+   "sheet": "image-82446177.png"
+  },
+  {
+   "file": "long-platform-bench.png",
+   "w": 276,
+   "h": 147,
+   "sheet": "image-82446177.png"
+  },
+  {
+   "file": "recliner-seat.png",
+   "w": 247,
+   "h": 237,
+   "sheet": "image-82446177.png"
+  },
+  {
+   "file": "station-stool.png",
+   "w": 140,
+   "h": 208,
+   "sheet": "image-82446177.png"
+  },
+  {
+   "file": "waiting-room-chair.png",
+   "w": 270,
+   "h": 219,
+   "sheet": "image-82446177.png"
+  },
+  {
+   "file": "massage-chair.png",
+   "w": 257,
+   "h": 270,
+   "sheet": "image-82446177.png"
+  },
+  {
+   "file": "sleep-pod.png",
+   "w": 244,
+   "h": 228,
+   "sheet": "image-82446177.png"
+  },
+  {
+   "file": "waiting-room-seat.png",
+   "w": 236,
+   "h": 231,
+   "sheet": "image-8451ad92.png"
+  },
+  {
+   "file": "coffee-table.png",
+   "w": 242,
+   "h": 168,
+   "sheet": "image-8451ad92.png"
+  },
+  {
+   "file": "waiting-luggage-rack.png",
+   "w": 224,
+   "h": 220,
+   "sheet": "image-8451ad92.png"
+  },
+  {
+   "file": "coat-stand.png",
+   "w": 113,
+   "h": 302,
+   "sheet": "image-8451ad92.png"
+  },
+  {
+   "file": "water-dispenser.png",
+   "w": 143,
+   "h": 286,
+   "sheet": "image-8451ad92.png"
+  },
+  {
+   "file": "notice-stand.png",
+   "w": 133,
+   "h": 276,
+   "sheet": "image-8451ad92.png"
+  },
+  {
+   "file": "magazine-rack.png",
+   "w": 200,
+   "h": 277,
+   "sheet": "image-8451ad92.png"
+  },
+  {
+   "file": "waiting-clock.png",
+   "w": 194,
+   "h": 201,
+   "sheet": "image-8451ad92.png"
+  },
+  {
+   "file": "waiting-mirror.png",
+   "w": 167,
+   "h": 301,
+   "sheet": "image-8451ad92.png"
+  },
+  {
+   "file": "waiting-bin.png",
+   "w": 142,
+   "h": 242,
+   "sheet": "image-8451ad92.png"
+  },
+  {
+   "file": "baby-change-sign.png",
+   "w": 190,
+   "h": 244,
+   "sheet": "image-8451ad92.png"
+  },
+  {
+   "file": "prayer-room-sign.png",
+   "w": 183,
+   "h": 249,
+   "sheet": "image-8451ad92.png"
+  },
+  {
+   "file": "stanchion-post.png",
+   "w": 109,
+   "h": 268,
+   "sheet": "image-e4aa0995.png"
+  },
+  {
+   "file": "rope-barrier.png",
+   "w": 303,
+   "h": 250,
+   "sheet": "image-e4aa0995.png"
+  },
+  {
+   "file": "queue-rail-post.png",
+   "w": 198,
+   "h": 251,
+   "sheet": "image-e4aa0995.png"
+  },
+  {
+   "file": "belt-barrier.png",
+   "w": 269,
+   "h": 208,
+   "sheet": "image-e4aa0995.png"
+  },
+  {
+   "file": "crowd-barrier.png",
+   "w": 268,
+   "h": 256,
+   "sheet": "image-e4aa0995.png"
+  },
+  {
+   "file": "waiting-line-sign.png",
+   "w": 113,
+   "h": 289,
+   "sheet": "image-e4aa0995.png"
+  },
+  {
+   "file": "queue-ticket-dispenser.png",
+   "w": 145,
+   "h": 297,
+   "sheet": "image-e4aa0995.png"
+  },
+  {
+   "file": "single-file-sign.png",
+   "w": 117,
+   "h": 316,
+   "sheet": "image-e4aa0995.png"
+  },
+  {
+   "file": "priority-seat-sign.png",
+   "w": 140,
+   "h": 257,
+   "sheet": "image-e4aa0995.png"
+  },
+  {
+   "file": "boarding-line.png",
+   "w": 277,
+   "h": 122,
+   "sheet": "image-e4aa0995.png"
+  },
+  {
+   "file": "direction-arrow.png",
+   "w": 176,
+   "h": 267,
+   "sheet": "image-e4aa0995.png"
+  },
+  {
+   "file": "waiting-zone-marking.png",
+   "w": 302,
+   "h": 143,
+   "sheet": "image-e4aa0995.png"
+  },
+  {
+   "file": "direction-sign.png",
+   "w": 198,
+   "h": 295,
+   "sheet": "image-9e661f77.png"
+  },
+  {
+   "file": "arrow-sign.png",
+   "w": 203,
+   "h": 236,
+   "sheet": "image-9e661f77.png"
+  },
+  {
+   "file": "map-board.png",
+   "w": 274,
+   "h": 294,
+   "sheet": "image-9e661f77.png"
+  },
+  {
+   "file": "name-plate.png",
+   "w": 141,
+   "h": 244,
+   "sheet": "image-9e661f77.png"
+  },
+  {
+   "file": "mileage-sign.png",
+   "w": 82,
+   "h": 312,
+   "sheet": "image-9e661f77.png"
+  },
+  {
+   "file": "warning-sign.png",
+   "w": 186,
+   "h": 299,
+   "sheet": "image-9e661f77.png"
+  },
+  {
+   "file": "prohibition-sign.png",
+   "w": 195,
+   "h": 285,
+   "sheet": "image-9e661f77.png"
+  },
+  {
+   "file": "mandatory-sign.png",
+   "w": 190,
+   "h": 266,
+   "sheet": "image-9e661f77.png"
+  },
+  {
+   "file": "street-plate.png",
+   "w": 183,
+   "h": 273,
+   "sheet": "image-9e661f77.png"
+  },
+  {
+   "file": "plaza-directory.png",
+   "w": 242,
+   "h": 294,
+   "sheet": "image-9e661f77.png"
+  },
+  {
+   "file": "trail-marker.png",
+   "w": 102,
+   "h": 288,
+   "sheet": "image-9e661f77.png"
+  },
+  {
+   "file": "heritage-plaque.png",
+   "w": 204,
+   "h": 242,
+   "sheet": "image-9e661f77.png"
+  },
+  {
+   "file": "waiting-bench.png",
+   "w": 285,
+   "h": 215,
+   "sheet": "image-e91cf2ef.png"
+  },
+  {
+   "file": "amenity-notice-board.png",
+   "w": 218,
+   "h": 258,
+   "sheet": "image-e91cf2ef.png"
+  },
+  {
+   "file": "amenity-drinking-fountain.png",
+   "w": 162,
+   "h": 254,
+   "sheet": "image-e91cf2ef.png"
+  },
+  {
+   "file": "vending-machine.png",
+   "w": 173,
+   "h": 293,
+   "sheet": "image-e91cf2ef.png"
+  },
+  {
+   "file": "charging-post.png",
+   "w": 77,
+   "h": 313,
+   "sheet": "image-e91cf2ef.png"
+  },
+  {
+   "file": "info-pylon.png",
+   "w": 125,
+   "h": 314,
+   "sheet": "image-e91cf2ef.png"
+  },
+  {
+   "file": "amenity-recycling-bin.png",
+   "w": 199,
+   "h": 216,
+   "sheet": "image-e91cf2ef.png"
+  },
+  {
+   "file": "amenity-phone-booth.png",
+   "w": 151,
+   "h": 317,
+   "sheet": "image-e91cf2ef.png"
+  },
+  {
+   "file": "amenity-luggage-rack.png",
+   "w": 230,
+   "h": 258,
+   "sheet": "image-e91cf2ef.png"
+  },
+  {
+   "file": "umbrella-stand.png",
+   "w": 135,
+   "h": 313,
+   "sheet": "image-e91cf2ef.png"
+  },
+  {
+   "file": "tissue-dispenser.png",
+   "w": 148,
+   "h": 270,
+   "sheet": "image-e91cf2ef.png"
+  },
+  {
+   "file": "hand-sanitiser-post.png",
+   "w": 84,
+   "h": 308,
+   "sheet": "image-e91cf2ef.png"
+  },
+  {
+   "file": "restroom-facility-sign.png",
+   "w": 219,
+   "h": 246,
+   "sheet": "image-31adf441.png"
+  },
+  {
+   "file": "baby-room-sign.png",
+   "w": 165,
+   "h": 249,
+   "sheet": "image-31adf441.png"
+  },
+  {
+   "file": "nursing-room-sign.png",
+   "w": 202,
+   "h": 258,
+   "sheet": "image-31adf441.png"
+  },
+  {
+   "file": "prayer-facility-sign.png",
+   "w": 195,
+   "h": 202,
+   "sheet": "image-31adf441.png"
+  },
+  {
+   "file": "smoking-area-sign.png",
+   "w": 204,
+   "h": 173,
+   "sheet": "image-31adf441.png"
+  },
+  {
+   "file": "no-smoking-sign.png",
+   "w": 213,
+   "h": 221,
+   "sheet": "image-31adf441.png"
+  },
+  {
+   "file": "wheelchair-sign.png",
+   "w": 194,
+   "h": 223,
+   "sheet": "image-31adf441.png"
+  },
+  {
+   "file": "escalator-facility-sign.png",
+   "w": 230,
+   "h": 218,
+   "sheet": "image-31adf441.png"
+  },
+  {
+   "file": "lift-facility-sign.png",
+   "w": 208,
+   "h": 249,
+   "sheet": "image-31adf441.png"
+  },
+  {
+   "file": "lost-property-sign.png",
+   "w": 159,
+   "h": 247,
+   "sheet": "image-31adf441.png"
+  },
+  {
+   "file": "ticket-office-sign.png",
+   "w": 235,
+   "h": 217,
+   "sheet": "image-31adf441.png"
+  },
+  {
+   "file": "platform-facility-sign.png",
+   "w": 227,
+   "h": 151,
+   "sheet": "image-31adf441.png"
+  },
+  {
+   "file": "bollard-row.png",
+   "w": 48,
+   "h": 215,
+   "sheet": "image-79dbdb93.png"
+  },
+  {
+   "file": "cycle-barrier.png",
+   "w": 229,
+   "h": 244,
+   "sheet": "image-79dbdb93.png"
+  },
+  {
+   "file": "pedestrian-station-gate.png",
+   "w": 194,
+   "h": 232,
+   "sheet": "image-79dbdb93.png"
+  },
+  {
+   "file": "station-handrail.png",
+   "w": 201,
+   "h": 163,
+   "sheet": "image-79dbdb93.png"
+  },
+  {
+   "file": "ramp-edge.png",
+   "w": 175,
+   "h": 168,
+   "sheet": "image-79dbdb93.png"
+  },
+  {
+   "file": "tactile-paving-block.png",
+   "w": 256,
+   "h": 140,
+   "sheet": "image-79dbdb93.png"
+  },
+  {
+   "file": "kerb-mat.png",
+   "w": 106,
+   "h": 178,
+   "sheet": "image-79dbdb93.png"
+  },
+  {
+   "file": "litter-bin-pair.png",
+   "w": 107,
+   "h": 180,
+   "sheet": "image-79dbdb93.png"
+  },
+  {
+   "file": "bench-with-planter.png",
+   "w": 274,
+   "h": 263,
+   "sheet": "image-79dbdb93.png"
+  },
+  {
+   "file": "shelter-screen.png",
+   "w": 180,
+   "h": 291,
+   "sheet": "image-79dbdb93.png"
+  },
+  {
+   "file": "wind-break-panel.png",
+   "w": 206,
+   "h": 298,
+   "sheet": "image-79dbdb93.png"
+  },
+  {
+   "file": "rain-canopy.png",
+   "w": 237,
+   "h": 212,
+   "sheet": "image-79dbdb93.png"
+  },
+  {
+   "file": "station-platform-light.png",
+   "w": 152,
+   "h": 358,
+   "sheet": "image-5981f9b2.png"
+  },
+  {
+   "file": "floodlight-post.png",
+   "w": 168,
+   "h": 333,
+   "sheet": "image-5981f9b2.png"
+  },
+  {
+   "file": "light-tower.png",
+   "w": 192,
+   "h": 351,
+   "sheet": "image-5981f9b2.png"
+  },
+  {
+   "file": "cable-drum.png",
+   "w": 261,
+   "h": 257,
+   "sheet": "image-5981f9b2.png"
+  },
+  {
+   "file": "junction-box.png",
+   "w": 161,
+   "h": 222,
+   "sheet": "image-5981f9b2.png"
+  },
+  {
+   "file": "transformer-box.png",
+   "w": 190,
+   "h": 263,
+   "sheet": "image-5981f9b2.png"
+  },
+  {
+   "file": "generator-cart.png",
+   "w": 221,
+   "h": 263,
+   "sheet": "image-5981f9b2.png"
+  },
+  {
+   "file": "battery-cabinet.png",
+   "w": 145,
+   "h": 257,
+   "sheet": "image-5981f9b2.png"
+  },
+  {
+   "file": "socket-pillar.png",
+   "w": 130,
+   "h": 300,
+   "sheet": "image-5981f9b2.png"
+  },
+  {
+   "file": "lamp-switch-box.png",
+   "w": 103,
+   "h": 272,
+   "sheet": "image-5981f9b2.png"
+  },
+  {
+   "file": "emergency-light.png",
+   "w": 150,
+   "h": 297,
+   "sheet": "image-5981f9b2.png"
+  },
+  {
+   "file": "small-power-pylon.png",
+   "w": 146,
+   "h": 316,
+   "sheet": "image-5981f9b2.png"
+  },
+  {
+   "file": "loading-dock.png",
+   "w": 249,
+   "h": 160,
+   "sheet": "image-86f0d4fc.png"
+  },
+  {
+   "file": "pallet-stack.png",
+   "w": 211,
+   "h": 209,
+   "sheet": "image-86f0d4fc.png"
+  },
+  {
+   "file": "forklift.png",
+   "w": 274,
+   "h": 270,
+   "sheet": "image-86f0d4fc.png"
+  },
+  {
+   "file": "ramp-trolley.png",
+   "w": 222,
+   "h": 248,
+   "sheet": "image-86f0d4fc.png"
+  },
+  {
+   "file": "cargo-net.png",
+   "w": 220,
+   "h": 265,
+   "sheet": "image-86f0d4fc.png"
+  },
+  {
+   "file": "crate-stack.png",
+   "w": 223,
+   "h": 270,
+   "sheet": "image-86f0d4fc.png"
+  },
+  {
+   "file": "weighbridge.png",
+   "w": 267,
+   "h": 265,
+   "sheet": "image-86f0d4fc.png"
+  },
+  {
+   "file": "cargo-door.png",
+   "w": 233,
+   "h": 255,
+   "sheet": "image-86f0d4fc.png"
+  },
+  {
+   "file": "dock-bumper.png",
+   "w": 237,
+   "h": 162,
+   "sheet": "image-86f0d4fc.png"
+  },
+  {
+   "file": "cargo-cage.png",
+   "w": 224,
+   "h": 262,
+   "sheet": "image-86f0d4fc.png"
+  },
+  {
+   "file": "hand-pallet-truck.png",
+   "w": 241,
+   "h": 286,
+   "sheet": "image-86f0d4fc.png"
+  },
+  {
+   "file": "dock-light.png",
+   "w": 161,
+   "h": 248,
+   "sheet": "image-86f0d4fc.png"
+  },
+  {
+   "file": "station-bin.png",
+   "w": 147,
+   "h": 279,
+   "sheet": "image-39d60da5.png"
+  },
+  {
+   "file": "sanitary-bin.png",
+   "w": 144,
+   "h": 272,
+   "sheet": "image-39d60da5.png"
+  },
+  {
+   "file": "mop-station.png",
+   "w": 191,
+   "h": 327,
+   "sheet": "image-39d60da5.png"
+  },
+  {
+   "file": "wet-floor-sign.png",
+   "w": 188,
+   "h": 283,
+   "sheet": "image-39d60da5.png"
+  },
+  {
+   "file": "cleaning-cart.png",
+   "w": 193,
+   "h": 290,
+   "sheet": "image-39d60da5.png"
+  },
+  {
+   "file": "pressure-washer.png",
+   "w": 182,
+   "h": 292,
+   "sheet": "image-39d60da5.png"
+  },
+  {
+   "file": "hose-reel.png",
+   "w": 195,
+   "h": 273,
+   "sheet": "image-39d60da5.png"
+  },
+  {
+   "file": "drain-grate.png",
+   "w": 210,
+   "h": 188,
+   "sheet": "image-39d60da5.png"
+  },
+  {
+   "file": "soap-dispenser.png",
+   "w": 116,
+   "h": 235,
+   "sheet": "image-39d60da5.png"
+  },
+  {
+   "file": "hand-dryer.png",
+   "w": 178,
+   "h": 220,
+   "sheet": "image-39d60da5.png"
+  },
+  {
+   "file": "paper-towel-post.png",
+   "w": 132,
+   "h": 302,
+   "sheet": "image-39d60da5.png"
+  },
+  {
+   "file": "floor-squeegee.png",
+   "w": 172,
+   "h": 310,
+   "sheet": "image-39d60da5.png"
+  },
+  {
+   "file": "fire-extinguisher.png",
+   "w": 153,
+   "h": 314,
+   "sheet": "image-92daadb5.png"
+  },
+  {
+   "file": "fire-hose-reel.png",
+   "w": 223,
+   "h": 293,
+   "sheet": "image-92daadb5.png"
+  },
+  {
+   "file": "fire-alarm-post.png",
+   "w": 120,
+   "h": 322,
+   "sheet": "image-92daadb5.png"
+  },
+  {
+   "file": "first-aid-box.png",
+   "w": 232,
+   "h": 200,
+   "sheet": "image-92daadb5.png"
+  },
+  {
+   "file": "defibrillator-cabinet.png",
+   "w": 212,
+   "h": 232,
+   "sheet": "image-92daadb5.png"
+  },
+  {
+   "file": "emergency-exit-sign.png",
+   "w": 212,
+   "h": 167,
+   "sheet": "image-92daadb5.png"
+  },
+  {
+   "file": "assembly-point-sign.png",
+   "w": 166,
+   "h": 254,
+   "sheet": "image-92daadb5.png"
+  },
+  {
+   "file": "safety-mirror.png",
+   "w": 206,
+   "h": 272,
+   "sheet": "image-92daadb5.png"
+  },
+  {
+   "file": "guard-rail.png",
+   "w": 242,
+   "h": 182,
+   "sheet": "image-92daadb5.png"
+  },
+  {
+   "file": "safety-net.png",
+   "w": 216,
+   "h": 254,
+   "sheet": "image-92daadb5.png"
+  },
+  {
+   "file": "rescue-ladder.png",
+   "w": 173,
+   "h": 291,
+   "sheet": "image-92daadb5.png"
+  },
+  {
+   "file": "alarm-bell.png",
+   "w": 209,
+   "h": 238,
+   "sheet": "image-92daadb5.png"
+  },
+  {
+   "file": "speaker-pole.png",
+   "w": 94,
+   "h": 328,
+   "sheet": "image-48bb97b2.png"
+  },
+  {
+   "file": "horn-loudspeaker.png",
+   "w": 224,
+   "h": 231,
+   "sheet": "image-48bb97b2.png"
+  },
+  {
+   "file": "digital-sign.png",
+   "w": 209,
+   "h": 259,
+   "sheet": "image-48bb97b2.png"
+  },
+  {
+   "file": "poster-frame.png",
+   "w": 180,
+   "h": 264,
+   "sheet": "image-48bb97b2.png"
+  },
+  {
+   "file": "advertising-panel.png",
+   "w": 198,
+   "h": 271,
+   "sheet": "image-48bb97b2.png"
+  },
+  {
+   "file": "backlit-poster.png",
+   "w": 197,
+   "h": 256,
+   "sheet": "image-48bb97b2.png"
+  },
+  {
+   "file": "led-strip-board.png",
+   "w": 225,
+   "h": 206,
+   "sheet": "image-48bb97b2.png"
+  },
+  {
+   "file": "digital-kiosk.png",
+   "w": 153,
+   "h": 298,
+   "sheet": "image-48bb97b2.png"
+  },
+  {
+   "file": "touchscreen-map.png",
+   "w": 231,
+   "h": 235,
+   "sheet": "image-48bb97b2.png"
+  },
+  {
+   "file": "camera-pole.png",
+   "w": 104,
+   "h": 305,
+   "sheet": "image-48bb97b2.png"
+  },
+  {
+   "file": "pa-cabinet.png",
+   "w": 187,
+   "h": 247,
+   "sheet": "image-48bb97b2.png"
+  },
+  {
+   "file": "clock-panel.png",
+   "w": 203,
+   "h": 217,
+   "sheet": "image-48bb97b2.png"
+  },
+  {
+   "file": "wheelchair-ramp.png",
+   "w": 248,
+   "h": 242,
+   "sheet": "image-ff32387b.png"
+  },
+  {
+   "file": "lift-platform.png",
+   "w": 219,
+   "h": 193,
+   "sheet": "image-ff32387b.png"
+  },
+  {
+   "file": "platform-lift.png",
+   "w": 176,
+   "h": 264,
+   "sheet": "image-ff32387b.png"
+  },
+  {
+   "file": "access-handrail-set.png",
+   "w": 234,
+   "h": 142,
+   "sheet": "image-ff32387b.png"
+  },
+  {
+   "file": "tactile-map-board.png",
+   "w": 226,
+   "h": 220,
+   "sheet": "image-ff32387b.png"
+  },
+  {
+   "file": "braille-sign.png",
+   "w": 183,
+   "h": 190,
+   "sheet": "image-ff32387b.png"
+  },
+  {
+   "file": "hearing-loop-sign.png",
+   "w": 187,
+   "h": 203,
+   "sheet": "image-ff32387b.png"
+  },
+  {
+   "file": "priority-seat.png",
+   "w": 192,
+   "h": 237,
+   "sheet": "image-ff32387b.png"
+  },
+  {
+   "file": "accessible-gate.png",
+   "w": 253,
+   "h": 235,
+   "sheet": "image-ff32387b.png"
+  },
+  {
+   "file": "accessible-bell-push.png",
+   "w": 76,
+   "h": 258,
+   "sheet": "image-ff32387b.png"
+  },
+  {
+   "file": "sensor-door.png",
+   "w": 238,
+   "h": 243,
+   "sheet": "image-ff32387b.png"
+  },
+  {
+   "file": "dropped-kerb-plate.png",
+   "w": 265,
+   "h": 190,
+   "sheet": "image-ff32387b.png"
+  },
+  {
+   "file": "newspaper-kiosk.png",
+   "w": 237,
+   "h": 293,
+   "sheet": "image-ca5b19e2.png"
+  },
+  {
+   "file": "flower-kiosk.png",
+   "w": 224,
+   "h": 290,
+   "sheet": "image-ca5b19e2.png"
+  },
+  {
+   "file": "coffee-kiosk.png",
+   "w": 202,
+   "h": 317,
+   "sheet": "image-ca5b19e2.png"
+  },
+  {
+   "file": "ticket-kiosk.png",
+   "w": 217,
+   "h": 279,
+   "sheet": "image-ca5b19e2.png"
+  },
+  {
+   "file": "shoe-shine-stand.png",
+   "w": 214,
+   "h": 204,
+   "sheet": "image-ca5b19e2.png"
+  },
+  {
+   "file": "lottery-stand.png",
+   "w": 152,
+   "h": 285,
+   "sheet": "image-ca5b19e2.png"
+  },
+  {
+   "file": "phone-card-stand.png",
+   "w": 192,
+   "h": 278,
+   "sheet": "image-ca5b19e2.png"
+  },
+  {
+   "file": "souvenir-cart.png",
+   "w": 255,
+   "h": 286,
+   "sheet": "image-ca5b19e2.png"
+  },
+  {
+   "file": "ice-cream-cart.png",
+   "w": 207,
+   "h": 307,
+   "sheet": "image-ca5b19e2.png"
+  },
+  {
+   "file": "food-cart.png",
+   "w": 282,
+   "h": 238,
+   "sheet": "image-ca5b19e2.png"
+  },
+  {
+   "file": "book-cart.png",
+   "w": 182,
+   "h": 304,
+   "sheet": "image-ca5b19e2.png"
+  },
+  {
+   "file": "hot-dog-stand.png",
+   "w": 221,
+   "h": 314,
+   "sheet": "image-ca5b19e2.png"
+  },
+  {
+   "file": "station-planter-box.png",
+   "w": 245,
+   "h": 251,
+   "sheet": "image-6017011e.png"
+  },
+  {
+   "file": "hanging-planter.png",
+   "w": 178,
+   "h": 288,
+   "sheet": "image-6017011e.png"
+  },
+  {
+   "file": "station-flower-bed.png",
+   "w": 263,
+   "h": 205,
+   "sheet": "image-6017011e.png"
+  },
+  {
+   "file": "banner-pole.png",
+   "w": 171,
+   "h": 287,
+   "sheet": "image-6017011e.png"
+  },
+  {
+   "file": "festoon-lights.png",
+   "w": 219,
+   "h": 225,
+   "sheet": "image-6017011e.png"
+  },
+  {
+   "file": "seasonal-decoration.png",
+   "w": 245,
+   "h": 187,
+   "sheet": "image-6017011e.png"
+  },
+  {
+   "file": "stone-urn.png",
+   "w": 205,
+   "h": 252,
+   "sheet": "image-6017011e.png"
+  },
+  {
+   "file": "station-trellis.png",
+   "w": 217,
+   "h": 250,
+   "sheet": "image-6017011e.png"
+  },
+  {
+   "file": "living-wall-panel.png",
+   "w": 185,
+   "h": 289,
+   "sheet": "image-6017011e.png"
+  },
+  {
+   "file": "tree-grate.png",
+   "w": 223,
+   "h": 306,
+   "sheet": "image-6017011e.png"
+  },
+  {
+   "file": "hedge-planter.png",
+   "w": 254,
+   "h": 155,
+   "sheet": "image-6017011e.png"
+  },
+  {
+   "file": "bench-with-tree.png",
+   "w": 231,
+   "h": 299,
+   "sheet": "image-6017011e.png"
+  },
+  {
+   "file": "forecourt-taxi-sign.png",
+   "w": 151,
+   "h": 273,
+   "sheet": "image-1b54cafe.png"
+  },
+  {
+   "file": "drop-off-shelter.png",
+   "w": 264,
+   "h": 230,
+   "sheet": "image-1b54cafe.png"
+  },
+  {
+   "file": "forecourt-bus-shelter.png",
+   "w": 258,
+   "h": 244,
+   "sheet": "image-1b54cafe.png"
+  },
+  {
+   "file": "forecourt-directory.png",
+   "w": 163,
+   "h": 263,
+   "sheet": "image-1b54cafe.png"
+  },
+  {
+   "file": "forecourt-flag-pole.png",
+   "w": 103,
+   "h": 302,
+   "sheet": "image-1b54cafe.png"
+  },
+  {
+   "file": "small-fountain.png",
+   "w": 239,
+   "h": 240,
+   "sheet": "image-1b54cafe.png"
+  },
+  {
+   "file": "forecourt-bench-set.png",
+   "w": 244,
+   "h": 167,
+   "sheet": "image-1b54cafe.png"
+  },
+  {
+   "file": "forecourt-planter.png",
+   "w": 227,
+   "h": 197,
+   "sheet": "image-1b54cafe.png"
+  },
+  {
+   "file": "forecourt-bike-rack.png",
+   "w": 252,
+   "h": 162,
+   "sheet": "image-1b54cafe.png"
+  },
+  {
+   "file": "forecourt-lamp.png",
+   "w": 75,
+   "h": 321,
+   "sheet": "image-1b54cafe.png"
+  },
+  {
+   "file": "forecourt-ticket-machine.png",
+   "w": 141,
+   "h": 290,
+   "sheet": "image-1b54cafe.png"
+  },
+  {
+   "file": "forecourt-info-booth.png",
+   "w": 253,
+   "h": 278,
+   "sheet": "image-1b54cafe.png"
+  },
+  {
+   "file": "bus-bay-sign.png",
+   "w": 88,
+   "h": 301,
+   "sheet": "image-fc5c9c4a.png"
+  },
+  {
+   "file": "bus-bay-marking.png",
+   "w": 302,
+   "h": 199,
+   "sheet": "image-fc5c9c4a.png"
+  },
+  {
+   "file": "coach-ticket-booth.png",
+   "w": 232,
+   "h": 268,
+   "sheet": "image-fc5c9c4a.png"
+  },
+  {
+   "file": "coach-luggage-trolley.png",
+   "w": 193,
+   "h": 265,
+   "sheet": "image-fc5c9c4a.png"
+  },
+  {
+   "file": "coach-timetable-board.png",
+   "w": 183,
+   "h": 292,
+   "sheet": "image-fc5c9c4a.png"
+  },
+  {
+   "file": "coach-waiting-bench.png",
+   "w": 261,
+   "h": 208,
+   "sheet": "image-fc5c9c4a.png"
+  },
+  {
+   "file": "coach-taxi-sign.png",
+   "w": 110,
+   "h": 321,
+   "sheet": "image-fc5c9c4a.png"
+  },
+  {
+   "file": "coach-info-kiosk.png",
+   "w": 150,
+   "h": 275,
+   "sheet": "image-fc5c9c4a.png"
+  },
+  {
+   "file": "coach-bin.png",
+   "w": 135,
+   "h": 255,
+   "sheet": "image-fc5c9c4a.png"
+  },
+  {
+   "file": "coach-shelter.png",
+   "w": 272,
+   "h": 241,
+   "sheet": "image-fc5c9c4a.png"
+  },
+  {
+   "file": "coach-arrival-board.png",
+   "w": 212,
+   "h": 276,
+   "sheet": "image-fc5c9c4a.png"
+  },
+  {
+   "file": "coach-departure-board.png",
+   "w": 208,
+   "h": 244,
+   "sheet": "image-fc5c9c4a.png"
+  },
+  {
+   "file": "metro-entrance-pylon.png",
+   "w": 138,
+   "h": 280,
+   "sheet": "image-0f172087.png"
+  },
+  {
+   "file": "metro-canopy-entrance.png",
+   "w": 283,
+   "h": 250,
+   "sheet": "image-0f172087.png"
+  },
+  {
+   "file": "metro-stairwell-sign.png",
+   "w": 183,
+   "h": 187,
+   "sheet": "image-0f172087.png"
+  },
+  {
+   "file": "metro-escalator-entry.png",
+   "w": 283,
+   "h": 234,
+   "sheet": "image-0f172087.png"
+  },
+  {
+   "file": "metro-lift-entry.png",
+   "w": 205,
+   "h": 282,
+   "sheet": "image-0f172087.png"
+  },
+  {
+   "file": "metro-entrance-map.png",
+   "w": 245,
+   "h": 236,
+   "sheet": "image-0f172087.png"
+  },
+  {
+   "file": "metro-entrance-ticket-machine.png",
+   "w": 146,
+   "h": 269,
+   "sheet": "image-0f172087.png"
+  },
+  {
+   "file": "entrance-railing.png",
+   "w": 274,
+   "h": 168,
+   "sheet": "image-0f172087.png"
+  },
+  {
+   "file": "entrance-bollard.png",
+   "w": 124,
+   "h": 245,
+   "sheet": "image-0f172087.png"
+  },
+  {
+   "file": "entrance-lighting.png",
+   "w": 211,
+   "h": 247,
+   "sheet": "image-0f172087.png"
+  },
+  {
+   "file": "entrance-drain-grate.png",
+   "w": 237,
+   "h": 173,
+   "sheet": "image-0f172087.png"
+  },
+  {
+   "file": "entrance-tactile-strip.png",
+   "w": 122,
+   "h": 196,
+   "sheet": "image-0f172087.png"
+  },
+  {
+   "file": "ferry-waiting-seat.png",
+   "w": 279,
+   "h": 223,
+   "sheet": "image-4c412b18.png"
+  },
+  {
+   "file": "ferry-gate.png",
+   "w": 246,
+   "h": 242,
+   "sheet": "image-4c412b18.png"
+  },
+  {
+   "file": "boarding-scanner.png",
+   "w": 127,
+   "h": 281,
+   "sheet": "image-4c412b18.png"
+  },
+  {
+   "file": "ferry-luggage-cart.png",
+   "w": 228,
+   "h": 273,
+   "sheet": "image-4c412b18.png"
+  },
+  {
+   "file": "ferry-board.png",
+   "w": 259,
+   "h": 269,
+   "sheet": "image-4c412b18.png"
+  },
+  {
+   "file": "ferry-ticket-window.png",
+   "w": 215,
+   "h": 265,
+   "sheet": "image-4c412b18.png"
+  },
+  {
+   "file": "ferry-bench.png",
+   "w": 279,
+   "h": 190,
+   "sheet": "image-4c412b18.png"
+  },
+  {
+   "file": "life-jacket-box.png",
+   "w": 184,
+   "h": 201,
+   "sheet": "image-4c412b18.png"
+  },
+  {
+   "file": "gangway-gate.png",
+   "w": 292,
+   "h": 219,
+   "sheet": "image-4c412b18.png"
+  },
+  {
+   "file": "ferry-timetable-stand.png",
+   "w": 104,
+   "h": 293,
+   "sheet": "image-4c412b18.png"
+  },
+  {
+   "file": "ferry-notice-board.png",
+   "w": 239,
+   "h": 289,
+   "sheet": "image-4c412b18.png"
+  },
+  {
+   "file": "ferry-queue-rail.png",
+   "w": 104,
+   "h": 286,
+   "sheet": "image-4c412b18.png"
+  },
+  {
+   "file": "airport-boarding-desk.png",
+   "w": 219,
+   "h": 233,
+   "sheet": "image-5c970b6e.png"
+  },
+  {
+   "file": "gate-seat-row.png",
+   "w": 264,
+   "h": 172,
+   "sheet": "image-5c970b6e.png"
+  },
+  {
+   "file": "charging-table.png",
+   "w": 224,
+   "h": 174,
+   "sheet": "image-5c970b6e.png"
+  },
+  {
+   "file": "gate-departure-screen.png",
+   "w": 241,
+   "h": 255,
+   "sheet": "image-5c970b6e.png"
+  },
+  {
+   "file": "luggage-sizer.png",
+   "w": 239,
+   "h": 234,
+   "sheet": "image-5c970b6e.png"
+  },
+  {
+   "file": "boarding-pass-gate.png",
+   "w": 122,
+   "h": 280,
+   "sheet": "image-5c970b6e.png"
+  },
+  {
+   "file": "airport-water-fountain.png",
+   "w": 171,
+   "h": 252,
+   "sheet": "image-5c970b6e.png"
+  },
+  {
+   "file": "airport-cafe-table.png",
+   "w": 217,
+   "h": 229,
+   "sheet": "image-5c970b6e.png"
+  },
+  {
+   "file": "airport-play-area.png",
+   "w": 277,
+   "h": 215,
+   "sheet": "image-5c970b6e.png"
+  },
+  {
+   "file": "prayer-room-door.png",
+   "w": 153,
+   "h": 287,
+   "sheet": "image-5c970b6e.png"
+  },
+  {
+   "file": "transfer-desk.png",
+   "w": 240,
+   "h": 159,
+   "sheet": "image-5c970b6e.png"
+  },
+  {
+   "file": "gate-number-sign.png",
+   "w": 226,
+   "h": 190,
+   "sheet": "image-5c970b6e.png"
+  },
+  {
+   "file": "cab-waiting-bay.png",
+   "w": 235,
+   "h": 134,
+   "sheet": "image-d819e52b.png"
+  },
+  {
+   "file": "rank-shelter-bench.png",
+   "w": 262,
+   "h": 264,
+   "sheet": "image-d819e52b.png"
+  },
+  {
+   "file": "rank-light.png",
+   "w": 89,
+   "h": 307,
+   "sheet": "image-d819e52b.png"
+  },
+  {
+   "file": "fare-info-board.png",
+   "w": 200,
+   "h": 281,
+   "sheet": "image-d819e52b.png"
+  },
+  {
+   "file": "rank-queue-gate.png",
+   "w": 253,
+   "h": 200,
+   "sheet": "image-d819e52b.png"
+  },
+  {
+   "file": "rank-conductor-post.png",
+   "w": 150,
+   "h": 239,
+   "sheet": "image-d819e52b.png"
+  },
+  {
+   "file": "rank-luggage-stand.png",
+   "w": 221,
+   "h": 121,
+   "sheet": "image-d819e52b.png"
+  },
+  {
+   "file": "rank-wheelchair-ramp.png",
+   "w": 264,
+   "h": 180,
+   "sheet": "image-d819e52b.png"
+  },
+  {
+   "file": "rank-info-booth.png",
+   "w": 234,
+   "h": 277,
+   "sheet": "image-d819e52b.png"
+  },
+  {
+   "file": "rank-bin.png",
+   "w": 132,
+   "h": 239,
+   "sheet": "image-d819e52b.png"
+  },
+  {
+   "file": "rank-notice-board.png",
+   "w": 164,
+   "h": 283,
+   "sheet": "image-d819e52b.png"
+  },
+  {
+   "file": "rank-sign-pole.png",
+   "w": 101,
+   "h": 320,
+   "sheet": "image-d819e52b.png"
+  },
+  {
+   "file": "bollard-light.png",
+   "w": 144,
+   "h": 420,
+   "sheet": "image-1fe79cc8.png"
+  },
+  {
+   "file": "coin-slot-box.png",
+   "w": 213,
+   "h": 372,
+   "sheet": "image-1fe79cc8.png"
+  },
+  {
+   "file": "station-umbrella-stand.png",
+   "w": 163,
+   "h": 354,
+   "sheet": "image-1fe79cc8.png"
+  },
+  {
+   "file": "station-newspaper-rack.png",
+   "w": 246,
+   "h": 390,
+   "sheet": "image-1fe79cc8.png"
+  },
+  {
+   "file": "umbrella-rental-stand.png",
+   "w": 231,
+   "h": 396,
+   "sheet": "image-1fe79cc8.png"
+  },
+  {
+   "file": "lost-item-box.png",
+   "w": 224,
+   "h": 366,
+   "sheet": "image-1fe79cc8.png"
+  },
+  {
+   "file": "key-box.png",
+   "w": 185,
+   "h": 383,
+   "sheet": "image-1fe79cc8.png"
+  },
+  {
+   "file": "ticket-stub-bin.png",
+   "w": 230,
+   "h": 347,
+   "sheet": "image-1fe79cc8.png"
+  }
+ ]
+}

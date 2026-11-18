@@ -631,8 +631,13 @@ export function createFrame(renderer, field, { samples = 4, fireScale = 0.5, blo
     update(dt, camera) {
       particles.update(dt, camera);
     },
-    render(scene, camera) {
-      renderer.getDrawingBufferSize(size);
+    /**
+     * @param target where the finished picture goes (null: the canvas). A photo passes its own, larger target: every
+     * pass is sized to it, and the brush spreads with it (frame.paintStride) so a big print reads as the same painting.
+     */
+    render(scene, camera, target = null) {
+      if (target) size.set(target.width, target.height);
+      else renderer.getDrawingBufferSize(size);
       fit(size.x, size.y);
       camera.updateMatrixWorld();
       const e = camera.matrixWorld.elements;
@@ -688,8 +693,9 @@ export function createFrame(renderer, field, { samples = 4, fireScale = 0.5, blo
       finalMaterial.uniforms.uExposure.value = frame.exposure;
       if (frame.grade) finalMaterial.uniforms.uGrade.value.copy(frame.grade);
       finalMaterial.uniforms.uPaint.value = frame.paint ?? 0;
-      finalMaterial.uniforms.uPaintTexel.value.set(1 / size.x, 1 / size.y);
-      pass(finalMaterial, null);
+      const stride = target ? frame.paintStride ?? 1 : 1;
+      finalMaterial.uniforms.uPaintTexel.value.set(stride / size.x, stride / size.y);
+      pass(finalMaterial, target);
     },
     /**
      * Compiles every shader the frame and the scene use, for the scene's own target, and sends every texture they

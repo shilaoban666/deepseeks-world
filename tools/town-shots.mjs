@@ -53,6 +53,14 @@ export const VIEWS = {
   fire: { x: -240, z: -84, yaw: 190, pitch: 16, dist: 11, face: 10, weather: 'windy', setup: "tg.whale.state.x = -240; tg.whale.state.z = -84; tg.whale.state.yaw = 0.17; tg.actions.act('fire'); for (let i = 0; i < 300; i++) tg.field.update(1/30, tg.camera);" },
   weatherPanel: { x: 96, z: 44, yaw: 235, pitch: 12, dist: 9, setup: "tg.panels.openWeather();" },
   bagPanel: { x: 40, z: 25, yaw: 230, pitch: 8, dist: 7, setup: "tg.game.state.bag.fish = 2; tg.game.state.bag.cooked = 1; tg.game.state.bag.flower = 3; tg.panels.openBag();" },
+  bigmap: { x: 40, z: 25, yaw: 230, pitch: 8, dist: 7, setup: "for (const [x, z] of [[-150,-500],[-440,0],[-430,640],[-700,300],[560,150],[640,-330],[-620,-250],[340,560]]) { tg.whale.state.x = x; tg.whale.state.z = z; tg.bigmap.update(0.016, true); } tg.whale.state.x = 40; tg.whale.state.z = 25; tg.bigmap.open(); tg.bigmap.setView(-40, -40, 1.05); tg.bigmap.setWaypoint({ id: 'lake-shore', name: '月亮湖边', x: -150, z: -500 }); tg.bigmap.update(0.016, true);" },
+  bigmapZoom: { x: 40, z: 25, yaw: 230, pitch: 8, dist: 7, setup: "tg.bigmap.open(); tg.bigmap.select('bus-AI 小镇站'); tg.bigmap.setView(60, 40, 4.5); tg.bigmap.update(0.016, true);" },
+  bigmapTown: { x: 40, z: 25, yaw: 230, pitch: 8, dist: 7, setup: "tg.bigmap.open(); tg.bigmap.setTab('town');" },
+  catch: { x: -150, z: -513, yaw: 50, pitch: 16, dist: 6, face: 180, setup: "tg.whale.state.yaw = Math.PI; tg.game.interact({ kind: 'fish', name: 'x' }); tg.game.fishing.phase = 'bite'; tg.game.fishing.fish = tg.fishdex.BY_ID['mandarin-fish']; tg.game.fishing.life = 99; const r = Math.random; Math.random = () => 0; tg.game.interact({ kind: 'fish', name: 'x' }); Math.random = r;" },
+  dex: { x: 40, z: 25, yaw: 230, pitch: 8, dist: 7, setup: "for (const id of ['crucian-carp','common-carp','grass-carp','mandarin-fish','koi-carp','snakehead','catfish','bream','chinese-sturgeon','tench','goldfish']) tg.game.state.dex[id] = 1 + (id.length % 4); tg.panels.openDex('lake');" },
+  crops: { x: -430, z: 664, yaw: 200, pitch: 18, dist: 8 },
+  orchard: { x: -704, z: 262, yaw: 160, pitch: 10, dist: 9 },
+  diveSea: { x: 900, z: 0, yaw: 120, pitch: 2, dist: 4.5, setup: "tg.actions.step(0.016, tg.plan.walkAt); tg.actions.act('dive'); for (let i = 0; i < 90; i++) tg.actions.step(1/30, tg.plan.walkAt);" },
   living: { indoor: true, x: -2.5, z: 2.5, yaw: 30, pitch: 40, dist: 7 },
   kitchen: { indoor: true, x: 4, z: 3.5, yaw: 200, pitch: 40, dist: 7 },
   bedroom: { indoor: true, x: -5, z: -3.5, yaw: 150, pitch: 40, dist: 7 },
@@ -120,6 +128,7 @@ for (const name of names.length ? names : Object.keys(VIEWS)) {
       const tg = window.__tg;
       if (!!v.indoor !== tg.indoor()) v.indoor ? tg.enter() : tg.exit();
       if (tg.hud.isOpen) tg.hud.close();
+      tg.bigmap?.close();
       tg.setClock(v.clock ?? (hour != null ? Number(hour) : 10.5));
       tg.whale.state.x = v.x;
       tg.whale.state.z = v.z;

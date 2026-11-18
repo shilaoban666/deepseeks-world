@@ -268,6 +268,7 @@ export const DISTRICTS = [
   { id: 'gate', yard: 9, name: '清镇市', x: 110, z: -336, r: 40, kind: 'gate' },
   { id: 'fishmarket', yard: 15, name: '河鲜集市', x: 178, z: -98, r: 30, kind: 'fishmarket' },
   { id: 'farm', name: '田园小镇', x: -620, z: 520, r: 130, kind: 'farm' },
+  { id: 'orchard', name: '果园', x: -700, z: 300, r: 60, kind: 'orchard' },
   { id: 'fields', name: '蔬菜田园', x: -430, z: 660, r: 170, kind: 'fields' },
   { id: 'snowtown', name: '雪山小镇', x: -620, z: -250, r: 80, kind: 'snowtown' },
   { id: 'seaside', name: '海滨小镇', x: 640, z: -330, r: 90, kind: 'seaside' },
@@ -482,4 +483,11 @@ export function waterAt(x, z) {
   }
   if (x > 480 && h < SEA.level) return SEA.level;
   return null;
+}
+
+/** 这片水是湖、河还是海（钓鱼和水下的鱼按它来）。 */
+export function waterKind(x, z) {
+  if (lakeDistance(x, z) < 1.5) return 'lake';
+  if (x > 480) return 'sea';
+  return 'river';
 }

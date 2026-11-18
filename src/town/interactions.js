@@ -1,6 +1,7 @@
 // 能做的事：钓鱼、种菜、做饭、买菜、逛超市、上网、打电玩、锻炼、看书、祈祷、接委托、许愿、采花。
 // 一个朴素的状态机 + 一点时间推进；面板都由 hud 弹出来。
 import { DISTRICTS } from './plan.js';
+import { rollFish, BY_ID, RARITY, WATER_NAME, spriteStyle } from './fishdex.js';
 
 const ITEMS = {
   rice: { name: '白米饭', icon: '🍚', price: 6, sell: 3 },
@@ -11,6 +12,7 @@ const ITEMS = {
   cooked: { name: '料理', icon: '🍱', price: 34, sell: 16 },
   tea: { name: '奶茶', icon: '🧋', price: 12, sell: 5 },
   pearl: { name: '珍珠', icon: '🫧', price: 60, sell: 30 },
+  fruit: { name: '水果', icon: '🍑', price: 10, sell: 5 },
 };
 
 const RECIPES = [
@@ -20,14 +22,18 @@ const RECIPES = [
   { name: '清炒时蔬配鱼', need: { fish: 1, veg: 2 }, hunger: 42, desc: '一个人吃有点多，但她能吃。' },
 ];
 
-export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, onMap, busStops = [] }) {
+export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, onMap, busStops = [], fishSprites = null, fishAtlas = './textures/plants/fish.png' }) {
   const state = {
     coins: 180,
     hunger: 74,
     stamina: 100,
     day: 1,
     minutes: 8 * 60 + 20,
-    bag: { rice: 2, fish: 0, veg: 1, seed: 3, flower: 0, cooked: 0, tea: 0, pearl: 0 },
+    bag: { rice: 2, fish: 0, veg: 1, seed: 3, flower: 0, cooked: 0, tea: 0, pearl: 0, fruit: 0 },
+    /** 图鉴：钓到过的鱼 { id: 条数 } */
+    dex: {},
+    /** 今天摘过的地方 { id: 第几天 } */
+    picked: {},
     plots: [],
     quests: [],
     stats: { fish: 0, cooked: 0, planted: 0, harvested: 0, shopped: 0, played: 0, read: 0 },
@@ -76,7 +82,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
   // ---- 钓鱼 --------------------------------------------------------------------------------------------------
   const startFishing = () => {
     if (fishing) return;
-    fishing = { phase: 'cast', t: 0, wait: 1.4 + Math.random() * 2.6 };
+    fishing = { phase: 'cast', t: 0, wait: 1.4 + Math.random() * 2.6, water: player.waterKind ?? 'lake' };
     hud.open('钓鱼', '<p id="fish-line">甩出鱼线……水面很静。</p>', [
       { label: '收线', onClick: () => { fishing = null; hud.close(); } },
     ], { dock: true });
@@ -94,15 +100,31 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
       hud.close();
       return true;
     }
-    const good = Math.random() < 0.62 + state.luck * 0.05;
-    if (good) {
-      const rare = Math.random() < 0.12;
-      add(rare ? 'pearl' : 'fish', 1);
-      state.stats.fish++;
-      hud.toast(rare ? '钓到一颗珍珠！' : '钓上来一条鱼！');
-    } else hud.toast('跑掉了……');
+    const f = fishing.fish;
+    const good = Math.random() < 0.7 + state.luck * 0.05 - (f.rarity - 1) * 0.08;
     fishing = null;
-    hud.close();
+    if (!good) {
+      hud.close();
+      hud.toast(f.rarity >= 3 ? `好大一条……线断了` : '跑掉了……');
+      return true;
+    }
+    state.stats.fish++;
+    const first = !state.dex[f.id];
+    state.dex[f.id] = (state.dex[f.id] ?? 0) + 1;
+    // 传说的鱼拍张照就放回去；其余进背包（做饭用）
+    if (f.rarity < 4) add('fish', 1);
+    else state.luck += 1;
+    if (f.water === 'lake' && Math.random() < 0.05) add('pearl', 1);
+    const pic = fishSprites?.[f.id] ? `<span style="${spriteStyle(fishSprites[f.id], fishAtlas, 150)}"></span>` : '';
+    hud.open(
+      first ? '新的鱼！' : '钓上来了',
+      `<div class="catch"><div class="pic">${pic}</div><div><b class="r${f.rarity}">${f.name}</b> <span class="tag r${f.rarity}">${RARITY[f.rarity]}</span><p>${f.note}</p><p class="dim">${WATER_NAME[f.water]} · 已钓到 ${state.dex[f.id]} 条${f.rarity >= 4 ? ' · 放回去了（运气 +1）' : ''}</p></div></div>`,
+      [
+        { label: '再甩一竿', primary: true, onClick: () => { hud.close(); startFishing(); } },
+        { label: '收竿', onClick: () => hud.close() },
+      ],
+      { dock: true },
+    );
     return true;
   };
 
@@ -389,6 +411,16 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
       case 'fishmarket':
         shop('河鲜集市', ['fish', 'rice', 'veg'], '刚从清溪河里捞上来的，还在蹦。架子上晒着一排鱼干。');
         break;
+      case 'orchard':
+      case 'pick': {
+        const today = state.day;
+        if (state.picked[it.id] === today) return void hud.toast(it.kind === 'orchard' ? '今天摘过了，留点给鸟吃' : '今天的菜摘过了');
+        state.picked[it.id] = today;
+        const n = 2 + Math.floor(Math.random() * 3);
+        add(it.kind === 'orchard' ? 'fruit' : 'veg', n);
+        hud.toast(it.kind === 'orchard' ? `摘了 ${n} 个果子（${it.fruit ?? '水果'}）` : `摘了 ${n} 把青菜`);
+        break;
+      }
       case 'village':
         hud.open(it.name, `<p>${it.text ?? ''}</p>`, [{ label: '嗯', onClick: () => hud.close() }]);
         break;
@@ -498,7 +530,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
 
   const update = (dt) => {
     clock += dt;
-    state.minutes += dt * 120; // 现实 1 秒 = 游戏 2 分钟
+    state.minutes += dt * 2; // 现实 1 秒 = 游戏 2 分钟（一天 12 分钟）
     if (state.minutes >= 24 * 60) {
       state.minutes -= 24 * 60;
       state.day++;
@@ -511,7 +543,10 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
       fishing.t += dt;
       if (fishing.phase === 'cast' && fishing.t > fishing.wait) {
         fishing.phase = 'bite';
-        fishing.life = 1.5;
+        // 上钩的是哪条：越稀有，留给你拉竿的时间越短
+        const h = Math.floor(state.minutes / 60) % 24;
+        fishing.fish = rollFish(fishing.water, { luck: state.luck, night: h < 6 || h >= 19, rain: player.raining });
+        fishing.life = [0, 1.7, 1.35, 1.05, 0.8][fishing.fish.rarity];
       } else if (fishing.phase === 'bite') {
         fishing.life -= dt;
         if (fishing.life <= 0) {
@@ -552,12 +587,17 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
     get fishing() {
       return fishing;
     },
+    /** 界面用：把物品图标换成手绘图 */
+    setIcon(key, html) {
+      if (ITEMS[key]) ITEMS[key].icon = html;
+      syncBag();
+    },
     syncStats,
     /** 背包里的东西：[{ key, name, icon, count, food }] */
     bagList,
     /** 用一样东西（吃掉 / 看看） */
     use(key) {
-      const FOOD = { rice: 18, fish: 0, veg: 6, cooked: 45, tea: 10, flower: 0 };
+      const FOOD = { rice: 18, fish: 0, veg: 6, cooked: 45, tea: 10, flower: 0, fruit: 12 };
       if (!(state.bag[key] > 0)) return '没有了';
       if (key === 'fish') return '生鱼……还是拿去厨房做了再吃吧';
       if (key === 'seed') return '种子要种到菜地里（家门口那块，E 种点什么）';

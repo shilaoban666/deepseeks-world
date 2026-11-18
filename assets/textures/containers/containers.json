@@ -1,0 +1,982 @@
+{
+ "crate_pine": {
+  "cn": "松木板箱",
+  "mean": [
+   0.9384,
+   0.8511,
+   0.6576
+  ],
+  "std": 0.064,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "crate_oak": {
+  "cn": "橡木板箱",
+  "mean": [
+   0.2949,
+   0.2321,
+   0.1517
+  ],
+  "std": 0.0331,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.36
+  ]
+ },
+ "crate_slatted": {
+  "cn": "条板箱",
+  "mean": [
+   0.6488,
+   0.4798,
+   0.267
+  ],
+  "std": 0.1201,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   5.75
+  ]
+ },
+ "crate_green": {
+  "cn": "墨绿漆箱",
+  "mean": [
+   0.478,
+   0.5862,
+   0.3845
+  ],
+  "std": 0.0488,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.64
+  ]
+ },
+ "crate_red": {
+  "cn": "红漆箱",
+  "mean": [
+   0.7024,
+   0.3487,
+   0.2892
+  ],
+  "std": 0.0419,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.5
+  ]
+ },
+ "crate_weathered": {
+  "cn": "风蚀板箱",
+  "mean": [
+   0.692,
+   0.6256,
+   0.4945
+  ],
+  "std": 0.1238,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "crate_plywood": {
+  "cn": "胶合板茶箱",
+  "mean": [
+   0.881,
+   0.6881,
+   0.3918
+  ],
+  "std": 0.0353,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "crate_fruit": {
+  "cn": "果箱薄板",
+  "mean": [
+   0.9372,
+   0.8684,
+   0.6928
+  ],
+  "std": 0.0721,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   0.9
+  ]
+ },
+ "crate_iron-corner": {
+  "cn": "铁角重箱",
+  "mean": [
+   0.6118,
+   0.5325,
+   0.4052
+  ],
+  "std": 0.2397,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.2
+  ]
+ },
+ "crate_burnt-mark": {
+  "cn": "烙痕木箱",
+  "mean": [
+   0.4669,
+   0.3335,
+   0.1839
+  ],
+  "std": 0.0851,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.54
+  ]
+ },
+ "barrel_oak": {
+  "cn": "橡木桶壁",
+  "mean": [
+   0.6592,
+   0.4962,
+   0.2732
+  ],
+  "std": 0.0604,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.27
+  ]
+ },
+ "barrel_wine": {
+  "cn": "酒渍桶壁",
+  "mean": [
+   0.4232,
+   0.1163,
+   0.1258
+  ],
+  "std": 0.0348,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.05
+  ]
+ },
+ "barrel_charred": {
+  "cn": "炭化桶内壁",
+  "mean": [
+   0.2296,
+   0.237,
+   0.23
+  ],
+  "std": 0.2566,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.47
+  ]
+ },
+ "barrel_hooped": {
+  "cn": "铁箍桶壁",
+  "mean": [
+   0.623,
+   0.4768,
+   0.2856
+  ],
+  "std": 0.137,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.7
+  ]
+ },
+ "keg_small": {
+  "cn": "小木桶条",
+  "mean": [
+   0.897,
+   0.8228,
+   0.6477
+  ],
+  "std": 0.0566,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   5.69
+  ]
+ },
+ "barrel_head": {
+  "cn": "桶顶放射板",
+  "mean": [
+   0.5408,
+   0.445,
+   0.3049
+  ],
+  "std": 0.0748,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "barrel_pickle": {
+  "cn": "腌菜桶条",
+  "mean": [
+   0.8886,
+   0.8059,
+   0.6139
+  ],
+  "std": 0.0515,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.34
+  ]
+ },
+ "bucket_wood": {
+  "cn": "木水桶条",
+  "mean": [
+   0.4699,
+   0.3684,
+   0.2271
+  ],
+  "std": 0.1083,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.97
+  ]
+ },
+ "trough_wood": {
+  "cn": "木槽内壁",
+  "mean": [
+   0.4954,
+   0.3789,
+   0.2126
+  ],
+  "std": 0.1675,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "churn_butter": {
+  "cn": "黄油搅桶木纹",
+  "mean": [
+   0.6149,
+   0.4476,
+   0.2513
+  ],
+  "std": 0.0505,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "metal_galvanised": {
+  "cn": "镀锌铁皮",
+  "mean": [
+   0.5941,
+   0.5897,
+   0.5679
+  ],
+  "std": 0.0738,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "metal_rusty-drum": {
+  "cn": "锈蚀油桶",
+  "mean": [
+   0.4735,
+   0.377,
+   0.3174
+  ],
+  "std": 0.0778,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "metal_blue-drum": {
+  "cn": "蓝漆油桶",
+  "mean": [
+   0.2412,
+   0.445,
+   0.5669
+  ],
+  "std": 0.0527,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "metal_tin-can": {
+  "cn": "瓦楞铁罐",
+  "mean": [
+   0.6711,
+   0.6216,
+   0.48
+  ],
+  "std": 0.1253,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.23
+  ]
+ },
+ "metal_copper": {
+  "cn": "黄铜板（带铜绿）",
+  "mean": [
+   0.5672,
+   0.4121,
+   0.259
+  ],
+  "std": 0.0513,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "metal_brass": {
+  "cn": "黄铜板（暖色）",
+  "mean": [
+   0.5992,
+   0.4876,
+   0.2523
+  ],
+  "std": 0.0519,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "metal_milk-churn": {
+  "cn": "钢制奶桶",
+  "mean": [
+   0.635,
+   0.6364,
+   0.6087
+  ],
+  "std": 0.0555,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "metal_cast-iron": {
+  "cn": "铸铁煤斗",
+  "mean": [
+   0.3432,
+   0.2546,
+   0.2023
+  ],
+  "std": 0.047,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.3
+  ]
+ },
+ "metal_corrugated": {
+  "cn": "瓦楞铁皮",
+  "mean": [
+   0.554,
+   0.5252,
+   0.4596
+  ],
+  "std": 0.0918,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.03
+  ]
+ },
+ "metal_perforated": {
+  "cn": "穿孔铁板",
+  "mean": [
+   0.4411,
+   0.3405,
+   0.2643
+  ],
+  "std": 0.1071,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "ceramic_terracotta": {
+  "cn": "赤陶",
+  "mean": [
+   0.8135,
+   0.5117,
+   0.3107
+  ],
+  "std": 0.0148,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "ceramic_celadon": {
+  "cn": "青瓷釉",
+  "mean": [
+   0.7531,
+   0.8105,
+   0.7454
+  ],
+  "std": 0.0182,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "ceramic_rough-clay": {
+  "cn": "粗陶素坯",
+  "mean": [
+   0.6614,
+   0.4499,
+   0.2973
+  ],
+  "std": 0.0185,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "ceramic_amphora": {
+  "cn": "双耳陶罐泥",
+  "mean": [
+   0.8125,
+   0.6112,
+   0.403
+  ],
+  "std": 0.0508,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "ceramic_stoneware": {
+  "cn": "炻器点釉",
+  "mean": [
+   0.5162,
+   0.5105,
+   0.4887
+  ],
+  "std": 0.0308,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "ceramic_earthenware": {
+  "cn": "褐釉陶",
+  "mean": [
+   0.4804,
+   0.3201,
+   0.2058
+  ],
+  "std": 0.0143,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "ceramic_stone-jar": {
+  "cn": "石雕罐面",
+  "mean": [
+   0.52,
+   0.4753,
+   0.4174
+  ],
+  "std": 0.0862,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "ceramic_concrete-tub": {
+  "cn": "混凝土槽",
+  "mean": [
+   0.5183,
+   0.5044,
+   0.4675
+  ],
+  "std": 0.0217,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "ceramic_glazed-tile": {
+  "cn": "青花瓷砖",
+  "mean": [
+   0.5463,
+   0.6745,
+   0.7834
+  ],
+  "std": 0.1674,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "ceramic_porcelain": {
+  "cn": "白瓷",
+  "mean": [
+   0.9372,
+   0.9257,
+   0.8934
+  ],
+  "std": 0.0234,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wicker_coarse": {
+  "cn": "粗柳编",
+  "mean": [
+   0.6604,
+   0.5468,
+   0.385
+  ],
+  "std": 0.0889,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wicker_fine": {
+  "cn": "细柳编",
+  "mean": [
+   0.7818,
+   0.5971,
+   0.3343
+  ],
+  "std": 0.0674,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wicker_rattan": {
+  "cn": "藤皮斜编",
+  "mean": [
+   0.7739,
+   0.6316,
+   0.4154
+  ],
+  "std": 0.0599,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wicker_bamboo": {
+  "cn": "竹编",
+  "mean": [
+   0.8055,
+   0.635,
+   0.3323
+  ],
+  "std": 0.0555,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wicker_reed-mat": {
+  "cn": "苇席编",
+  "mean": [
+   0.6548,
+   0.5096,
+   0.28
+  ],
+  "std": 0.0495,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wicker_straw": {
+  "cn": "草辫编",
+  "mean": [
+   0.8279,
+   0.6996,
+   0.425
+  ],
+  "std": 0.0585,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wicker_seagrass": {
+  "cn": "海草编",
+  "mean": [
+   0.4672,
+   0.4504,
+   0.2772
+  ],
+  "std": 0.0399,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wicker_split-bamboo": {
+  "cn": "竹篾格",
+  "mean": [
+   0.8088,
+   0.6684,
+   0.4056
+  ],
+  "std": 0.0708,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wicker_palm": {
+  "cn": "棕叶编",
+  "mean": [
+   0.7308,
+   0.6278,
+   0.4228
+  ],
+  "std": 0.0444,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wicker_rope": {
+  "cn": "麻绳缠绕",
+  "mean": [
+   0.7164,
+   0.6013,
+   0.4147
+  ],
+  "std": 0.0952,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "cloth_burlap-coarse": {
+  "cn": "粗麻袋布",
+  "mean": [
+   0.6152,
+   0.4915,
+   0.2959
+  ],
+  "std": 0.0581,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "cloth_burlap-fine": {
+  "cn": "细麻布",
+  "mean": [
+   0.824,
+   0.6823,
+   0.469
+  ],
+  "std": 0.0579,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "cloth_jute-heavy": {
+  "cn": "厚重黄麻",
+  "mean": [
+   0.6731,
+   0.5358,
+   0.3382
+  ],
+  "std": 0.0791,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "cloth_canvas": {
+  "cn": "帆布",
+  "mean": [
+   0.7837,
+   0.6174,
+   0.4303
+  ],
+  "std": 0.068,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "cloth_linen": {
+  "cn": "亚麻袋布",
+  "mean": [
+   0.9186,
+   0.876,
+   0.7854
+  ],
+  "std": 0.0377,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "cloth_leather": {
+  "cn": "旧皮革",
+  "mean": [
+   0.4585,
+   0.2994,
+   0.1789
+  ],
+  "std": 0.0265,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "cloth_tarpaulin": {
+  "cn": "深色油布",
+  "mean": [
+   0.2126,
+   0.2117,
+   0.1798
+  ],
+  "std": 0.0236,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "cloth_cardboard": {
+  "cn": "瓦楞纸板",
+  "mean": [
+   0.6174,
+   0.5036,
+   0.3417
+  ],
+  "std": 0.1016,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   7.08
+  ]
+ },
+ "cloth_kraft-paper": {
+  "cn": "牛皮纸",
+  "mean": [
+   0.7265,
+   0.5904,
+   0.4055
+  ],
+  "std": 0.0242,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "cloth_oiled-canvas": {
+  "cn": "油浸帆布",
+  "mean": [
+   0.5633,
+   0.471,
+   0.2694
+  ],
+  "std": 0.0505,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "mixed_pallet": {
+  "cn": "托盘木条",
+  "mean": [
+   0.4996,
+   0.3824,
+   0.2478
+  ],
+  "std": 0.0788,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.54
+  ]
+ },
+ "mixed_straw-bale": {
+  "cn": "草捆侧面",
+  "mean": [
+   0.8173,
+   0.6559,
+   0.3147
+  ],
+  "std": 0.0791,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "mixed_coal-sack": {
+  "cn": "沾煤灰麻袋",
+  "mean": [
+   0.4831,
+   0.4421,
+   0.3787
+  ],
+  "std": 0.1224,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "mixed_book-crate": {
+  "cn": "书箱深色板",
+  "mean": [
+   0.2316,
+   0.153,
+   0.1077
+  ],
+  "std": 0.0262,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   5.87
+  ]
+ },
+ "mixed_seed-box": {
+  "cn": "种子箱浅松木",
+  "mean": [
+   0.9471,
+   0.8764,
+   0.6886
+  ],
+  "std": 0.0451,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   0.99
+  ]
+ },
+ "mixed_compost-slats": {
+  "cn": "堆肥箱旧板",
+  "mean": [
+   0.4906,
+   0.443,
+   0.333
+  ],
+  "std": 0.0997,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.32
+  ]
+ },
+ "mixed_wire-mesh": {
+  "cn": "铁丝网框",
+  "mean": [
+   0.4266,
+   0.3545,
+   0.2471
+  ],
+  "std": 0.0819,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "mixed_lattice": {
+  "cn": "格栅木箱",
+  "mean": [
+   0.5422,
+   0.4032,
+   0.2491
+  ],
+  "std": 0.1245,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.74
+  ]
+ },
+ "mixed_zinc-bucket": {
+  "cn": "锌皮水桶",
+  "mean": [
+   0.6169,
+   0.6415,
+   0.6368
+  ],
+  "std": 0.0662,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.17
+  ]
+ },
+ "mixed_brass-chest": {
+  "cn": "铜箍箱板",
+  "mean": [
+   0.4757,
+   0.3519,
+   0.1807
+  ],
+  "std": 0.0787,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.44
+  ]
+ }
+}

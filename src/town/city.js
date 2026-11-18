@@ -847,20 +847,71 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     const names = new Map(plants.critter[0].sprites.map((sp, i) => [sp.name, i]));
     const goods = [];
     for (const g of stallGoods) goods.push({ ...g, sprite: names.get(g.name) });
-    // 蔬菜田园：菜地的格子里，一行行的大头菜和蔬菜
+    // 蔬菜田园：每块菜地种一种菜（白菜、萝卜、番茄、辣椒……），沿着地块的方向一行行排；
+    // 手绘的作物在 farm 图集里（tools/pack-extra.py），没有就退回大头菜
+    const farmIdx = new Map((plants.farm?.[0]?.sprites ?? []).map((sp, i) => [sp.name, i]));
+    const farmCards = [];
     {
       const d = DISTRICTS.find((x) => x.id === 'fields');
-      for (let x = d.x - 150; x < d.x + 150; x += 3.2) {
-        for (let z = d.z - 150; z < d.z + 150; z += 3.2) {
+      const VEG = [['napa-cabbage', 0.7], ['radish', 0.62], ['tomato', 0.9], ['chilli', 0.75], ['potato', 0.7], ['peanut', 0.55], ['soybean', 0.8], ['sweet-potato', 0.6], ['taro', 0.95], ['garlic', 0.55], ['sugar-beet', 0.6], ['pea', 0.85], ['broad-bean', 0.85], ['tobacco', 1.1]];
+      const TALL = [['sunflower', 1.9], ['rapeseed', 1.0], ['maize', 2.0], ['sorghum', 1.9], ['cotton', 1.1], ['sugarcane', 2.2]];
+      const U = [0.82, 0.57];
+      const V = [-0.57, 0.82];
+      for (let x = d.x - 160; x < d.x + 160; x += 1.0) {
+        for (let z = d.z - 160; z < d.z + 160; z += 1.0) {
+          // 只在行上种：沿地块方向每 1.6 m 一行、行里每 1.2 m 一棵
+          const u = x * U[0] + z * U[1];
+          const v = x * V[0] + z * V[1];
+          if (Math.abs(v / 1.6 - Math.round(v / 1.6)) > 0.32 || Math.abs(u / 1.2 - Math.round(u / 1.2)) > 0.42) continue;
           if (fieldsAt(x, z) < 0.5 || riverAt(x, z).d < RIVER_HALF + 8) continue;
           const p = plotAt(x, z);
-          if (p.kind !== 1 || p.edge < 0.9 || random() < 0.35) continue;
-          goods.push({ x: x + (random() - 0.5) * 0.6, z: z + (random() - 0.5) * 0.6, y: heightAt(x, z) - 0.04, h: p.id < 0.7 ? 0.62 : 0.5, sprite: names.get(p.id < 0.7 ? 'turnip' : 'vegetables') });
+          if (p.edge < 0.95) continue;
+          let pick = null;
+          if (p.kind === 1) pick = VEG[Math.floor(p.id * 9973) % VEG.length];
+          else if (p.kind === 0 && p.id < 0.2) pick = TALL[Math.floor(p.id * 7919) % TALL.length];
+          if (!pick) continue;
+          const name = `plant-${pick[0]}`;
+          const idx = farmIdx.get(name);
+          const y = heightAt(x, z) - 0.04;
+          if (idx != null) farmCards.push({ x: x + (random() - 0.5) * 0.25, z: z + (random() - 0.5) * 0.25, y, h: pick[1] * (0.85 + random() * 0.3), sprite: idx });
+          else if (p.kind === 1 && random() < 0.5) goods.push({ x, z, y, h: 0.55, sprite: names.get('turnip') });
         }
       }
+      add({ id: 'pick-fields', name: '菜地', kind: 'pick', x: d.x, z: d.z, r: 40, hint: 'E 摘点菜' });
       // 家门口那一畦
-      for (let i = 0; i < 6; i++) goods.push({ x: HOME[0] + 2.6 + (i % 3) * 1.4, z: HOME[1] + 2.4 + Math.floor(i / 3) * 1.2, y: heightAt(HOME[0] + 4, HOME[1] + 2) - 0.02, h: 0.55, sprite: names.get('turnip') });
+      for (let i = 0; i < 6; i++) {
+        const idx = farmIdx.get(i % 2 ? 'plant-radish' : 'plant-napa-cabbage');
+        const card = { x: HOME[0] + 2.6 + (i % 3) * 1.4, z: HOME[1] + 2.4 + Math.floor(i / 3) * 1.2, y: heightAt(HOME[0] + 4, HOME[1] + 2) - 0.02, h: 0.6 };
+        if (idx != null) farmCards.push({ ...card, sprite: idx });
+        else goods.push({ ...card, sprite: names.get('turnip') });
+      }
     }
+    // 果园：田园小镇北边，一排排结果的树；树下掉了几个果子
+    {
+      const d = DISTRICTS.find((x) => x.id === 'orchard');
+      const KINDS = [['apple', '苹果'], ['pear', '梨'], ['peach', '桃'], ['persimmon', '柿子'], ['mandarin', '橘子'], ['cherry', '樱桃'], ['loquat', '枇杷'], ['pomegranate', '石榴'], ['plum', '李子'], ['jujube', '枣']];
+      for (let r = 0; r < 7; r++) {
+        const kind = KINDS[(r * 3) % KINDS.length];
+        const idx = farmIdx.get(`orchard-${kind[0]}`);
+        for (let c = 0; c < 10; c++) {
+          const x = d.x - 36 + c * 8 + (r % 2) * 4;
+          const z = d.z - 27 + r * 9;
+          if (idx == null || riverAt(x, z).d < RIVER_HALF + 6) continue;
+          farmCards.push({ x, z, y: heightAt(x, z) - 0.1, h: 4.6 + random() * 1.2, sprite: idx, tree: true });
+          claim(x, z, 2.5);
+        }
+        add({ id: `orchard-${r}`, name: `${kind[1]}树`, kind: 'orchard', fruit: kind[1], x: d.x - 36 + 40, z: d.z - 27 + r * 9, r: 7, hint: `E 摘${kind[1]}` });
+      }
+      fence(b, d.x - 44, d.z - 34, d.x + 48, d.z - 34, 1.0);
+      fence(b, d.x - 44, d.z + 34, d.x + 48, d.z + 34, 1.0);
+      banner(b, d.x - 46, d.z, '果园', Math.PI / 2, 4);
+    }
+    // 作物矮，保留手绘线条和墨线；果树和别的树一样交给笔触去"刷"，不像贴纸
+    const crops = farmCards.filter((c) => !c.tree);
+    const fruitTrees = farmCards.filter((c) => c.tree);
+    if (crops.length) group.add(createPlantBatch(shared, plants.farm, crops, { alpha: 0.16 }));
+    if (fruitTrees.length) group.add(createPlantBatch(shared, plants.farm, fruitTrees, { alpha: 0.9, cutoff: 0.82 }));
+    group.userData.farmCards = farmCards.length;
     for (const t of trainSpots) goods.push({ ...t, sprite: names.get('train') });
     const still = createPlantBatch(shared, plants.critter, goods, { alpha: 0.16, sway: 0 });
     // （货和车不该随风摆：把相位以外的摆幅关掉——立牌着色器按高度摆，这里把它们的随机角清零即可）

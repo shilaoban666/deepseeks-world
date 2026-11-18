@@ -18,6 +18,8 @@ import { createParticles } from './particles.js';
 import { createWeather } from './weather.js';
 import { createActions } from './actions.js';
 import { createPanels } from './panels.js';
+import { spriteStyle } from './fishdex.js';
+import { createBigMap } from './bigmap.js';
 
 const params = new URLSearchParams(location.search);
 // 画质档和原作一样：high / medium / low。?lite=1 是 low 的别名（给核显用）。
@@ -241,9 +243,26 @@ const bakedMap = bakeMinimap();
 const minimap = createMinimap($('minimap'), bakedMap);
 minimap.setInteractables(city.interactables);
 
+// 图集里的鱼和作物（界面图标、钓鱼结果用）
+const fishSprites = Object.fromEntries((plants?.fish?.[0]?.sprites ?? []).map((sp) => [sp.name, sp]));
+const farmSprites = Object.fromEntries((plants?.farm?.[0]?.sprites ?? []).map((sp) => [sp.name, sp]));
 const game = createGame({
   hud,
+  fishSprites,
   player: {
+    /** 面朝的那片水是湖、河还是海 */
+    get waterKind() {
+      const f = [Math.sin(whale.state.yaw), Math.cos(whale.state.yaw)];
+      for (let d = 1.5; d <= 7; d += 0.75) {
+        const x = whale.state.x + f[0] * d;
+        const z = whale.state.z + f[1] * d;
+        if (plan.waterAt(x, z) != null) return plan.waterKind(x, z);
+      }
+      return plan.waterKind(whale.state.x, whale.state.z);
+    },
+    get raining() {
+      return weather.info.rain > 0.3;
+    },
     get x() {
       return whale.state.x;
     },
@@ -439,21 +458,35 @@ const indoorLight = () => {
 };
 
 // ---- 地图：M 轮着看——小地图 / 全图 / 手绘的小镇图 / 手绘的世界图 ---------------------------------------
-let mapPage = 0;
+// ---- 大地图（M）：手绘全图、探索、地点、目标、坐车 -----------------------------------------------------------
+const bigmap = createBigMap({
+  city,
+  hud,
+  getPlayer: () => ({ x: whale.state.x, z: whale.state.z, yaw: whale.state.yaw }),
+  onTravel(it) {
+    if (indoor) game.interact({ kind: 'exit', name: '玄关' });
+    actions.reset();
+    // 站到那个地方的门口/站台边，别站在屋里
+    const a = Math.atan2(it.x - whale.state.x, it.z - whale.state.z);
+    whale.setPos(it.x - Math.sin(a) * 3, it.z - Math.cos(a) * 3);
+    whale.state.yaw = a;
+    cam.yaw = a + Math.PI;
+    game.state.minutes += 20;
+    hud.toast(`坐车到了：${it.name}（20 分钟）`);
+  },
+});
 function showMap(page) {
-  mapPage = page;
-  const paper = $('papermap');
-  if (page <= 1) {
-    paper.classList.remove('on');
-    if ((page === 1) !== minimap.full) minimap.toggle();
-    $('minimap-mode').textContent = minimap.label;
-  } else {
-    if (minimap.full) minimap.toggle();
-    $('papermap-img').src = page === 2 ? './maps/town.jpg' : './maps/world.jpg';
-    $('papermap-cap').textContent = page === 2 ? '鱼的小镇地图 · 现在能走到的地方（M 看世界地图）' : '幻想世界地图 · 玉海城等铁路修好再去（M 关闭）';
-    paper.classList.add('on');
-  }
+  // 旧的接口：高铁站面板里"看看地图"还在调它
+  if (page) {
+    mapPage = 1;
+    bigmap.open();
+  } else bigmap.close();
 }
+let mapPage = 0;
+$('minimap-wrap').addEventListener('click', (e) => {
+  e.stopPropagation();
+  bigmap.open();
+});
 
 // ---- 交互：找最近的那个点 --------------------------------------------------------------------------------------
 let nearest = null;
@@ -471,9 +504,30 @@ const findNearest = () => {
   return best;
 };
 
+// 背包图标：有手绘图的换成手绘图
+{
+  const icon = (sp, atlas) => (sp ? `<span style="${spriteStyle(sp, atlas, 22)}"></span>` : null);
+  const set = (k, html) => html && game.setIcon(k, html);
+  set('fish', icon(fishSprites['crucian-carp'], './textures/plants/fish.png'));
+  set('rice', icon(farmSprites['produce-rice-ears'], './textures/plants/farm.png'));
+  set('veg', icon(farmSprites['produce-napa-cabbage'], './textures/plants/farm.png'));
+  set('fruit', icon(farmSprites['orchard-peach'], './textures/plants/farm.png'));
+}
+
+// 背包图标：有手绘图的换成手绘图
+{
+  const icon = (sp, atlas) => (sp ? `<span style="${spriteStyle(sp, atlas, 22)}"></span>` : null);
+  const set = (k, html) => html && game.setIcon(k, html);
+  set('fish', icon(fishSprites['crucian-carp'], './textures/plants/fish.png'));
+  set('rice', icon(farmSprites['produce-rice-ears'], './textures/plants/farm.png'));
+  set('veg', icon(farmSprites['produce-napa-cabbage'], './textures/plants/farm.png'));
+  set('fruit', icon(farmSprites['orchard-peach'], './textures/plants/farm.png'));
+}
+
 // ---- 动作 ------------------------------------------------------------------------------------------------------
 actions = createActions({ whale, mover, cam, game, hud, woods: city.woods, particles, field, plan, weather, plants, shared: field.uniforms, scene });
 const panels = createPanels({
+  fishSprites,
   actions,
   weather,
   game,
@@ -521,14 +575,26 @@ window.addEventListener('keydown', (e) => {
     standUp();
     return;
   }
+  // 大地图开着：只认 M 和 Esc，别的键不让人在后面乱走
+  if (bigmap.isOpen) {
+    if (e.code === 'KeyM' || e.code === 'Escape') bigmap.close();
+    mover.keys.clear();
+    e.preventDefault();
+    return;
+  }
+  if (e.code === 'KeyM') {
+    if (hud.isOpen) hud.close();
+    cam.unlock();
+    mover.keys.clear();
+    bigmap.open();
+    return;
+  }
   if (e.code === 'KeyE') {
     e.preventDefault();
     doInteract();
   }
-  if (e.code === 'KeyM') showMap((mapPage + 1) % 4);
   if (e.code === 'Escape') {
-    if (mapPage > 1) showMap(0);
-    else if (hud.isOpen) hud.close();
+    if (hud.isOpen) hud.close();
     else cam.unlock();
   }
   if (e.code === 'KeyB') panels.openBag();
@@ -544,7 +610,7 @@ window.addEventListener('keydown', (e) => {
   }
 });
 canvas.addEventListener('click', () => {
-  if (hud.isOpen) return;
+  if (hud.isOpen || bigmap.isOpen) return;
   cam.lock();
 });
 
@@ -600,6 +666,7 @@ function tick(dt) {
   if (!indoor) field.uniforms.uWalker.value.set(whale.state.x, whale.state.z, 0.55, 2.2);
   else interior.update(dt);
   game.update(dt);
+  bigmap.update(dt, !indoor);
   weather.update(dt, camera, { minutes: game.state.day * 1440 + game.state.minutes, outdoor: !indoor, night: nightNow });
   particles.update(dt, [field.uniforms.uWind.value.x, field.uniforms.uWind.value.y, field.uniforms.uWind.value.z]);
   syncSky();
@@ -618,7 +685,9 @@ function tick(dt) {
   if (mapAccum > 0.1) {
     mapAccum = 0;
     panels.update(indoor, camera);
-    minimap.draw(0.1, { x: whale.state.x, z: whale.state.z, yaw: whale.state.yaw });
+    minimap.draw(0.1, { x: whale.state.x, z: whale.state.z, yaw: whale.state.yaw, waypoint: bigmap.waypoint });
+    const wp = bigmap.waypoint;
+    $('minimap-mode').textContent = wp ? `→ ${wp.name} ${Math.round(Math.hypot(wp.x - whale.state.x, wp.z - whale.state.z))} 米` : 'M 大地图';
   }
 }
 
@@ -687,6 +756,8 @@ window.__tg = {
   actions,
   particles,
   panels,
+  bigmap,
+  fishdex: await import('./fishdex.js'),
   setPaint(v) {
     paintNow = v;
   },

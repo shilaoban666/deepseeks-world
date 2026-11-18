@@ -25,8 +25,9 @@ await page.waitForFunction(() => window.__tg?.ready, null, { timeout: 240000 });
 const out = await page.evaluate(() => {
   const tg = window.__tg;
   tg.setClock(10.5);
-  tg.whale.state.x = 96;
-  tg.whale.state.z = 44;
+  const at = new URLSearchParams(location.search).get('at')?.split(',').map(Number) ?? [96, 44];
+  tg.whale.state.x = at[0];
+  tg.whale.state.z = at[1];
   tg.cam.yaw = (235 * Math.PI) / 180;
   tg.cam.pitch = 0.2;
   const gl = tg.renderer.getContext();

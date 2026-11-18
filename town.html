@@ -362,6 +362,236 @@
           bottom: 70px;
         }
       }
+      .bag-grid.dex .slot {
+        cursor: default;
+        min-height: 112px;
+        justify-content: flex-end;
+      }
+      .bag-grid.dex .ic {
+        min-height: 54px;
+        display: flex;
+        align-items: center;
+      }
+      .bag-grid .unknown .ic span {
+        filter: brightness(0) opacity(0.22);
+      }
+      .bag-grid .unknown b {
+        color: var(--ink2);
+      }
+      .r1 { color: #6b7a62; }
+      .r2 { color: #2f6d97; }
+      .r3 { color: #9a4fc2; }
+      .r4 { color: #c27a14; font-weight: 700; }
+      .tag {
+        font-size: 11px;
+        padding: 1px 7px;
+        border-radius: 8px;
+        background: rgba(38, 51, 63, 0.07);
+      }
+      .catch {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+      }
+      .catch .pic {
+        width: 160px;
+        min-height: 90px;
+        display: grid;
+        place-items: center;
+      }
+      .catch p {
+        margin: 4px 0;
+      }
+      .tabs {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 4px;
+      }
+      .tab {
+        padding: 5px 14px;
+        border-radius: 10px;
+        border: 1px solid rgba(38, 51, 63, 0.18);
+        background: rgba(255, 255, 255, 0.5);
+        font: inherit;
+        color: var(--ink);
+        cursor: pointer;
+      }
+      .tab.on {
+        background: var(--blue);
+        color: #fff;
+        border-color: var(--blue);
+      }
+      /* ---------- 大地图 ---------- */
+      #bigmap {
+        position: fixed;
+        inset: 0;
+        display: none;
+        place-items: center;
+        background: rgba(24, 34, 44, 0.5);
+        z-index: 45;
+      }
+      #bigmap.on {
+        display: grid;
+      }
+      .bm-frame {
+        width: min(1240px, 96vw);
+        height: min(820px, 92vh);
+        display: flex;
+        flex-direction: column;
+        background: var(--paper);
+        border-radius: 18px;
+        box-shadow: 0 24px 70px rgba(20, 30, 40, 0.5);
+        overflow: hidden;
+      }
+      .bm-head {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 10px 16px;
+        border-bottom: 1px dashed rgba(38, 51, 63, 0.2);
+      }
+      .bm-head b {
+        font-size: 18px;
+        letter-spacing: 0.1em;
+      }
+      .bm-head .tabs {
+        margin: 0;
+      }
+      .bm-head .dim {
+        margin-left: auto;
+        color: var(--ink2);
+        font-size: 12px;
+      }
+      .bm-x {
+        border: 0;
+        background: none;
+        font-size: 18px;
+        cursor: pointer;
+        color: var(--ink2);
+      }
+      .bm-body {
+        flex: 1;
+        display: flex;
+        min-height: 0;
+      }
+      .bm-view {
+        position: relative;
+        flex: 1;
+        margin: 10px;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #e9dcbc;
+        box-shadow: inset 0 0 0 1px rgba(58, 46, 34, 0.25);
+      }
+      #bigmap-canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+        cursor: grab;
+      }
+      #bigmap-canvas:active {
+        cursor: grabbing;
+      }
+      #bigmap-paper {
+        display: none;
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        background: #e9dcbc;
+      }
+      #bigmap.paper #bigmap-paper {
+        display: block;
+      }
+      #bigmap.paper .bm-zoom {
+        display: none;
+      }
+      .bm-zoom {
+        position: absolute;
+        right: 12px;
+        bottom: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .bm-zoom button {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        border: 1px solid rgba(38, 51, 63, 0.2);
+        background: rgba(246, 239, 223, 0.95);
+        font-size: 16px;
+        cursor: pointer;
+        color: var(--ink);
+      }
+      #bigmap-side {
+        width: 260px;
+        padding: 14px 16px 14px 4px;
+        overflow: auto;
+        font-size: 13px;
+      }
+      .bm-sec {
+        margin: 6px 0 8px;
+        color: var(--ink2);
+      }
+      .bm-card {
+        padding: 12px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.6);
+        border: 1px solid rgba(38, 51, 63, 0.14);
+        margin-bottom: 12px;
+        line-height: 1.7;
+      }
+      .bm-title {
+        font-size: 16px;
+        font-weight: 700;
+      }
+      .bm-btns {
+        display: flex;
+        gap: 6px;
+        margin-top: 8px;
+      }
+      .bm-btns button {
+        flex: 1;
+        padding: 6px 8px;
+        border-radius: 9px;
+        border: 1px solid rgba(38, 51, 63, 0.2);
+        background: #fff;
+        font: inherit;
+        cursor: pointer;
+      }
+      .bm-btns button.primary {
+        background: var(--blue);
+        color: #fff;
+        border-color: var(--blue);
+      }
+      .bm-legend {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px 10px;
+      }
+      .bm-line {
+        display: inline-block;
+        width: 18px;
+        height: 4px;
+        border-radius: 2px;
+        margin-right: 4px;
+        vertical-align: middle;
+      }
+      .bm-line.bus {
+        background: repeating-linear-gradient(90deg, #e88c34 0 5px, transparent 5px 8px);
+      }
+      .bm-line.road {
+        background: #f8eed6;
+        box-shadow: 0 0 0 1.5px #78604a;
+      }
+      .bm-line.lane {
+        background: repeating-linear-gradient(90deg, #8c6c46 0 3px, transparent 3px 6px);
+      }
+      #minimap-wrap {
+        cursor: pointer;
+      }
       #papermap {
         position: fixed;
         inset: 0;
@@ -635,7 +865,7 @@
 
       <div id="minimap-wrap" class="card">
         <canvas id="minimap" width="194" height="194"></canvas>
-        <div id="minimap-label"><span>小地图</span><span id="minimap-mode">M 全图</span></div>
+        <div id="minimap-label"><span>小地图</span><span id="minimap-mode">M 大地图</span></div>
       </div>
 
       <div id="panel">
@@ -658,6 +888,29 @@
     </div>
 
     <script type="module" src="./src/town/main.js"></script>
+    <!-- 大地图（M） -->
+    <div id="bigmap">
+      <div class="bm-frame">
+        <div class="bm-head">
+          <b>地图</b>
+          <div class="tabs">
+            <button class="tab on" data-tab="map">大地图</button>
+            <button class="tab" data-tab="town">小镇手绘图</button>
+            <button class="tab" data-tab="world">世界地图</button>
+          </div>
+          <span class="dim">M / Esc 关闭</span>
+          <button class="bm-x" data-close>✕</button>
+        </div>
+        <div class="bm-body">
+          <div class="bm-view">
+            <canvas id="bigmap-canvas"></canvas>
+            <img id="bigmap-paper" alt="" />
+            <div class="bm-zoom"><button data-zoom="in">＋</button><button data-zoom="out">－</button><button data-zoom="me" title="回到自己">◎</button></div>
+          </div>
+          <div id="bigmap-side"></div>
+        </div>
+      </div>
+    </div>
     <!-- 手绘地图（M 键轮着看） -->
     <div id="papermap">
       <figure>

@@ -107,6 +107,39 @@ const report = await page.evaluate(async () => {
   tg.game.state.bag.rice = 2; const h0 = tg.game.state.hunger; tg.game.use('rice'); act.eat = Math.round(tg.game.state.hunger - h0);
   tg.panels.openBag(); act.bagPanel = document.querySelectorAll('.bag-grid .slot').length; tg.hud.close();
   tg.panels.openWeather(); act.weatherPanel = document.querySelectorAll('.bag-grid .wx').length; tg.hud.close();
+  // 大地图：M 开关、选地点、设目标、坐车
+  tg.bigmap.close(); // 前面高铁站面板的"看看地图"按钮会把它打开
+  window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyM' }));
+  act.mapOpen = tg.bigmap.isOpen;
+  tg.bigmap.select('station');
+  act.mapSelect = !!document.querySelector('#bigmap-side .bm-card');
+  document.querySelector('#bigmap-side [data-act="wp"]')?.click();
+  act.waypoint = tg.bigmap.waypoint?.name;
+  document.querySelector('#bigmap-side [data-act="go"]')?.click();
+  act.traveled = Math.round(Math.hypot(tg.whale.state.x - 560, tg.whale.state.z - 164));
+  act.mapClosedAfterTravel = !tg.bigmap.isOpen;
+  window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyM' }));
+  window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyM' }));
+  act.mapToggle = !tg.bigmap.isOpen;
+  // 钓鱼：三种水各钓一条，进图鉴
+  tg.weather.set('clear', { immediate: true });
+  const r0 = Math.random;
+  for (const [x, z, yaw] of [[-150, -513, Math.PI], [-449, 0, Math.PI / 2], [804, 60, Math.PI / 2]]) {
+    tg.whale.state.x = x; tg.whale.state.z = z; tg.whale.state.yaw = yaw; step(2);
+    tg.game.interact({ kind: 'fish', name: 'x' });
+    if (!tg.game.fishing) continue;
+    tg.game.fishing.wait = 0; tg.game.update(0.05);
+    Math.random = () => 0.01; tg.game.interact({ kind: 'fish', name: 'x' }); Math.random = r0;
+    tg.hud.close();
+  }
+  act.dex = Object.keys(tg.game.state.dex);
+  // 摘菜、摘果
+  const v0 = tg.game.state.bag.veg ?? 0;
+  tg.game.interact(tg.city.interactables.find((i) => i.kind === 'pick'));
+  act.pickVeg = (tg.game.state.bag.veg ?? 0) - v0;
+  tg.game.interact(tg.city.interactables.find((i) => i.kind === 'orchard'));
+  act.pickFruit = tg.game.state.bag.fruit;
+  act.farmCards = tg.city.group.userData.farmCards;
   out.actions = act;
   out.state = { coins: tg.game.state.coins ?? tg.game.state.gold, day: tg.game.state.day };
   out.stats = tg.city.stats;

@@ -237,10 +237,11 @@ export function createMinimap(canvas, baked) {
       const span = 520;
       const scale = W / span;
       const sx = ((s.x + HALF) / (HALF * 2)) * baked.width - (span / (HALF * 2)) * baked.width * 0.5;
+      const sz = ((s.z + HALF) / (HALF * 2)) * baked.height - (span / (HALF * 2)) * baked.height * 0.5;
       const sw = (span / (HALF * 2)) * baked.width;
       g.fillStyle = '#1d2a33';
       g.fillRect(0, 0, W, H);
-      g.drawImage(baked, sx, sx, sw, sw, 0, 0, W, H);
+      g.drawImage(baked, sx, sz, sw, sw, 0, 0, W, H);
       const w2m = (x, z) => [W / 2 + (x - s.x) * scale, H / 2 + (z - s.z) * scale];
       // 交互点（只画近的）
       for (const it of interactables) {
@@ -248,6 +249,38 @@ export function createMinimap(canvas, baked) {
         if (d > span * 0.55) continue;
         const [px, py] = w2m(it.x, it.z);
         api.marker(px, py, it);
+      }
+      // 目标：在圈里就画图钉，不在就在边上画一个指向它的小三角
+      if (s.waypoint) {
+        const [wx, wy] = w2m(s.waypoint.x, s.waypoint.z);
+        const inside = wx > 8 && wy > 8 && wx < W - 8 && wy < H - 8;
+        g.fillStyle = '#e0533a';
+        g.strokeStyle = '#fff8ee';
+        g.lineWidth = 1.5;
+        if (inside) {
+          g.beginPath();
+          g.arc(wx, wy - 6, 4.5, 0, Math.PI * 2);
+          g.moveTo(wx - 3.5, wy - 4);
+          g.lineTo(wx, wy + 2);
+          g.lineTo(wx + 3.5, wy - 4);
+          g.fill();
+          g.stroke();
+        } else {
+          const a = Math.atan2(wy - H / 2, wx - W / 2);
+          const ex = W / 2 + Math.cos(a) * (W / 2 - 9);
+          const ey = H / 2 + Math.sin(a) * (H / 2 - 9);
+          g.save();
+          g.translate(ex, ey);
+          g.rotate(a);
+          g.beginPath();
+          g.moveTo(7, 0);
+          g.lineTo(-4, -5);
+          g.lineTo(-4, 5);
+          g.closePath();
+          g.fill();
+          g.stroke();
+          g.restore();
+        }
       }
       // 人
       api.arrow(W / 2, H / 2, s.yaw, 7);
@@ -314,4 +347,10 @@ const COLOR = {
   farm: '#c8e6a0',
   gather: '#f7bfe0',
   mail: '#e8dcc8',
+  bus: '#f0a64a',
+  station: '#7ab4e8',
+  fishmarket: '#6fc3e8',
+  village: '#e8dcc8',
+  orchard: '#f2b6a0',
+  pick: '#c8e6a0',
 };

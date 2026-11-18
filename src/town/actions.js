@@ -5,6 +5,7 @@
 // 体力和氧气怎么变、脚下冒什么粒子。每帧返回给主循环：她在不在动、摆什么姿势、镜头看多高。
 import * as THREE from 'three';
 import { createPlantBatch } from './billboard.js';
+import { FISH } from './fishdex.js';
 
 const GRAVITY = 16;
 const JUMP = 5.6;
@@ -55,18 +56,22 @@ export function createActions({ whale, mover, cam, game, hud, woods, particles, 
   towel.visible = false;
   scene.add(towel);
 
-  // 水下的鱼：一小群，跟着潜水的人
+  // 水下的鱼：湖、河、海各一群（图鉴里那片水的鱼），跟着潜水的人
   let fish = null;
-  if (plants?.critter?.length) {
-    const idx = plants.critter[0].sprites.findIndex((sp) => sp.name === 'fish');
-    if (idx >= 0) {
-      const school = Array.from({ length: 14 }, (_, i) => ({ a: Math.random() * 6.28, r: 2 + Math.random() * 5, h: Math.random(), w: (0.3 + Math.random() * 0.4) * (i % 2 ? 1 : -1) }));
-      const batch = createPlantBatch(shared, plants.critter, school.map(() => ({ x: 0, z: 0, y: -999, h: 0.42, sprite: idx })), { alpha: 0.16, sway: 0 });
+  if (plants?.fish?.length) {
+    const sprites = plants.fish[0].sprites;
+    const idxOf = new Map(sprites.map((sp, i) => [sp.name, i]));
+    const pick = (water) => FISH.filter((f) => f.water === water && f.rarity <= 3).map((f) => idxOf.get(f.id)).filter((i) => i != null);
+    const schools = {};
+    for (const water of ['lake', 'river', 'sea']) {
+      const ids = pick(water);
+      const school = Array.from({ length: 16 }, (_, i) => ({ a: Math.random() * 6.28, r: 2 + Math.random() * 6, h: Math.random(), w: (0.25 + Math.random() * 0.4) * (i % 2 ? 1 : -1), size: 0.3 + Math.random() * 0.45 }));
+      const batch = createPlantBatch(shared, plants.fish, school.map((f, i) => ({ x: 0, z: 0, y: -999, h: f.size, sprite: ids[i % ids.length] })), { alpha: 0.16, sway: 0 });
       batch.visible = false;
       scene.add(batch);
-      const at = batch.children[0].geometry.attributes.aOffset;
-      fish = { batch, school, at };
+      schools[water] = { batch, school, at: batch.children[0].geometry.attributes.aOffset };
     }
+    fish = schools;
   }
 
   const keyDown = (c) => mover.keys.has(c);
@@ -444,18 +449,20 @@ export function createActions({ whale, mover, cam, game, hud, woods, particles, 
 
       // 水下的鱼
       if (fish) {
-        fish.batch.visible = mode === 'dive';
-        if (mode === 'dive' && lastWater != null) {
+        const kind = mode === 'dive' ? plan.waterKind(s.x, s.z) : null;
+        for (const [water, sc] of Object.entries(fish)) {
+          sc.batch.visible = water === kind;
+          if (water !== kind || lastWater == null) continue;
           const t = performance.now() * 0.001;
-          fish.school.forEach((f, i) => {
+          sc.school.forEach((f, i) => {
             const a = f.a + t * f.w;
             const x = s.x + Math.cos(a) * f.r;
             const z = s.z + Math.sin(a) * f.r;
             const bed = plan.heightAt(x, z);
             const y = Math.min(lastWater - 0.6, Math.max(bed + 0.3, s.y + 0.4 + (f.h - 0.5) * 2.2));
-            fish.at.setXYZ(i, x, y, z);
+            sc.at.setXYZ(i, x, y, z);
           });
-          fish.at.needsUpdate = true;
+          sc.at.needsUpdate = true;
         }
       }
       return { moving, pose, eye };
@@ -467,7 +474,7 @@ export function createActions({ whale, mover, cam, game, hud, woods, particles, 
       tree = null;
       towel.visible = false;
       rod.visible = line.visible = float.visible = false;
-      if (fish) fish.batch.visible = false;
+      if (fish) for (const sc of Object.values(fish)) sc.batch.visible = false;
     },
   };
   return actions;

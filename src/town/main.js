@@ -20,6 +20,7 @@ import { createActions } from './actions.js';
 import { createPanels } from './panels.js';
 import { spriteStyle } from './fishdex.js';
 import { createBigMap } from './bigmap.js';
+import { createPhoto } from './photo.js';
 
 const params = new URLSearchParams(location.search);
 // 画质档和原作一样：high / medium / low。?lite=1 是 low 的别名（给核显用）。
@@ -514,16 +515,6 @@ const findNearest = () => {
   set('fruit', icon(farmSprites['orchard-peach'], './textures/plants/farm.png'));
 }
 
-// 背包图标：有手绘图的换成手绘图
-{
-  const icon = (sp, atlas) => (sp ? `<span style="${spriteStyle(sp, atlas, 22)}"></span>` : null);
-  const set = (k, html) => html && game.setIcon(k, html);
-  set('fish', icon(fishSprites['crucian-carp'], './textures/plants/fish.png'));
-  set('rice', icon(farmSprites['produce-rice-ears'], './textures/plants/farm.png'));
-  set('veg', icon(farmSprites['produce-napa-cabbage'], './textures/plants/farm.png'));
-  set('fruit', icon(farmSprites['orchard-peach'], './textures/plants/farm.png'));
-}
-
 // ---- 动作 ------------------------------------------------------------------------------------------------------
 actions = createActions({ whale, mover, cam, game, hud, woods: city.woods, particles, field, plan, weather, plants, shared: field.uniforms, scene });
 const panels = createPanels({
@@ -535,6 +526,10 @@ const panels = createPanels({
   onAction(id) {
     if (id === 'bag') return panels.openBag();
     if (id === 'weather') return panels.openWeather();
+    if (id === 'camera') {
+      hud.close();
+      return photo.enter();
+    }
     if (id === 'strike') {
       hud.close();
       // 劈在她前面二十几米的草地上
@@ -546,6 +541,33 @@ const panels = createPanels({
     if (id === 'run') return hud.toast('按住 Shift 跑');
     if (indoor || seated) return;
     actions.act(id);
+  },
+});
+
+// ---- 相机（V）：取景、4K 照片、相册 -----------------------------------------------------------------------------
+const photo = createPhoto({
+  renderer,
+  frame,
+  camera,
+  cam,
+  whale,
+  canvas,
+  hud,
+  mover,
+  scene: () => (indoor ? indoorScene : scene),
+  info: () => ({
+    place: $('stat-place').textContent || '清镇',
+    clock: $('stat-clock').textContent,
+    weather: `${weather.info.name} ${weather.info.temp}°C`,
+    underwater: $('underwater').classList.contains('on'),
+  }),
+  light: {
+    get: () => frozenClock ?? (game.state.minutes / 60) % 24,
+    frozen: () => frozenClock,
+    set(h) {
+      frozenClock = h;
+      syncSky();
+    },
   },
 });
 
@@ -570,6 +592,11 @@ const doInteract = () => {
 
 window.addEventListener('keydown', (e) => {
   if (e.target instanceof HTMLInputElement) return;
+  // 相机拿在手上：按键都归相机（走路的 WASD 照常）
+  if (photo.on) {
+    photo.handleKey(e);
+    return;
+  }
   // 坐着时按移动键也起身
   if (seated && ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space'].includes(e.code)) {
     standUp();
@@ -580,6 +607,12 @@ window.addEventListener('keydown', (e) => {
     if (e.code === 'KeyM' || e.code === 'Escape') bigmap.close();
     mover.keys.clear();
     e.preventDefault();
+    return;
+  }
+  if (e.code === 'KeyV') {
+    if (hud.isOpen) hud.close();
+    mover.keys.delete('KeyV');
+    photo.enter();
     return;
   }
   if (e.code === 'KeyM') {
@@ -610,7 +643,7 @@ window.addEventListener('keydown', (e) => {
   }
 });
 canvas.addEventListener('click', () => {
-  if (hud.isOpen || bigmap.isOpen) return;
+  if (hud.isOpen || bigmap.isOpen || photo.on) return;
   cam.lock();
 });
 
@@ -660,6 +693,8 @@ function tick(dt) {
     whale.update(dt, camera, moving || window.__tg?.forceMoving, window.__tg?.forcePose ?? pose);
     cam.update(dt, whale.state, ground, eye);
   }
+  // 相机拿在手上：焦距、歪镜头、她眼睛的机位
+  photo.apply();
 
   field.update(dt, camera);
   city.update(dt, [whale.state.x, whale.state.z], camera);
@@ -757,6 +792,7 @@ window.__tg = {
   particles,
   panels,
   bigmap,
+  photo,
   fishdex: await import('./fishdex.js'),
   setPaint(v) {
     paintNow = v;

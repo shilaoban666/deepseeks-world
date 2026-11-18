@@ -47,6 +47,7 @@ export function createPanels({ actions, weather, game, hud, onAction, fishSprite
     for (const [id, k, label] of [
       ['bag', 'B', '背包'],
       ['weather', 'T', '天气'],
+      ['camera', 'V', '相机'],
     ]) {
       const b = document.createElement('button');
       b.className = 'act menu';

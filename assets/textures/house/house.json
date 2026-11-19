@@ -3898,5 +3898,1305 @@
    0.0,
    4.4
   ]
+ },
+ "roof-tile-terracotta": {
+  "mean": [
+   0.8413,
+   0.3489,
+   0.2207
+  ],
+  "std": 0.0569,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.08
+  ]
+ },
+ "roof-tile-kawara": {
+  "mean": [
+   0.2875,
+   0.2976,
+   0.3284
+  ],
+  "std": 0.0366,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.33
+  ]
+ },
+ "roof-tile-slate": {
+  "mean": [
+   0.3688,
+   0.3988,
+   0.4561
+  ],
+  "std": 0.0574,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "roof-tile-thatch": {
+  "mean": [
+   0.8821,
+   0.6328,
+   0.2159
+  ],
+  "std": 0.078,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.03
+  ]
+ },
+ "roof-tile-shingle": {
+  "mean": [
+   0.5523,
+   0.4227,
+   0.3394
+  ],
+  "std": 0.0846,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.33
+  ]
+ },
+ "roof-tile-pantile": {
+  "mean": [
+   0.8202,
+   0.314,
+   0.1967
+  ],
+  "std": 0.0557,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   7.47
+  ]
+ },
+ "roof-tile-mossy": {
+  "mean": [
+   0.5688,
+   0.3751,
+   0.2894
+  ],
+  "std": 0.0528,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.37
+  ]
+ },
+ "roof-tile-bleached": {
+  "mean": [
+   0.7051,
+   0.6859,
+   0.6625
+  ],
+  "std": 0.1053,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.38
+  ]
+ },
+ "roof-tile-green-glazed": {
+  "mean": [
+   0.2912,
+   0.5224,
+   0.3103
+  ],
+  "std": 0.0723,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.65
+  ]
+ },
+ "roof-tile-fish-scale": {
+  "mean": [
+   0.8062,
+   0.3757,
+   0.255
+  ],
+  "std": 0.0608,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.48
+  ]
+ },
+ "roof-ridge-cap": {
+  "mean": [
+   0.742,
+   0.3886,
+   0.2587
+  ],
+  "std": 0.0805,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "roof-hip-cap": {
+  "mean": [
+   0.8017,
+   0.3609,
+   0.2258
+  ],
+  "std": 0.0599,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.59
+  ]
+ },
+ "roof-verge-trim": {
+  "mean": [
+   0.8295,
+   0.8146,
+   0.7684
+  ],
+  "std": 0.1343,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.19
+  ]
+ },
+ "roof-fascia-board": {
+  "mean": [
+   0.7905,
+   0.7301,
+   0.6687
+  ],
+  "std": 0.1714,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.71
+  ]
+ },
+ "roof-soffit-vent": {
+  "mean": [
+   0.9239,
+   0.8638,
+   0.774
+  ],
+  "std": 0.1285,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.13
+  ]
+ },
+ "roof-eaves-bracket": {
+  "mean": [
+   0.6424,
+   0.4055,
+   0.2913
+  ],
+  "std": 0.1363,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.25
+  ]
+ },
+ "roof-guttering": {
+  "mean": [
+   0.5399,
+   0.4781,
+   0.4215
+  ],
+  "std": 0.2104,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.09
+  ]
+ },
+ "roof-downpipe": {
+  "mean": [
+   0.8162,
+   0.6872,
+   0.5166
+  ],
+  "std": 0.1722,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.15
+  ]
+ },
+ "roof-flashing-lead": {
+  "mean": [
+   0.6737,
+   0.4474,
+   0.3889
+  ],
+  "std": 0.0535,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.65
+  ]
+ },
+ "roof-dormer-cheek": {
+  "mean": [
+   0.4112,
+   0.4493,
+   0.5224
+  ],
+  "std": 0.0621,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "chimney-brick": {
+  "mean": [
+   0.6968,
+   0.3278,
+   0.2412
+  ],
+  "std": 0.106,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.13
+  ]
+ },
+ "chimney-stone": {
+  "mean": [
+   0.6203,
+   0.5452,
+   0.4799
+  ],
+  "std": 0.0984,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "chimney-pot-terracotta": {
+  "mean": [
+   0.7542,
+   0.3724,
+   0.2417
+  ],
+  "std": 0.0885,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "chimney-cowl-iron": {
+  "mean": [
+   0.631,
+   0.5933,
+   0.5539
+  ],
+  "std": 0.3246,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "chimney-cowl-vane": {
+  "mean": [
+   0.872,
+   0.7548,
+   0.6693
+  ],
+  "std": 0.2161,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "chimney-flaunching": {
+  "mean": [
+   0.5314,
+   0.5291,
+   0.5286
+  ],
+  "std": 0.0148,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.02
+  ]
+ },
+ "ext-plaster-lime": {
+  "mean": [
+   0.9866,
+   0.884,
+   0.6864
+  ],
+  "std": 0.0131,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.09
+  ]
+ },
+ "ext-roughcast": {
+  "mean": [
+   0.9169,
+   0.8414,
+   0.7368
+  ],
+  "std": 0.0571,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   6.07
+  ]
+ },
+ "ext-stone-rubble": {
+  "mean": [
+   0.6081,
+   0.5488,
+   0.4865
+  ],
+  "std": 0.0814,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   5.74
+  ]
+ },
+ "ext-ashlar": {
+  "mean": [
+   0.7872,
+   0.6943,
+   0.581
+  ],
+  "std": 0.0682,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.93
+  ]
+ },
+ "ext-flint": {
+  "mean": [
+   0.5843,
+   0.5334,
+   0.4909
+  ],
+  "std": 0.1672,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "ext-brick-red": {
+  "mean": [
+   0.7152,
+   0.3313,
+   0.2662
+  ],
+  "std": 0.0895,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.65
+  ]
+ },
+ "ext-brick-yellow": {
+  "mean": [
+   0.9221,
+   0.6865,
+   0.2517
+  ],
+  "std": 0.0647,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   7.92
+  ]
+ },
+ "ext-half-timber": {
+  "mean": [
+   0.8129,
+   0.656,
+   0.4814
+  ],
+  "std": 0.2053,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.89
+  ]
+ },
+ "ext-timber-cladding": {
+  "mean": [
+   0.7054,
+   0.4321,
+   0.2897
+  ],
+  "std": 0.0409,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.26
+  ]
+ },
+ "facade-window-reveal": {
+  "mean": [
+   0.6711,
+   0.5776,
+   0.4879
+  ],
+  "std": 0.1189,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.5
+  ]
+ },
+ "facade-shutter-louvre": {
+  "mean": [
+   0.368,
+   0.5612,
+   0.4398
+  ],
+  "std": 0.1145,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.35
+  ]
+ },
+ "facade-balcony-iron": {
+  "mean": [
+   0.6867,
+   0.6632,
+   0.6278
+  ],
+  "std": 0.3209,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.76
+  ]
+ },
+ "facade-balcony-wood": {
+  "mean": [
+   0.6726,
+   0.6653,
+   0.6553
+  ],
+  "std": 0.1155,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.04
+  ]
+ },
+ "facade-balcony-juliet": {
+  "mean": [
+   0.7376,
+   0.6581,
+   0.5333
+  ],
+  "std": 0.1665,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.95
+  ]
+ },
+ "facade-porch-column": {
+  "mean": [
+   0.6657,
+   0.538,
+   0.4842
+  ],
+  "std": 0.156,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   0.9
+  ]
+ },
+ "facade-porch-step": {
+  "mean": [
+   0.6185,
+   0.5812,
+   0.5457
+  ],
+  "std": 0.0686,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.17
+  ]
+ },
+ "facade-door-canopy": {
+  "mean": [
+   0.793,
+   0.6173,
+   0.4754
+  ],
+  "std": 0.2163,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "facade-awning": {
+  "mean": [
+   0.8994,
+   0.5652,
+   0.4776
+  ],
+  "std": 0.2266,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.1
+  ]
+ },
+ "facade-shop-front": {
+  "mean": [
+   0.4263,
+   0.5199,
+   0.5489
+  ],
+  "std": 0.1326,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.28
+  ]
+ },
+ "facade-bracket-sign": {
+  "mean": [
+   0.827,
+   0.7484,
+   0.6463
+  ],
+  "std": 0.21,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.44
+  ]
+ },
+ "facade-hanging-basket": {
+  "mean": [
+   0.8276,
+   0.7614,
+   0.6317
+  ],
+  "std": 0.1931,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "facade-window-box": {
+  "mean": [
+   0.7002,
+   0.5799,
+   0.3892
+  ],
+  "std": 0.1942,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "facade-wall-lantern": {
+  "mean": [
+   0.8165,
+   0.7119,
+   0.5576
+  ],
+  "std": 0.1598,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "facade-number-plaque": {
+  "mean": [
+   0.7409,
+   0.5904,
+   0.4958
+  ],
+  "std": 0.1976,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "facade-bell-push": {
+  "mean": [
+   0.7395,
+   0.5379,
+   0.3918
+  ],
+  "std": 0.198,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "facade-letter-plate": {
+  "mean": [
+   0.468,
+   0.3282,
+   0.3067
+  ],
+  "std": 0.0404,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "facade-doorstep-slab": {
+  "mean": [
+   0.6509,
+   0.6088,
+   0.5603
+  ],
+  "std": 0.0471,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "facade-railings": {
+  "mean": [
+   0.782,
+   0.7059,
+   0.5491
+  ],
+  "std": 0.2872,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "facade-gate-iron": {
+  "mean": [
+   0.6643,
+   0.6196,
+   0.5651
+  ],
+  "std": 0.2603,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   0.99
+  ]
+ },
+ "garden-fence-picket": {
+  "mean": [
+   0.8598,
+   0.7959,
+   0.7116
+  ],
+  "std": 0.118,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.49
+  ]
+ },
+ "garden-fence-board": {
+  "mean": [
+   0.6965,
+   0.4066,
+   0.2864
+  ],
+  "std": 0.0511,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.43
+  ]
+ },
+ "garden-gate-wood": {
+  "mean": [
+   0.6499,
+   0.3974,
+   0.2562
+  ],
+  "std": 0.067,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.28
+  ]
+ },
+ "garden-trellis": {
+  "mean": [
+   0.5569,
+   0.4695,
+   0.2172
+  ],
+  "std": 0.1082,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.9
+  ]
+ },
+ "garden-pergola-beam": {
+  "mean": [
+   0.8217,
+   0.673,
+   0.5757
+  ],
+  "std": 0.2486,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.68
+  ]
+ },
+ "garden-path-gravel": {
+  "mean": [
+   0.6312,
+   0.5823,
+   0.5389
+  ],
+  "std": 0.0863,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   5.76
+  ]
+ },
+ "garden-paving-slab": {
+  "mean": [
+   0.6461,
+   0.6007,
+   0.5477
+  ],
+  "std": 0.0713,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.73
+  ]
+ },
+ "garden-hedge-box": {
+  "mean": [
+   0.3048,
+   0.588,
+   0.2113
+  ],
+  "std": 0.0849,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   5.11
+  ]
+ },
+ "garden-planter": {
+  "mean": [
+   0.8576,
+   0.4113,
+   0.2077
+  ],
+  "std": 0.0695,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.47
+  ]
+ },
+ "shed-clapboard": {
+  "mean": [
+   0.3945,
+   0.6009,
+   0.678
+  ],
+  "std": 0.0751,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.9
+  ]
+ },
+ "shed-corrugated-iron": {
+  "mean": [
+   0.4994,
+   0.5057,
+   0.5056
+  ],
+  "std": 0.0549,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.27
+  ]
+ },
+ "shed-slate-hanging": {
+  "mean": [
+   0.5585,
+   0.377,
+   0.3295
+  ],
+  "std": 0.0714,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.45
+  ]
+ },
+ "shed-felt-roof": {
+  "mean": [
+   0.3353,
+   0.3358,
+   0.346
+  ],
+  "std": 0.0803,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "shed-door-plank": {
+  "mean": [
+   0.64,
+   0.3514,
+   0.2475
+  ],
+  "std": 0.0568,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.57
+  ]
+ },
+ "shed-log-store": {
+  "mean": [
+   0.6958,
+   0.488,
+   0.3023
+  ],
+  "std": 0.1427,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   6.79
+  ]
+ },
+ "brickwork-herringbone": {
+  "mean": [
+   0.533,
+   0.3938,
+   0.4166
+  ],
+  "std": 0.0477,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   6.03
+  ]
+ },
+ "brickwork-diaper": {
+  "mean": [
+   0.8129,
+   0.4897,
+   0.3367
+  ],
+  "std": 0.1065,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.03
+  ]
+ },
+ "brickwork-corbel-table": {
+  "mean": [
+   0.6546,
+   0.3425,
+   0.2346
+  ],
+  "std": 0.1016,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.97
+  ]
+ },
+ "stone-quoins": {
+  "mean": [
+   0.8994,
+   0.797,
+   0.6639
+  ],
+  "std": 0.0619,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.78
+  ]
+ },
+ "stone-plinth": {
+  "mean": [
+   0.5576,
+   0.5368,
+   0.518
+  ],
+  "std": 0.0986,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.09
+  ]
+ },
+ "stone-coping": {
+  "mean": [
+   0.8293,
+   0.7652,
+   0.6893
+  ],
+  "std": 0.1052,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.05
+  ]
+ },
+ "stone-lintel": {
+  "mean": [
+   0.7058,
+   0.5985,
+   0.4919
+  ],
+  "std": 0.1014,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   5.28
+  ]
+ },
+ "stone-carving": {
+  "mean": [
+   0.7833,
+   0.6448,
+   0.5037
+  ],
+  "std": 0.0999,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   6.31
+  ]
+ },
+ "plaster-pargeting": {
+  "mean": [
+   0.8332,
+   0.6144,
+   0.4817
+  ],
+  "std": 0.1433,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.67
+  ]
+ },
+ "render-dash": {
+  "mean": [
+   0.9639,
+   0.8342,
+   0.6445
+  ],
+  "std": 0.0211,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.19
+  ]
+ },
+ "paint-ext-cream": {
+  "mean": [
+   0.9473,
+   0.8674,
+   0.7244
+  ],
+  "std": 0.0849,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "paint-ext-sage": {
+  "mean": [
+   0.5791,
+   0.7006,
+   0.4999
+  ],
+  "std": 0.0082,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "paint-ext-blue": {
+  "mean": [
+   0.4573,
+   0.604,
+   0.6991
+  ],
+  "std": 0.0142,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "paint-ext-oxblood": {
+  "mean": [
+   0.5389,
+   0.1376,
+   0.1515
+  ],
+  "std": 0.006,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "ext-weatherboard": {
+  "mean": [
+   0.864,
+   0.7705,
+   0.6235
+  ],
+  "std": 0.1212,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.42
+  ]
+ },
+ "iron-gutter-hopper": {
+  "mean": [
+   0.5354,
+   0.4958,
+   0.4497
+  ],
+  "std": 0.2576,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.71
+  ]
+ },
+ "iron-downpipe-bracket": {
+  "mean": [
+   0.8167,
+   0.681,
+   0.5188
+  ],
+  "std": 0.1165,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.94
+  ]
+ },
+ "iron-snow-guard": {
+  "mean": [
+   0.3345,
+   0.3585,
+   0.4039
+  ],
+  "std": 0.0539,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.04
+  ]
+ },
+ "iron-lightning-rod": {
+  "mean": [
+   0.8952,
+   0.8436,
+   0.7737
+  ],
+  "std": 0.185,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   0.61
+  ]
+ },
+ "iron-weather-vane": {
+  "mean": [
+   0.871,
+   0.8026,
+   0.6665
+  ],
+  "std": 0.2028,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "stone-finial-ball": {
+  "mean": [
+   0.6195,
+   0.4228,
+   0.3769
+  ],
+  "std": 0.091,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   7.46
+  ]
+ },
+ "cupola-louvre": {
+  "mean": [
+   0.7066,
+   0.6699,
+   0.5762
+  ],
+  "std": 0.2348,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.89
+  ]
+ },
+ "belvedere-railing": {
+  "mean": [
+   0.6775,
+   0.7101,
+   0.6302
+  ],
+  "std": 0.2368,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.75
+  ]
+ },
+ "coping-lead-flashing": {
+  "mean": [
+   0.6687,
+   0.624,
+   0.5511
+  ],
+  "std": 0.099,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.51
+  ]
+ },
+ "gable-vent": {
+  "mean": [
+   0.6318,
+   0.6572,
+   0.5965
+  ],
+  "std": 0.2048,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.02
+  ]
+ },
+ "fascia-ornament": {
+  "mean": [
+   0.819,
+   0.6084,
+   0.4708
+  ],
+  "std": 0.1829,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.46
+  ]
+ },
+ "bargeboard-carved": {
+  "mean": [
+   0.6046,
+   0.5638,
+   0.5223
+  ],
+  "std": 0.2049,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.24
+  ]
+ },
+ "dentil-eaves": {
+  "mean": [
+   0.7622,
+   0.6797,
+   0.5491
+  ],
+  "std": 0.216,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   0.79
+  ]
+ },
+ "rafter-tails": {
+  "mean": [
+   0.7023,
+   0.5904,
+   0.4838
+  ],
+  "std": 0.1852,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.16
+  ]
+ },
+ "lead-flashing-ornate": {
+  "mean": [
+   0.4884,
+   0.501,
+   0.5458
+  ],
+  "std": 0.0459,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   6.93
+  ]
  }
 }

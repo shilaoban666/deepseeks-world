@@ -28,7 +28,7 @@ for (const c of CROPS) {
   ITEMS[c.id] = { name: c.name, icon: '🥕', price: c.sell * 2, sell: c.sell, crop: c.id };
 }
 
-export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, onMap, busStops = [], fishSprites = null, farmSprites = null, fishAtlas = './textures/plants/fish.png' }) {
+export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, onMap, onRide, busStops = [], fishSprites = null, farmSprites = null, fishAtlas = './textures/plants/fish.png' }) {
   // 作物的图标：手绘的收获物，种子用作物本身的小图
   if (farmSprites) {
     for (const c of CROPS) {
@@ -54,6 +54,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
     stats: { fish: 0, cooked: 0, planted: 0, harvested: 0, shopped: 0, played: 0, read: 0 },
     luck: 0,
     indoor: false,
+    riding: null,
   };
   let fishing = null;
   let arcade = null;
@@ -571,6 +572,18 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
           })),
           { label: '不坐了', onClick: () => hud.close() },
         ]);
+        break;
+      }
+      case 'vehicle': {
+        if (state.riding?.id === it.id) {
+          state.riding = null;
+          onRide?.(null, it);
+          hud.toast('下车了，风从耳边吹过');
+        } else {
+          state.riding = it;
+          onRide?.(it, it);
+          hud.toast(`坐上${it.name}，按 E 下车`);
+        }
         break;
       }
       case 'gate':

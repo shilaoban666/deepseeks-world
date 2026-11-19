@@ -304,7 +304,9 @@ export function createActions({ whale, mover, cam, game, hud, woods, particles, 
       const running = (keyDown('ShiftLeft') || keyDown('ShiftRight')) && st.stamina > 15;
 
       if (mode === 'ground') {
-        const moved = mover.step(dt, s, cam, st.stamina > 15 ? 1 : 0.62, true);
+        // 乘坐交通工具时提高巡航速度，同时不再因体力下降而突然变慢。
+        const rideBoost = game.state.riding ? (game.state.riding.vehicle?.includes('boat') || game.state.riding.vehicle?.includes('canoe') || game.state.riding.vehicle?.includes('kayak') ? 1.3 : 1.65) : 1;
+        const moved = mover.step(dt, s, cam, (st.stamina > 15 ? 1 : 0.72) * rideBoost, true);
         moving = moved.moved > 0.004;
         const g = ground(s.x, s.z);
         s.groundY = g;

@@ -475,7 +475,7 @@ export function createMover(o) {
       if (keys.has('KeyD') || keys.has('ArrowRight')) mx += 1;
       if (keys.has('KeyA') || keys.has('ArrowLeft')) mx -= 1;
       const len = Math.hypot(mx, mz) || 1;
-      const base = keys.has('ShiftLeft') || keys.has('ShiftRight') ? 8.6 : 4.4;
+      const base = keys.has('ShiftLeft') || keys.has('ShiftRight') ? 10.8 : 5.35;
       const wantX = ((f.x * mz + rxp * mx) / len) * base * speedScale;
       const wantZ = ((f.y * mz + rzp * mx) / len) * base * speedScale;
       const grip = 12;

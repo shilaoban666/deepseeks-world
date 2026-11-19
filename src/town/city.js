@@ -1004,6 +1004,21 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
       if (sprite == null) return false;
       if (!force && (!free(x, z, r) || roadEdge(x, z) < 0.4)) return false;
       decor.push({ x, z, y: y ?? heightAt(x, z), h, sprite });
+      // 交通工具同时作为可交互的乘坐点：素材仍由 life 图集绘制，交互数据独立于装饰批次。
+      if (name.startsWith('transport-')) {
+        const labels = {
+          'transport-city-bicycle': '城市自行车',
+          'transport-cargo-bike': '货运自行车',
+          'transport-scooter': '小电驴',
+          'transport-rowboat': '小木船',
+          'transport-kayak': '皮划艇',
+          'transport-canoe': '独木舟',
+          'transport-ox-cart': '牛车',
+          'transport-wheelbarrow': '独轮车',
+          'transport-handcart': '手推车',
+        };
+        add({ id: `vehicle-${name}-${Math.round(x)}-${Math.round(z)}`, name: labels[name] ?? '交通工具', kind: 'vehicle', vehicle: name, x, z, r: Math.max(1.8, r + 0.8), hint: 'E 乘坐' });
+      }
       if (name === 'infra-stone-lantern') (b.lanterns ??= []).push([x, (y ?? heightAt(x, z)) + h * 0.62, z]);
       claim(x, z, r);
       return true;

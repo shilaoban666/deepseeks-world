@@ -310,6 +310,10 @@ const game = createGame({
   onTravel(st) {
     whale.setPos(st.x + 1, st.z - 3);
   },
+  onRide(vehicle) {
+    // 交通工具状态保存在 game.state 中；这里让相机轻微拉远，保证骑乘时画面舒展。
+    cam.want = vehicle ? Math.max(cam.want, 9.5) : Math.min(cam.want, 7.5);
+  },
   onMap() {
     showMap(1);
   },
@@ -819,7 +823,8 @@ function tick(dt) {
 }
 
 // 动态分辨率（?dyn=0 关）：低配档默认开。每 30 帧看一次平均帧时间，慢了就少画点像素，快了再加回来
-const dyn = params.get('dyn') !== '0' && (lite || params.get('dyn') === '1');
+// 默认对所有设备启用动态分辨率，忙碌街区会自动降采样，空旷区域再恢复清晰度。
+const dyn = params.get('dyn') !== '0';
 const baseRatio = renderer.getPixelRatio();
 let ratioK = 1;
 let frames = 0;

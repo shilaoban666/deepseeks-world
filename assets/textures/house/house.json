@@ -2598,5 +2598,1305 @@
    0.0,
    3.56
   ]
+ },
+ "hw-door-knob-brass": {
+  "mean": [
+   0.7145,
+   0.3663,
+   0.1957
+  ],
+  "std": 0.0612,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.9
+  ]
+ },
+ "hw-door-knob-porcelain": {
+  "mean": [
+   0.6002,
+   0.6486,
+   0.5073
+  ],
+  "std": 0.1283,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.64
+  ]
+ },
+ "hw-door-knob-wood": {
+  "mean": [
+   0.8551,
+   0.6553,
+   0.4051
+  ],
+  "std": 0.1738,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.49
+  ]
+ },
+ "hw-lever-brass": {
+  "mean": [
+   0.9098,
+   0.7661,
+   0.5335
+  ],
+  "std": 0.176,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   5.86
+  ]
+ },
+ "hw-lever-iron": {
+  "mean": [
+   0.6407,
+   0.6088,
+   0.5569
+  ],
+  "std": 0.3184,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.61
+  ]
+ },
+ "hw-ring-pull": {
+  "mean": [
+   0.7196,
+   0.6491,
+   0.5682
+  ],
+  "std": 0.2413,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.13
+  ]
+ },
+ "hw-thumb-latch": {
+  "mean": [
+   0.6958,
+   0.4264,
+   0.2662
+  ],
+  "std": 0.0601,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.49
+  ]
+ },
+ "hw-knocker-lion": {
+  "mean": [
+   0.6997,
+   0.3945,
+   0.2102
+  ],
+  "std": 0.1162,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "hw-knocker-ring": {
+  "mean": [
+   0.5502,
+   0.3618,
+   0.2757
+  ],
+  "std": 0.0549,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.25
+  ]
+ },
+ "hw-push-plate": {
+  "mean": [
+   0.7868,
+   0.5907,
+   0.1716
+  ],
+  "std": 0.035,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.49
+  ]
+ },
+ "hw-hinge-butt": {
+  "mean": [
+   0.7295,
+   0.4223,
+   0.212
+  ],
+  "std": 0.0575,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.15
+  ]
+ },
+ "hw-hinge-strap": {
+  "mean": [
+   0.587,
+   0.3737,
+   0.2573
+  ],
+  "std": 0.0804,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.71
+  ]
+ },
+ "hw-hinge-t": {
+  "mean": [
+   0.5712,
+   0.3705,
+   0.2766
+  ],
+  "std": 0.0744,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.11
+  ]
+ },
+ "hw-hinge-parliament": {
+  "mean": [
+   0.8085,
+   0.6083,
+   0.1523
+  ],
+  "std": 0.0982,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.94
+  ]
+ },
+ "hw-lock-mortice": {
+  "mean": [
+   0.7846,
+   0.5824,
+   0.1971
+  ],
+  "std": 0.0686,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.72
+  ]
+ },
+ "hw-lock-rim": {
+  "mean": [
+   0.4727,
+   0.2849,
+   0.219
+  ],
+  "std": 0.0926,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.4
+  ]
+ },
+ "hw-deadbolt": {
+  "mean": [
+   0.6905,
+   0.4281,
+   0.224
+  ],
+  "std": 0.124,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "hw-latch-bar": {
+  "mean": [
+   0.6655,
+   0.4128,
+   0.2679
+  ],
+  "std": 0.0661,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   5.71
+  ]
+ },
+ "hw-barrel-bolt": {
+  "mean": [
+   0.6778,
+   0.6375,
+   0.5897
+  ],
+  "std": 0.2344,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "hw-escutcheon": {
+  "mean": [
+   0.7092,
+   0.4121,
+   0.2023
+  ],
+  "std": 0.1323,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.49
+  ]
+ },
+ "hw-letterbox-flap": {
+  "mean": [
+   0.7662,
+   0.5632,
+   0.1997
+  ],
+  "std": 0.0877,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.42
+  ]
+ },
+ "hw-letter-plate-iron": {
+  "mean": [
+   0.3458,
+   0.3257,
+   0.3367
+  ],
+  "std": 0.0557,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.41
+  ]
+ },
+ "hw-number-plate": {
+  "mean": [
+   0.7983,
+   0.7631,
+   0.7166
+  ],
+  "std": 0.2621,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "hw-bell-pull": {
+  "mean": [
+   0.8824,
+   0.7888,
+   0.6407
+  ],
+  "std": 0.1654,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "hw-door-chain": {
+  "mean": [
+   0.3636,
+   0.4134,
+   0.4572
+  ],
+  "std": 0.0456,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.87
+  ]
+ },
+ "hw-spyhole": {
+  "mean": [
+   0.6166,
+   0.3065,
+   0.1653
+  ],
+  "std": 0.0798,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "hw-kick-plate": {
+  "mean": [
+   0.7664,
+   0.4895,
+   0.1656
+  ],
+  "std": 0.1028,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.39
+  ]
+ },
+ "hw-door-stop": {
+  "mean": [
+   0.9285,
+   0.8059,
+   0.6221
+  ],
+  "std": 0.1711,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.11
+  ]
+ },
+ "hw-door-closer": {
+  "mean": [
+   0.815,
+   0.7511,
+   0.6498
+  ],
+  "std": 0.2,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   7.83
+  ]
+ },
+ "hw-threshold-strip": {
+  "mean": [
+   0.6371,
+   0.3824,
+   0.1861
+  ],
+  "std": 0.0752,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.89
+  ]
+ },
+ "hw-casement-stay": {
+  "mean": [
+   0.8597,
+   0.7666,
+   0.5479
+  ],
+  "std": 0.2016,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   0.39
+  ]
+ },
+ "hw-casement-fastener": {
+  "mean": [
+   0.8858,
+   0.8053,
+   0.6624
+  ],
+  "std": 0.2084,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.07
+  ]
+ },
+ "hw-sash-lift": {
+  "mean": [
+   0.8397,
+   0.7212,
+   0.5057
+  ],
+  "std": 0.1545,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.13
+  ]
+ },
+ "hw-sash-fastener": {
+  "mean": [
+   0.8823,
+   0.7724,
+   0.5479
+  ],
+  "std": 0.1818,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "hw-window-lock": {
+  "mean": [
+   0.4035,
+   0.5162,
+   0.5414
+  ],
+  "std": 0.1044,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.44
+  ]
+ },
+ "hw-espagnolette": {
+  "mean": [
+   0.8762,
+   0.7755,
+   0.6153
+  ],
+  "std": 0.1303,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.31
+  ]
+ },
+ "hw-shutter-hinge": {
+  "mean": [
+   0.564,
+   0.5464,
+   0.5152
+  ],
+  "std": 0.3314,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.49
+  ]
+ },
+ "hw-shutter-dog": {
+  "mean": [
+   0.8643,
+   0.7607,
+   0.653
+  ],
+  "std": 0.1731,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   7.09
+  ]
+ },
+ "hw-window-crank": {
+  "mean": [
+   0.8458,
+   0.7317,
+   0.5159
+  ],
+  "std": 0.1781,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.4
+  ]
+ },
+ "hw-sash-pulley": {
+  "mean": [
+   0.6524,
+   0.5466,
+   0.4326
+  ],
+  "std": 0.1828,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.55
+  ]
+ },
+ "hw-curtain-pole": {
+  "mean": [
+   0.8878,
+   0.7867,
+   0.612
+  ],
+  "std": 0.1646,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.79
+  ]
+ },
+ "hw-curtain-finial": {
+  "mean": [
+   0.842,
+   0.7277,
+   0.5283
+  ],
+  "std": 0.1838,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   7.04
+  ]
+ },
+ "hw-curtain-tieback": {
+  "mean": [
+   0.9154,
+   0.8011,
+   0.6401
+  ],
+  "std": 0.1062,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "hw-curtain-hook": {
+  "mean": [
+   0.849,
+   0.732,
+   0.5418
+  ],
+  "std": 0.1503,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "hw-curtain-ring": {
+  "mean": [
+   0.9292,
+   0.819,
+   0.7022
+  ],
+  "std": 0.1737,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   0.74
+  ]
+ },
+ "hw-blind-pulley": {
+  "mean": [
+   0.5593,
+   0.6188,
+   0.6519
+  ],
+  "std": 0.1782,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.32
+  ]
+ },
+ "hw-blind-bracket": {
+  "mean": [
+   0.7399,
+   0.6889,
+   0.5871
+  ],
+  "std": 0.1428,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.27
+  ]
+ },
+ "hw-valance-clip": {
+  "mean": [
+   0.7954,
+   0.5379,
+   0.4001
+  ],
+  "std": 0.2074,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "hw-swag-holder": {
+  "mean": [
+   0.8258,
+   0.6268,
+   0.3824
+  ],
+  "std": 0.1794,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "hw-curtain-bracket": {
+  "mean": [
+   0.7804,
+   0.737,
+   0.653
+  ],
+  "std": 0.2124,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   7.52
+  ]
+ },
+ "metal-grille-scroll": {
+  "mean": [
+   0.6552,
+   0.6314,
+   0.5845
+  ],
+  "std": 0.288,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   0.64
+  ]
+ },
+ "metal-vent-grille": {
+  "mean": [
+   0.3512,
+   0.3715,
+   0.3847
+  ],
+  "std": 0.1469,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   0.74
+  ]
+ },
+ "metal-radiator-grille": {
+  "mean": [
+   0.4986,
+   0.3927,
+   0.1866
+  ],
+  "std": 0.2084,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.1
+  ]
+ },
+ "metal-floor-vent": {
+  "mean": [
+   0.2486,
+   0.234,
+   0.2404
+  ],
+  "std": 0.0934,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.63
+  ]
+ },
+ "metal-letter-slot": {
+  "mean": [
+   0.7507,
+   0.5478,
+   0.1548
+  ],
+  "std": 0.1067,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.48
+  ]
+ },
+ "metal-nail-heads": {
+  "mean": [
+   0.3512,
+   0.2143,
+   0.1516
+  ],
+  "std": 0.0716,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.29
+  ]
+ },
+ "metal-studs": {
+  "mean": [
+   0.2633,
+   0.2872,
+   0.3276
+  ],
+  "std": 0.0336,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.56
+  ]
+ },
+ "metal-rivets": {
+  "mean": [
+   0.3976,
+   0.4309,
+   0.4632
+  ],
+  "std": 0.0259,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.52
+  ]
+ },
+ "metal-hinge-pin": {
+  "mean": [
+   0.4016,
+   0.4032,
+   0.4074
+  ],
+  "std": 0.0382,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.78
+  ]
+ },
+ "metal-studded-plate": {
+  "mean": [
+   0.7631,
+   0.5658,
+   0.1651
+  ],
+  "std": 0.0305,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.55
+  ]
+ },
+ "tile-border-pattern": {
+  "mean": [
+   0.6976,
+   0.59,
+   0.4711
+  ],
+  "std": 0.2348,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.17
+  ]
+ },
+ "tile-corner": {
+  "mean": [
+   0.7939,
+   0.7225,
+   0.641
+  ],
+  "std": 0.1901,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.85
+  ]
+ },
+ "tile-dado": {
+  "mean": [
+   0.5797,
+   0.6501,
+   0.4388
+  ],
+  "std": 0.1351,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.44
+  ]
+ },
+ "tile-picture-rail": {
+  "mean": [
+   0.6452,
+   0.6529,
+   0.5639
+  ],
+  "std": 0.1951,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   6.47
+  ]
+ },
+ "tile-mosaic-band": {
+  "mean": [
+   0.741,
+   0.5666,
+   0.3554
+  ],
+  "std": 0.1955,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "tile-herringbone-accent": {
+  "mean": [
+   0.7809,
+   0.7112,
+   0.6179
+  ],
+  "std": 0.1523,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.58
+  ]
+ },
+ "tile-frieze": {
+  "mean": [
+   0.7677,
+   0.6909,
+   0.5749
+  ],
+  "std": 0.1979,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.88
+  ]
+ },
+ "tile-border-mint": {
+  "mean": [
+   0.8549,
+   0.8675,
+   0.7408
+  ],
+  "std": 0.0871,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.06
+  ]
+ },
+ "tile-border-encaustic": {
+  "mean": [
+   0.9272,
+   0.6745,
+   0.3809
+  ],
+  "std": 0.1508,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.67
+  ]
+ },
+ "tile-border-terracotta": {
+  "mean": [
+   0.8577,
+   0.5518,
+   0.3543
+  ],
+  "std": 0.1348,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.49
+  ]
+ },
+ "plaster-cornice-corner": {
+  "mean": [
+   0.9027,
+   0.8087,
+   0.6908
+  ],
+  "std": 0.0689,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.36
+  ]
+ },
+ "plaster-ceiling-rose": {
+  "mean": [
+   0.9283,
+   0.8706,
+   0.7821
+  ],
+  "std": 0.0431,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.64
+  ]
+ },
+ "plaster-corbel": {
+  "mean": [
+   0.7798,
+   0.6297,
+   0.4662
+  ],
+  "std": 0.1819,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.14
+  ]
+ },
+ "plaster-moulding-curve": {
+  "mean": [
+   0.9044,
+   0.8198,
+   0.667
+  ],
+  "std": 0.0815,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.53
+  ]
+ },
+ "plaster-acanthus": {
+  "mean": [
+   0.8824,
+   0.6799,
+   0.4974
+  ],
+  "std": 0.1567,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   5.59
+  ]
+ },
+ "plaster-egg-dart": {
+  "mean": [
+   0.8646,
+   0.7909,
+   0.6922
+  ],
+  "std": 0.137,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "plaster-dentil": {
+  "mean": [
+   0.8978,
+   0.8311,
+   0.7077
+  ],
+  "std": 0.0974,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   0.92
+  ]
+ },
+ "plaster-niche": {
+  "mean": [
+   0.8979,
+   0.7488,
+   0.5322
+  ],
+  "std": 0.057,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.41
+  ]
+ },
+ "plaster-arch-moulding": {
+  "mean": [
+   0.8869,
+   0.8065,
+   0.686
+  ],
+  "std": 0.0908,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   6.52
+  ]
+ },
+ "plaster-scroll": {
+  "mean": [
+   0.8852,
+   0.7666,
+   0.5952
+  ],
+  "std": 0.07,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.23
+  ]
+ },
+ "wood-acanthus": {
+  "mean": [
+   0.7907,
+   0.5139,
+   0.2764
+  ],
+  "std": 0.1502,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   6.91
+  ]
+ },
+ "wood-linenfold": {
+  "mean": [
+   0.7324,
+   0.3905,
+   0.1849
+  ],
+  "std": 0.0656,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.32
+  ]
+ },
+ "wood-rosette": {
+  "mean": [
+   0.7431,
+   0.4182,
+   0.1996
+  ],
+  "std": 0.0786,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.82
+  ]
+ },
+ "wood-lattice": {
+  "mean": [
+   0.8066,
+   0.6502,
+   0.5115
+  ],
+  "std": 0.2192,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.87
+  ]
+ },
+ "wood-fretwork": {
+  "mean": [
+   0.7747,
+   0.5713,
+   0.4052
+  ],
+  "std": 0.227,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.71
+  ]
+ },
+ "wood-chip-carving": {
+  "mean": [
+   0.8614,
+   0.501,
+   0.2523
+  ],
+  "std": 0.0478,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.24
+  ]
+ },
+ "wood-marquetry": {
+  "mean": [
+   0.7359,
+   0.5159,
+   0.2919
+  ],
+  "std": 0.1748,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.45
+  ]
+ },
+ "wood-inlay-border": {
+  "mean": [
+   0.7568,
+   0.4725,
+   0.2559
+  ],
+  "std": 0.1483,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.74
+  ]
+ },
+ "wood-carved-bracket": {
+  "mean": [
+   0.6974,
+   0.4785,
+   0.3228
+  ],
+  "std": 0.158,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.69
+  ]
+ },
+ "wood-spindle": {
+  "mean": [
+   0.8676,
+   0.729,
+   0.5831
+  ],
+  "std": 0.1908,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.08
+  ]
+ },
+ "sign-brass-plaque": {
+  "mean": [
+   0.8423,
+   0.6255,
+   0.1797
+  ],
+  "std": 0.0419,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.65
+  ]
+ },
+ "sign-enamel-panel": {
+  "mean": [
+   0.9586,
+   0.8713,
+   0.6987
+  ],
+  "std": 0.1001,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.3
+  ]
+ },
+ "sign-name-plate": {
+  "mean": [
+   0.7047,
+   0.6347,
+   0.5341
+  ],
+  "std": 0.2954,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "sign-number-tile": {
+  "mean": [
+   0.8182,
+   0.7864,
+   0.7012
+  ],
+  "std": 0.1969,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.42
+  ]
+ },
+ "sign-hanging-board": {
+  "mean": [
+   0.8568,
+   0.7766,
+   0.6671
+  ],
+  "std": 0.2087,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "sign-iron-plate": {
+  "mean": [
+   0.2839,
+   0.2957,
+   0.3117
+  ],
+  "std": 0.0307,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.62
+  ]
+ },
+ "sign-ceramic-label": {
+  "mean": [
+   0.85,
+   0.8144,
+   0.742
+  ],
+  "std": 0.1936,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.23
+  ]
+ },
+ "sign-paper-label": {
+  "mean": [
+   0.9408,
+   0.8801,
+   0.7493
+  ],
+  "std": 0.0784,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.79
+  ]
+ },
+ "sign-stencil": {
+  "mean": [
+   0.8819,
+   0.7519,
+   0.6202
+  ],
+  "std": 0.1091,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   5.86
+  ]
+ },
+ "sign-wax-seal": {
+  "mean": [
+   0.7031,
+   0.2354,
+   0.1969
+  ],
+  "std": 0.0448,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.4
+  ]
  }
 }

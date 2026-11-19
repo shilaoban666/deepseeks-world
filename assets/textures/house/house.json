@@ -5198,5 +5198,1305 @@
    0.0,
    6.93
   ]
+ },
+ "fab-linen-natural": {
+  "mean": [
+   0.8956,
+   0.7908,
+   0.6516
+  ],
+  "std": 0.0578,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "fab-linen-stripe": {
+  "mean": [
+   0.7522,
+   0.6903,
+   0.6552
+  ],
+  "std": 0.1667,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "fab-cotton-plain": {
+  "mean": [
+   0.9758,
+   0.9055,
+   0.7475
+  ],
+  "std": 0.0218,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "fab-velvet-rose": {
+  "mean": [
+   0.7395,
+   0.3504,
+   0.3887
+  ],
+  "std": 0.0208,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "fab-velvet-green": {
+  "mean": [
+   0.0192,
+   0.2351,
+   0.0665
+  ],
+  "std": 0.0107,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "fab-velvet-navy": {
+  "mean": [
+   0.0613,
+   0.1333,
+   0.2864
+  ],
+  "std": 0.0093,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "fab-tapestry-floral": {
+  "mean": [
+   0.7385,
+   0.5943,
+   0.4218
+  ],
+  "std": 0.1852,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "fab-damask-blue": {
+  "mean": [
+   0.397,
+   0.4997,
+   0.5793
+  ],
+  "std": 0.1821,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   5.18
+  ]
+ },
+ "fab-toile": {
+  "mean": [
+   0.6925,
+   0.7128,
+   0.7692
+  ],
+  "std": 0.2259,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "fab-chintz": {
+  "mean": [
+   0.822,
+   0.7044,
+   0.5817
+  ],
+  "std": 0.1751,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "fab-plaid-wool": {
+  "mean": [
+   0.6275,
+   0.3368,
+   0.2641
+  ],
+  "std": 0.124,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.96
+  ]
+ },
+ "fab-tartan": {
+  "mean": [
+   0.456,
+   0.3405,
+   0.2551
+  ],
+  "std": 0.0997,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.81
+  ]
+ },
+ "fab-tweed-herringbone": {
+  "mean": [
+   0.5527,
+   0.3936,
+   0.2954
+  ],
+  "std": 0.0931,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   7.36
+  ]
+ },
+ "fab-boucle": {
+  "mean": [
+   0.9203,
+   0.8226,
+   0.6833
+  ],
+  "std": 0.0613,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "fab-mohair": {
+  "mean": [
+   0.935,
+   0.8172,
+   0.6479
+  ],
+  "std": 0.0297,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "fab-silk-ivory": {
+  "mean": [
+   0.955,
+   0.8839,
+   0.7319
+  ],
+  "std": 0.023,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "fab-brocade-gold": {
+  "mean": [
+   0.788,
+   0.3842,
+   0.177
+  ],
+  "std": 0.1594,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   5.48
+  ]
+ },
+ "fab-embroidered": {
+  "mean": [
+   0.8556,
+   0.7052,
+   0.5322
+  ],
+  "std": 0.154,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "fab-quilted": {
+  "mean": [
+   0.9592,
+   0.8253,
+   0.6115
+  ],
+  "std": 0.0701,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.09
+  ]
+ },
+ "fab-patchwork": {
+  "mean": [
+   0.8235,
+   0.5963,
+   0.3982
+  ],
+  "std": 0.1352,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   5.98
+  ]
+ },
+ "fab-canvas": {
+  "mean": [
+   0.8462,
+   0.7352,
+   0.5836
+  ],
+  "std": 0.0642,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.87
+  ]
+ },
+ "fab-burlap": {
+  "mean": [
+   0.7429,
+   0.5531,
+   0.3529
+  ],
+  "std": 0.121,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "fab-ticking": {
+  "mean": [
+   0.803,
+   0.8075,
+   0.7625
+  ],
+  "std": 0.1812,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.84
+  ]
+ },
+ "fab-gingham": {
+  "mean": [
+   0.8888,
+   0.5601,
+   0.5024
+  ],
+  "std": 0.1532,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.27
+  ]
+ },
+ "fab-polka": {
+  "mean": [
+   0.9096,
+   0.7064,
+   0.6005
+  ],
+  "std": 0.2138,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "fab-leaf-print": {
+  "mean": [
+   0.4814,
+   0.5397,
+   0.3506
+  ],
+  "std": 0.0644,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "fab-fig-print": {
+  "mean": [
+   0.7017,
+   0.6792,
+   0.504
+  ],
+  "std": 0.2245,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "fab-bird-print": {
+  "mean": [
+   0.8143,
+   0.7296,
+   0.5679
+  ],
+  "std": 0.2273,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "fab-geometric-print": {
+  "mean": [
+   0.8552,
+   0.5654,
+   0.4335
+  ],
+  "std": 0.2177,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "fab-ikat": {
+  "mean": [
+   0.7278,
+   0.6403,
+   0.5225
+  ],
+  "std": 0.2013,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "leather-brown": {
+  "mean": [
+   0.4704,
+   0.2451,
+   0.1371
+  ],
+  "std": 0.0209,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "leather-oxblood": {
+  "mean": [
+   0.4364,
+   0.1217,
+   0.143
+  ],
+  "std": 0.016,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "leather-green": {
+  "mean": [
+   0.1279,
+   0.3306,
+   0.1528
+  ],
+  "std": 0.0205,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "leather-black": {
+  "mean": [
+   0.1558,
+   0.1483,
+   0.1563
+  ],
+  "std": 0.0166,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "leather-tooled": {
+  "mean": [
+   0.6979,
+   0.3491,
+   0.168
+  ],
+  "std": 0.0488,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "leather-cracked": {
+  "mean": [
+   0.5425,
+   0.2729,
+   0.1537
+  ],
+  "std": 0.0459,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "leather-suede": {
+  "mean": [
+   0.7247,
+   0.4462,
+   0.2719
+  ],
+  "std": 0.0203,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "hide-cowhide": {
+  "mean": [
+   0.6653,
+   0.5101,
+   0.4003
+  ],
+  "std": 0.2871,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "hide-sheepskin": {
+  "mean": [
+   0.9689,
+   0.8689,
+   0.6855
+  ],
+  "std": 0.0482,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "hide-goatskin": {
+  "mean": [
+   0.9362,
+   0.7669,
+   0.4857
+  ],
+  "std": 0.0198,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "rug-oriental": {
+  "mean": [
+   0.7111,
+   0.4932,
+   0.3548
+  ],
+  "std": 0.161,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   6.54
+  ]
+ },
+ "rug-persian": {
+  "mean": [
+   0.6728,
+   0.4276,
+   0.3195
+  ],
+  "std": 0.1908,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "rug-kilim": {
+  "mean": [
+   0.7429,
+   0.5343,
+   0.3992
+  ],
+  "std": 0.1729,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   5.28
+  ]
+ },
+ "rug-floral": {
+  "mean": [
+   0.8713,
+   0.6574,
+   0.5402
+  ],
+  "std": 0.1265,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   7.94
+  ]
+ },
+ "rug-geometric": {
+  "mean": [
+   0.4675,
+   0.4398,
+   0.4429
+  ],
+  "std": 0.227,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.04
+  ]
+ },
+ "rug-stripe": {
+  "mean": [
+   0.7185,
+   0.5438,
+   0.3482
+  ],
+  "std": 0.1399,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.87
+  ]
+ },
+ "rug-shag": {
+  "mean": [
+   0.9481,
+   0.8547,
+   0.693
+  ],
+  "std": 0.0487,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.0
+  ]
+ },
+ "rug-braided": {
+  "mean": [
+   0.8216,
+   0.5191,
+   0.3023
+  ],
+  "std": 0.1397,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.76
+  ]
+ },
+ "rug-hooked": {
+  "mean": [
+   0.7529,
+   0.6058,
+   0.4547
+  ],
+  "std": 0.2074,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   7.08
+  ]
+ },
+ "rug-wool-plain": {
+  "mean": [
+   0.8756,
+   0.7569,
+   0.5967
+  ],
+  "std": 0.0381,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   8.0
+  ]
+ },
+ "carpet-frieze": {
+  "mean": [
+   0.6746,
+   0.2964,
+   0.2285
+  ],
+  "std": 0.1453,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.88
+  ]
+ },
+ "carpet-axminster": {
+  "mean": [
+   0.6822,
+   0.3236,
+   0.2436
+  ],
+  "std": 0.1707,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   5.34
+  ]
+ },
+ "carpet-stair-runner": {
+  "mean": [
+   0.7612,
+   0.4295,
+   0.26
+  ],
+  "std": 0.1912,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   6.88
+  ]
+ },
+ "mat-coir": {
+  "mean": [
+   0.7828,
+   0.4492,
+   0.1352
+  ],
+  "std": 0.0816,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "mat-hemp": {
+  "mean": [
+   0.8028,
+   0.6379,
+   0.3935
+  ],
+  "std": 0.0733,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   7.58
+  ]
+ },
+ "wall-fresco": {
+  "mean": [
+   0.7509,
+   0.615,
+   0.4731
+  ],
+  "std": 0.1755,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wall-mural-garden": {
+  "mean": [
+   0.5033,
+   0.6276,
+   0.6316
+  ],
+  "std": 0.115,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wall-stencil-border": {
+  "mean": [
+   0.8085,
+   0.7026,
+   0.6311
+  ],
+  "std": 0.2089,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wall-mirror-panelling": {
+  "mean": [
+   0.7177,
+   0.554,
+   0.4104
+  ],
+  "std": 0.1803,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.04
+  ]
+ },
+ "niche-velvet": {
+  "mean": [
+   0.7068,
+   0.3719,
+   0.2701
+  ],
+  "std": 0.2393,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "alcove-shelf": {
+  "mean": [
+   0.867,
+   0.7217,
+   0.5765
+  ],
+  "std": 0.0961,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.49
+  ]
+ },
+ "picture-rail-carved": {
+  "mean": [
+   0.7776,
+   0.5733,
+   0.3914
+  ],
+  "std": 0.1999,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "cornice-gilt": {
+  "mean": [
+   0.869,
+   0.6775,
+   0.3178
+  ],
+  "std": 0.1257,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "ceiling-painted-cloud": {
+  "mean": [
+   0.5756,
+   0.6993,
+   0.7804
+  ],
+  "std": 0.1088,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "ceiling-beams-painted": {
+  "mean": [
+   0.5371,
+   0.6771,
+   0.477
+  ],
+  "std": 0.0629,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "tile-accent-band": {
+  "mean": [
+   0.6562,
+   0.7137,
+   0.7394
+  ],
+  "std": 0.2138,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.22
+  ]
+ },
+ "plaster-panel-frieze": {
+  "mean": [
+   0.7178,
+   0.6908,
+   0.6399
+  ],
+  "std": 0.1615,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   7.77
+  ]
+ },
+ "wall-medallion": {
+  "mean": [
+   0.7742,
+   0.6446,
+   0.4883
+  ],
+  "std": 0.129,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wood-panel-marquetry": {
+  "mean": [
+   0.6967,
+   0.3877,
+   0.1892
+  ],
+  "std": 0.1161,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.81
+  ]
+ },
+ "wall-clock-panel": {
+  "mean": [
+   0.4135,
+   0.2883,
+   0.2207
+  ],
+  "std": 0.1817,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   5.01
+  ]
+ },
+ "wood-oak": {
+  "mean": [
+   0.8098,
+   0.5091,
+   0.2266
+  ],
+  "std": 0.0503,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.83
+  ]
+ },
+ "wood-walnut": {
+  "mean": [
+   0.4717,
+   0.2592,
+   0.1733
+  ],
+  "std": 0.0261,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.93
+  ]
+ },
+ "wood-pine": {
+  "mean": [
+   0.9544,
+   0.6661,
+   0.3203
+  ],
+  "std": 0.0436,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.85
+  ]
+ },
+ "wood-mahogany": {
+  "mean": [
+   0.5435,
+   0.172,
+   0.1105
+  ],
+  "std": 0.0218,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   2.93
+  ]
+ },
+ "wood-painted-distressed": {
+  "mean": [
+   0.494,
+   0.619,
+   0.4761
+  ],
+  "std": 0.0546,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.5
+  ]
+ },
+ "wood-lacquer-black": {
+  "mean": [
+   0.0872,
+   0.0869,
+   0.0933
+  ],
+  "std": 0.0042,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   0.64
+  ]
+ },
+ "wood-lacquer-red": {
+  "mean": [
+   0.758,
+   0.1291,
+   0.0733
+  ],
+  "std": 0.0076,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.07
+  ]
+ },
+ "wood-gilt": {
+  "mean": [
+   0.6798,
+   0.3775,
+   0.1776
+  ],
+  "std": 0.1153,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   7.23
+  ]
+ },
+ "wood-stain-honey": {
+  "mean": [
+   0.8765,
+   0.5542,
+   0.1536
+  ],
+  "std": 0.0541,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "wood-stain-ebony": {
+  "mean": [
+   0.1727,
+   0.1282,
+   0.1139
+  ],
+  "std": 0.019,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "veneer-burl": {
+  "mean": [
+   0.8319,
+   0.4723,
+   0.2294
+  ],
+  "std": 0.0644,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   5.29
+  ]
+ },
+ "veneer-rosewood": {
+  "mean": [
+   0.4369,
+   0.1491,
+   0.1246
+  ],
+  "std": 0.0339,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.36
+  ]
+ },
+ "marble-white-top": {
+  "mean": [
+   0.9347,
+   0.9165,
+   0.9069
+  ],
+  "std": 0.0289,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.64
+  ]
+ },
+ "marble-black-top": {
+  "mean": [
+   0.1711,
+   0.1773,
+   0.1937
+  ],
+  "std": 0.1038,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.56
+  ]
+ },
+ "slate-top": {
+  "mean": [
+   0.2974,
+   0.3352,
+   0.3778
+  ],
+  "std": 0.0228,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.6
+  ]
+ },
+ "screen-paper-folding": {
+  "mean": [
+   0.7286,
+   0.6403,
+   0.5067
+  ],
+  "std": 0.1676,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   5.85
+  ]
+ },
+ "screen-bamboo": {
+  "mean": [
+   0.8624,
+   0.6417,
+   0.3286
+  ],
+  "std": 0.1424,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.95
+  ]
+ },
+ "shoji-lattice": {
+  "mean": [
+   0.9131,
+   0.793,
+   0.6721
+  ],
+  "std": 0.153,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.96
+  ]
+ },
+ "curtain-velvet": {
+  "mean": [
+   0.5058,
+   0.1182,
+   0.1591
+  ],
+  "std": 0.029,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   1.01
+  ]
+ },
+ "curtain-linen": {
+  "mean": [
+   0.9158,
+   0.849,
+   0.7544
+  ],
+  "std": 0.0454,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   3.64
+  ]
+ },
+ "curtain-silk": {
+  "mean": [
+   0.962,
+   0.8958,
+   0.756
+  ],
+  "std": 0.0174,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   0.86
+  ]
+ },
+ "canopy-velvet": {
+  "mean": [
+   0.5632,
+   0.1097,
+   0.1718
+  ],
+  "std": 0.013,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "quilt-patchwork": {
+  "mean": [
+   0.7523,
+   0.635,
+   0.5412
+  ],
+  "std": 0.1534,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "quilt-star": {
+  "mean": [
+   0.8539,
+   0.7498,
+   0.6186
+  ],
+  "std": 0.1601,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "tablecloth-linen": {
+  "mean": [
+   0.9079,
+   0.8099,
+   0.678
+  ],
+  "std": 0.0589,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.51
+  ]
+ },
+ "napkin-damask": {
+  "mean": [
+   0.8545,
+   0.7174,
+   0.5937
+  ],
+  "std": 0.149,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "cushion-embroidered": {
+  "mean": [
+   0.8176,
+   0.7016,
+   0.5639
+  ],
+  "std": 0.1638,
+  "seam": "mx→mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
+ },
+ "throw-tartan": {
+  "mean": [
+   0.5768,
+   0.4079,
+   0.3299
+  ],
+  "std": 0.1272,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   4.32
+  ]
+ },
+ "rug-antique": {
+  "mean": [
+   0.6232,
+   0.4024,
+   0.3083
+  ],
+  "std": 0.1209,
+  "seam": "mx",
+  "seamAbsAfter": [
+   0.0,
+   6.86
+  ]
+ },
+ "lampshade-fabric": {
+  "mean": [
+   0.9461,
+   0.8417,
+   0.6386
+  ],
+  "std": 0.0386,
+  "seam": "mirror",
+  "seamAbsAfter": [
+   0.0,
+   0.0
+  ]
  }
 }

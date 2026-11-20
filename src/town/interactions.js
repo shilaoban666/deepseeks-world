@@ -304,7 +304,8 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
       `<p>${blurb}</p><p class="dim">钱：${state.coins} 金币</p><table class="recipes"><tbody>${rows}</tbody></table>`,
       list
         .map((k) => ({
-          label: `买 ${ITEMS[k].icon}${ITEMS[k].name}（${ITEMS[k].price}）`,
+          // 按钮使用纯文本，避免把手绘图标的 CSS 片段显示成字面量；商品表格仍保留图标。
+          label: `买 ${ITEMS[k].name}（${ITEMS[k].price}）`,
           disabled: state.coins < ITEMS[k].price,
           onClick: () => {
             state.coins -= ITEMS[k].price;

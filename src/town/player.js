@@ -432,31 +432,51 @@ export function createMover(o) {
   window.addEventListener('keyup', (e) => keys.delete(e.code));
   window.addEventListener('blur', () => keys.clear());
 
-  /** 圆形的人对轴对齐的盒子：把圆推出去。 */
+  /** 圆形的人对轴对齐的盒子：把圆推出去，并返回最后一次接触法线。 */
   const pushOut = (p, radius) => {
-    for (const c of list()) {
-      const dx = p.x - c.x;
-      const dz = p.z - c.z;
-      // 快速剔除
-      if (Math.abs(dx) > c.hw + radius + 2 || Math.abs(dz) > c.hd + radius + 2) continue;
-      const px = Math.min(c.hw, Math.max(-c.hw, dx));
-      const pz = Math.min(c.hd, Math.max(-c.hd, dz));
-      const ox = dx - px;
-      const oz = dz - pz;
-      const d = Math.hypot(ox, oz);
-      if (d < radius) {
-        if (d > 1e-4) {
-          p.x += (ox / d) * (radius - d);
-          p.z += (oz / d) * (radius - d);
-        } else {
-          // 圆心在盒子里：往最近的那条边推
-          const l = Math.abs(dx) - c.hw;
-          const r2 = Math.abs(dz) - c.hd;
-          if (l > r2) p.x += Math.sign(dx || 1) * (radius - l);
-          else p.z += Math.sign(dz || 1) * (radius - r2);
+    let nx = 0;
+    let nz = 0;
+    let hit = false;
+    // Three passes resolve corners and adjacent building boxes without tunnelling
+    // through a second box after the first correction.
+    for (let pass = 0; pass < 3; pass++) {
+      let changed = false;
+      for (const c of list()) {
+        const dx = p.x - c.x;
+        const dz = p.z - c.z;
+        if (Math.abs(dx) > c.hw + radius + 2 || Math.abs(dz) > c.hd + radius + 2) continue;
+        const px = Math.min(c.hw, Math.max(-c.hw, dx));
+        const pz = Math.min(c.hd, Math.max(-c.hd, dz));
+        const ox = dx - px;
+        const oz = dz - pz;
+        const d = Math.hypot(ox, oz);
+        if (d < radius) {
+          let ax;
+          let az;
+          let depth;
+          if (d > 1e-4) {
+            ax = ox / d;
+            az = oz / d;
+            depth = radius - d;
+          } else {
+            const edgeX = c.hw - Math.abs(dx);
+            const edgeZ = c.hd - Math.abs(dz);
+            if (edgeX < edgeZ) {
+              ax = Math.sign(dx || 1); az = 0; depth = radius + edgeX;
+            } else {
+              ax = 0; az = Math.sign(dz || 1); depth = radius + edgeZ;
+            }
+          }
+          p.x += ax * depth;
+          p.z += az * depth;
+          nx += ax; nz += az;
+          hit = changed = true;
         }
       }
+      if (!changed) break;
     }
+    const n = Math.hypot(nx, nz);
+    return hit ? { x: nx / Math.max(n, 1e-5), z: nz / Math.max(n, 1e-5) } : null;
   };
 
   const state = { vx: 0, vz: 0, radius: 0.42 };
@@ -489,7 +509,17 @@ export function createMover(o) {
       const lim = HALF - 40;
       if (Math.abs(p.x) > lim) p.x = Math.sign(p.x) * lim;
       if (Math.abs(p.z) > lim) p.z = Math.sign(p.z) * lim;
-      pushOut(p, state.radius);
+      const contact = pushOut(p, state.radius);
+      if (contact) {
+        // Remove velocity into the wall while preserving a little tangential slide.
+        const into = state.vx * contact.x + state.vz * contact.z;
+        if (into < 0) {
+          state.vx -= contact.x * into;
+          state.vz -= contact.z * into;
+          state.vx *= 0.86;
+          state.vz *= 0.86;
+        }
+      }
       // 不下水
       if (!allowWater && inLake(p.x, p.z)) {
         p.x = ox;

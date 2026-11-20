@@ -340,14 +340,19 @@ export function createActions({ whale, mover, cam, game, hud, woods, particles, 
         const g = ground(s.x, s.z);
         s.groundY = g;
         if (air) {
-          s.vy -= GRAVITY * dt;
-          s.y += s.vy * dt;
-          if (s.y <= g) {
-            s.y = g;
-            air = false;
-            const w = depthHere();
-            if (w && w.depth > 0.3) particles.splash(s.x, w.level, s.z, 1);
-            else particles.dust(s.x, g, s.z, 5);
+          // Integrate in small fixed slices so a long frame cannot skip through the ground.
+          const slices = Math.max(1, Math.ceil(dt / 0.025));
+          const h = dt / slices;
+          for (let step = 0; step < slices && air; step++) {
+            s.vy = Math.max(-32, s.vy - GRAVITY * h);
+            s.y += s.vy * h;
+            if (s.y <= g) {
+              s.y = g;
+              air = false;
+              const w = depthHere();
+              if (w && w.depth > 0.3) particles.splash(s.x, w.level, s.z, 1);
+              else particles.dust(s.x, g, s.z, 5);
+            }
           }
         } else s.y = g;
         // 走进深水 → 游泳

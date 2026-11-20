@@ -3,8 +3,9 @@
 //
 // 走过的地方才看得清（探索），没去过的地方蒙着一层纸。滚轮缩放、拖动平移、点地标看详情，
 // 能把它设为目标（小地图上会指方向），公交站、家和高铁站可以直接"坐车过去"。
-// 上面的页签还能翻到两张手绘的纸地图（小镇图、世界图）。
-import { DISTRICTS, ROADS, SEGS, PLAZA, HALF, LAKE, BUS_ROUTE, heightAt, lakeDistance, riverAt, RIVER_HALF, SEA, SEA_WEST, coastX, forestAt, fieldsAt, plotAt, pavedAt, mountainAt, fbm } from './plan.js';
+// 上面的页签还能翻到手绘的纸地图：《幻想世界地图》总图，和十张分区图（public/maps/v3，tools/make-maps.mjs 缩的）。
+import { DISTRICTS, ROADS, PLAZA, HOME, YUHAI, HALF, BUS_ROUTE, BUS_STOPS, METRO, METRO_STOPS, RAIL, RAIL_STATIONS, lakeDistance, riverAt, RIVER_HALF, SEA, coastD, snowAt, forestAt, fieldsAt, plotAt, smooth, fbm } from './plan.js';
+import { smoothLine, gridHeight, yardAt } from './ui.js';
 
 const $ = (id) => document.getElementById(id);
 const BAKE = 1024;
@@ -38,14 +39,59 @@ const ICON = {
   gather: ['🌼', '#f7bfe0', '野外'],
   board: ['📋', '#e8dcc8', '地标'],
   mail: ['✉️', '#e8dcc8', '地标'],
+  // 各区的特色玩法（activities.js）
+  ski: ['⛷️', '#bfe6ff', '娱乐'],
+  boat: ['🚣', '#6fd3e8', '娱乐'],
+  surf: ['🏄', '#ffb86b', '娱乐'],
+  lounger: ['⛱️', '#ffd98a', '娱乐'],
+  chess: ['♟️', '#e0c9a6', '娱乐'],
+  shell: ['🐚', '#f7d9c4', '野外'],
+  farmstand: ['🧺', '#ffb07c', '市场'],
+  work: ['💼', '#ffcf5c', '委托'],
 };
 /** 可以直接传送过去的地点 */
 const TRAVEL = new Set(['door', 'bus', 'station']);
+/** 写大字的街区（一片片的地方）；别的是城里、镇上的一处处，放大了才写 */
+const BIG = new Set(['lake', 'mountain', 'forest', 'fields', 'oldtown', 'town', 'snowtown', 'seaside', 'newtown', 'beach', 'university', 'cbd', 'lakeside', 'pastoral', 'port', 'harbor']);
+/** 城、镇：里面的小地名缩小的时候不写（不然挤成一团） */
+const TOWNS = DISTRICTS.filter((d) => ['oldtown', 'town', 'cbd'].includes(d.kind));
+const INNER = new Set(DISTRICTS.filter((d) => !BIG.has(d.kind) && TOWNS.some((t) => Math.hypot(d.x - t.x, d.z - t.z) < t.r)).map((d) => d.id));
+/** 高铁线：和世界里一样，把控制点顺成一条光滑的线 */
+const RAIL_LINE = smoothLine(RAIL, 10);
+
+/** 手绘的纸地图（public/maps/v3）：world 是总图，其余十张是分区图。at 是这张图画的那几处（挑"离你最近的一张"用）。 */
+export const PAPERS = [
+  { id: 'yuhai', name: '玉海城', at: [[YUHAI[0], YUHAI[1], 250]] },
+  { id: 'aitown', name: 'AI 小镇', at: [[-470, -100, 120], [HOME[0], HOME[1], 40], [-452, 62, 60], [-378, 172, 50]] },
+  { id: 'pastoral', name: '田园小镇', at: [[-860, -150, 90], [-872, 62, 150]] },
+  { id: 'snow', name: '雪山小镇', at: [[-790, -560, 130]] },
+  { id: 'lake', name: '月亮湖', at: [[-40, -520, 185], [285, -510, 100]] },
+  { id: 'university', name: '大学城', at: [[640, -480, 135]] },
+  { id: 'cbd', name: '新新区 CBD', at: [[445, -120, 125]] },
+  { id: 'seaside-port', name: '海滨小镇 · 港口', at: [[762, -182, 110], [902, -190, 30], [715, 95, 95]] },
+  { id: 'station-beach', name: '高铁站 · 沙滩', at: [[20, 400, 90], [425, 462, 50], [380, 556, 110]] },
+  { id: 'newtown', name: '海边新城 · 码头', at: [[-740, 345, 125], [-735, 545, 75]] },
+];
+/** 离 (x, z) 最近的那张分区图的 id */
+export function paperAt(x, z) {
+  let best = PAPERS[0];
+  let bestD = 1e9;
+  for (const p of PAPERS) {
+    for (const [px, pz, pr] of p.at) {
+      const d = Math.hypot(x - px, z - pz) - pr;
+      if (d < bestD) {
+        bestD = d;
+        best = p;
+      }
+    }
+  }
+  return best.id;
+}
 
 const lerp = (a, b, t) => a + (b - a) * t;
 const mix3 = (a, b, t) => [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
 
-/** 烘一张 1024² 的手绘底图（第一次打开时才烘，约半秒） */
+/** 烘一张 1024² 的手绘底图（第一次打开时才烘，一秒上下；高度查 ui.js 那张和小地图合用的表） */
 function bake() {
   const c = document.createElement('canvas');
   c.width = c.height = BAKE;
@@ -53,9 +99,10 @@ function bake() {
   const img = g.createImageData(BAKE, BAKE);
   const S = (HALF * 2) / BAKE;
   const H = new Float32Array(BAKE * BAKE);
-  for (let j = 0; j < BAKE; j++) for (let i = 0; i < BAKE; i++) H[j * BAKE + i] = heightAt(-HALF + (i + 0.5) * S, -HALF + (j + 0.5) * S);
+  for (let j = 0; j < BAKE; j++) for (let i = 0; i < BAKE; i++) H[j * BAKE + i] = gridHeight(-HALF + (i + 0.5) * S, -HALF + (j + 0.5) * S);
   const at = (i, j) => H[Math.min(BAKE - 1, Math.max(0, j)) * BAKE + Math.min(BAKE - 1, Math.max(0, i))];
-  const PAPER = [242, 233, 210];
+  // 哪些格子是水（描岸线用）
+  const water = new Uint8Array(BAKE * BAKE);
   for (let j = 0; j < BAKE; j++) {
     for (let i = 0; i < BAKE; i++) {
       const x = -HALF + (i + 0.5) * S;
@@ -71,12 +118,15 @@ function bake() {
       // 草地：黄绿到蓝绿
       let col = mix3([150, 186, 110], [118, 168, 104], fbm(x / 260, z / 260, 3, 3));
       // 山：越高越灰褐、雪线以上白
-      const m = mountainAt(x, z);
+      const m = smooth(150, 300, h);
       col = mix3(col, [168, 158, 140], Math.min(1, m * 1.1));
       col = mix3(col, [246, 247, 250], Math.max(0, Math.min(1, (h - 230) / 60)));
-      // 林：深绿
+      // 林：深绿（雪地里的林子是带霜的冷绿）
+      const snow = snowAt(x, z);
       const f = forestAt(x, z);
       if (f > 0.05) col = mix3(col, [86, 128, 88], Math.min(1, f * 1.2));
+      // 雪：雪山小镇那一片
+      if (snow > 0.02) col = mix3(col, [246, 248, 252], snow * (0.92 - 0.3 * Math.min(1, f * 1.2)));
       // 田：拼布
       const fd = fieldsAt(x, z);
       if (fd > 0.4) {
@@ -84,22 +134,25 @@ function bake() {
         const crop = p.kind === 0 ? [224, 196, 112] : p.kind === 1 ? [128, 176, 92] : [178, 146, 104];
         col = mix3(col, p.edge < 0.6 ? [170, 150, 112] : crop, Math.min(1, (fd - 0.4) * 2.5));
       }
-      // 铺装：奶油
-      const pv = pavedAt(x, z);
+      // 铺装（广场、院子、站前、货场）：奶油
+      const pv = yardAt(x, z);
       if (pv > 0.2) col = mix3(col, [226, 214, 188], pv * 0.85);
       // 水
       const rv = riverAt(x, z);
       const ld = lakeDistance(x, z);
-      const isSea = x > SEA_WEST && h < SEA.level;
-      const isWater = ld < 1.0 || rv.d < RIVER_HALF + 1.5 || isSea;
+      const cd = coastD(x, z);
+      const isSea = h < SEA.level && cd < 60;
+      const isWater = ld < 1.0 || (rv.d < RIVER_HALF + 1.5 && cd > -30) || isSea;
+      if (isWater) water[j * BAKE + i] = 1;
       if (isWater) {
-        const depth = isSea ? Math.min(1, (SEA.level - h) / 8) : ld < 1 ? Math.min(1, 1 - ld) : 0.4;
+        const depth = isSea ? Math.min(1, (SEA.level - h) / 14) : ld < 1 ? Math.min(1, 1 - ld) : 0.4;
         col = mix3([150, 200, 214], [84, 140, 182], depth);
         shade = 1;
         // 水面的细波纹
         if (Math.sin((x + z * 0.3) * 0.25 + fbm(x / 40, z / 40, 2, 9) * 6) > 0.96) col = mix3(col, [230, 244, 248], 0.5);
-      } else if (ld < 1.08 || (x > SEA_WEST && h < SEA.level + 1.2) || rv.d < RIVER_HALF + 4) {
-        col = mix3(col, [228, 214, 172], 0.8); // 沙滩
+      } else if (ld < 1.08 || (cd < 160 && h < SEA.level + 2.4) || rv.d < RIVER_HALF + 4) {
+        col = mix3(col, [234, 220, 176], 0.85); // 沙滩、河滩
+        shade = 0.5 + shade * 0.5;
       }
       let r = col[0] * shade * wash;
       let gg = col[1] * shade * wash;
@@ -124,6 +177,20 @@ function bake() {
       img.data[o + 3] = 255;
     }
   }
+  // 海岸线、湖岸、河岸：水和岸交界的地方描一道深蓝。岸线照着烘出来的水走（COAST 那个多边形在 coastD 里
+  // 还加了摆动，沙滩上水边又退得远，直接描多边形会和水色对不上）
+  for (let j = 1; j < BAKE - 1; j++) {
+    for (let i = 1; i < BAKE - 1; i++) {
+      const o = j * BAKE + i;
+      const n = water[o - 1] + water[o + 1] + water[o - BAKE] + water[o + BAKE] + water[o - BAKE - 1] + water[o - BAKE + 1] + water[o + BAKE - 1] + water[o + BAKE + 1];
+      const edge = water[o] ? 8 - n : n;
+      if (!edge) continue;
+      const a = Math.min(1, edge / 3) * (water[o] ? 0.5 : 0.28);
+      img.data[o * 4] = lerp(img.data[o * 4], 52, a);
+      img.data[o * 4 + 1] = lerp(img.data[o * 4 + 1], 96, a);
+      img.data[o * 4 + 2] = lerp(img.data[o * 4 + 2], 130, a);
+    }
+  }
   g.putImageData(img, 0, 0);
   const w2p = (x, z) => [(x + HALF) / S, (z + HALF) / S];
   // 林子：一团团的树冠印章
@@ -139,23 +206,14 @@ function bake() {
     g.beginPath();
     g.arc(px + 0.6, py + 0.8, r, 0, Math.PI * 2);
     g.fill();
-    g.fillStyle = `rgba(${96 + Math.random() * 30},${146 + Math.random() * 20},${92},0.8)`;
+    // 雪地里的树：树冠上一层白
+    const sn = snowAt(x, z);
+    g.fillStyle = sn > 0.5 ? `rgba(${214 + Math.random() * 30},${228 + Math.random() * 20},232,0.85)` : `rgba(${96 + Math.random() * 30},${146 + Math.random() * 20},${92},0.8)`;
     g.beginPath();
     g.arc(px, py, r * 0.8, 0, Math.PI * 2);
     g.fill();
   }
   g.restore();
-  // 海岸线、湖岸：一道深蓝的描边
-  g.strokeStyle = 'rgba(52,96,130,0.6)';
-  g.lineWidth = 1.2;
-  g.beginPath();
-  for (let z = -HALF; z <= HALF; z += 8) {
-    if (coastX(z) > HALF + 120) break;
-    const [px, py] = w2p(coastX(z) - 30, z);
-    if (z === -HALF) g.moveTo(px, py);
-    else g.lineTo(px, py);
-  }
-  g.stroke();
   // 四边：一圈暗下去的纸边
   const vg = g.createRadialGradient(BAKE / 2, BAKE / 2, BAKE * 0.42, BAKE / 2, BAKE / 2, BAKE * 0.74);
   vg.addColorStop(0, 'rgba(120,96,60,0)');
@@ -176,6 +234,9 @@ export function createBigMap({ city, getPlayer, onTravel, hud, minutes }) {
   let base = null;
   let open = false;
   let tab = 'map';
+  // 分区手绘图翻到哪一张：null = 跟着人走（离哪张近看哪张）
+  let paperPick = null;
+  let paperShown = '';
   let zoom = 1.6;
   let cx = 0;
   let cz = 0;
@@ -213,10 +274,12 @@ export function createBigMap({ city, getPlayer, onTravel, hud, minutes }) {
     const j = Math.floor((z + HALF) / cell);
     return i >= 0 && j >= 0 && i < FOG && j < FOG && fog[j * FOG + i] > 120;
   };
-  // 开局：镇子中心看得清
-  reveal(PLAZA[0], PLAZA[1], 300);
+  // 开局：家、AI 小镇看得清，玉海城露出一点（去过才全亮）
+  reveal(HOME[0], HOME[1], 260);
+  reveal(-460, -112, 220);
+  reveal(YUHAI[0], YUHAI[1], 190);
 
-  const places = () => city.interactables.filter((it) => ICON[it.kind] && it.kind !== 'home');
+  const places = () => city.interactables.filter((it) => ICON[it.kind] && it.kind !== 'home' && it.map !== false);
 
   // 世界 ↔ 画布
   const size = () => ({ W: canvas.width, H: canvas.height });
@@ -283,27 +346,34 @@ export function createBigMap({ city, getPlayer, onTravel, hud, minutes }) {
     const lw = (m, min) => Math.max(min * dpr, m * k);
     g.lineCap = 'round';
     g.lineJoin = 'round';
-    for (const pass of [0, 1]) {
-      for (const sg of SEGS) {
-        const [ax, ay] = w2s(sg.ax, sg.az);
-        const [bx, by] = w2s(sg.bx, sg.bz);
-        if (sg.lane) {
-          if (pass) continue;
-          g.setLineDash([4 * dpr, 4 * dpr]);
-          g.strokeStyle = 'rgba(140,108,70,0.8)';
-          g.lineWidth = lw(2.4, 1.4);
-        } else {
-          g.setLineDash([]);
-          g.strokeStyle = pass ? '#f8eed6' : 'rgba(120,96,70,0.9)';
-          g.lineWidth = pass ? lw(7.2, 2.2) : lw(9.6, 3.6);
-        }
-        g.beginPath();
-        g.moveTo(ax, ay);
-        g.lineTo(bx, by);
-        g.stroke();
+    const trace = (pts) => {
+      g.beginPath();
+      for (let i = 0; i < pts.length; i++) {
+        const [px, py] = w2s(pts[i][0], pts[i][1]);
+        if (i === 0) g.moveTo(px, py);
+        else g.lineTo(px, py);
       }
-    }
+      g.stroke();
+    };
+    // 土路：棕色的细虚线
+    g.setLineDash([4 * dpr, 4 * dpr]);
+    g.strokeStyle = 'rgba(140,108,70,0.8)';
+    g.lineWidth = lw(2.4, 1.4);
+    for (const line of ROADS) if (line.kind === 'lane') trace(line);
     g.setLineDash([]);
+    // 公路（灰米色、窄一点）和石板街（奶油色）：先深边，再填；街压在公路上面
+    g.strokeStyle = 'rgba(112,100,84,0.85)';
+    g.lineWidth = lw(8.4, 3.2);
+    for (const line of ROADS) if (line.kind === 'road') trace(line);
+    g.strokeStyle = 'rgba(120,96,70,0.9)';
+    g.lineWidth = lw(9.6, 3.6);
+    for (const line of ROADS) if (line.kind === 'street') trace(line);
+    g.strokeStyle = '#e4dccb';
+    g.lineWidth = lw(6.2, 1.9);
+    for (const line of ROADS) if (line.kind === 'road') trace(line);
+    g.strokeStyle = '#f8eed6';
+    g.lineWidth = lw(7.2, 2.2);
+    for (const line of ROADS) if (line.kind === 'street') trace(line);
     {
       const [qx, qy] = w2s(PLAZA[0], PLAZA[1]);
       g.fillStyle = '#f2e6c8';
@@ -347,28 +417,86 @@ export function createBigMap({ city, getPlayer, onTravel, hud, minutes }) {
         g.stroke();
       }
     }
-    g.setLineDash([6 * dpr, 5 * dpr]);
+    // 37 路公交：橙色的线，站是白心的小圆点
     g.strokeStyle = 'rgba(232,140,52,0.95)';
-    g.lineWidth = 2.4 * dpr;
-    g.beginPath();
-    BUS_ROUTE.forEach(([x, z], i) => {
-      const [px, py] = w2s(x, z);
-      if (i === 0) g.moveTo(px, py);
-      else g.lineTo(px, py);
-    });
-    g.stroke();
+    g.lineWidth = 2.2 * dpr;
+    trace(BUS_ROUTE);
+    const dotR = Math.min(5.5, 2.6 + zoom * 0.45) * dpr;
+    for (const st of BUS_STOPS) {
+      const [px, py] = w2s(st.x, st.z);
+      g.beginPath();
+      g.arc(px, py, dotR, 0, Math.PI * 2);
+      g.fillStyle = '#fffaf0';
+      g.fill();
+      g.lineWidth = 1.6 * dpr;
+      g.stroke();
+    }
+    // 地铁 1 号线：紫色虚线，站是 Ⓜ
+    g.lineCap = 'butt';
+    g.setLineDash([7 * dpr, 5 * dpr]);
+    g.strokeStyle = 'rgba(128,88,190,0.95)';
+    g.lineWidth = 2.6 * dpr;
+    trace(METRO);
     g.setLineDash([]);
+    for (const st of METRO_STOPS) {
+      const [px, py] = w2s(st.x, st.z);
+      const r = dotR * 1.25;
+      g.beginPath();
+      g.arc(px, py, r, 0, Math.PI * 2);
+      g.fillStyle = '#7a56bc';
+      g.fill();
+      g.strokeStyle = '#fffaf0';
+      g.lineWidth = 1.4 * dpr;
+      g.stroke();
+      g.fillStyle = '#fffaf0';
+      g.font = `800 ${Math.round(r * 1.25)}px "Microsoft YaHei","PingFang SC",sans-serif`;
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText('M', px, py + 0.5 * dpr);
+    }
+    // 高铁：老地图上铁路的画法——深色的线，里面一节节白
+    g.strokeStyle = 'rgba(46,50,60,0.95)';
+    g.lineWidth = lw(5, 3.4);
+    trace(RAIL_LINE);
+    g.setLineDash([lw(14, 7), lw(14, 7)]);
+    g.strokeStyle = '#fbf6ea';
+    g.lineWidth = lw(2.6, 1.6);
+    trace(RAIL_LINE);
+    g.setLineDash([]);
+    g.lineCap = 'round';
+    // 高铁站：🚄 的小牌子（去过的才画；城里已经有"高铁站"这个地点图标的就不重复）
+    for (const st of RAIL_STATIONS) {
+      if (!explored(st.x, st.z)) continue;
+      if (places().some((it) => it.kind === 'station' && Math.hypot(it.x - st.x, it.z - st.z) < 45)) continue;
+      const [px, py] = w2s(st.x, st.z);
+      const fs = 11 * dpr * Math.min(1.3, 0.8 + zoom * 0.1);
+      g.font = `700 ${fs}px "Segoe UI Emoji","Microsoft YaHei","PingFang SC",sans-serif`;
+      const text = zoom >= 1.5 ? `🚄 ${st.name}` : '🚄';
+      const tw = g.measureText(text).width + fs * 0.9;
+      const th = fs * 1.7;
+      g.beginPath();
+      g.roundRect(px - tw / 2, py - th / 2, tw, th, th / 2);
+      g.fillStyle = 'rgba(255,253,246,0.95)';
+      g.fill();
+      g.strokeStyle = 'rgba(46,50,60,0.85)';
+      g.lineWidth = 1.4 * dpr;
+      g.stroke();
+      g.fillStyle = '#26333f';
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText(text, px, py + 0.5 * dpr);
+    }
     // 地名（去过的才写）
     for (const d of DISTRICTS) {
-      if (d.kind === 'residential' && zoom < 2.2) continue;
+      if (INNER.has(d.id) && zoom < 2.6) continue;
       if (!explored(d.x, d.z)) continue;
       const [px, py] = w2s(d.x, d.z);
-      const big = ['lake', 'mountain', 'forest', 'fields', 'farm', 'snowtown', 'seaside', 'newtown', 'beach'].includes(d.kind);
+      const big = BIG.has(d.kind);
       const s2 = (big ? 15 : 12.5) * dpr * Math.min(1.6, 0.75 + zoom * 0.18);
       // 有图标在同一处的，字写在图标上方，别压在一起
-      const hasIcon = places().some((it) => Math.hypot(it.x - d.x, it.z - d.z) < d.r * 0.6);
+      const hasIcon = places().some((it) => Math.hypot(it.x - d.x, it.z - d.z) < Math.min(d.r * 0.6, 26));
       const lift = hasIcon ? 9 * dpr * Math.min(1.4, 0.7 + zoom * 0.15) + s2 * 0.75 : big ? 0 : 14 * dpr;
-      label(d.name, px, py - lift, s2, big ? 800 : 700, big ? '#2f5068' : '#3a2e22');
+      label(d.name, px, py - lift, s2, big ? 800 : 700, big ? (['lake', 'beach', 'harbor', 'port'].includes(d.kind) ? '#2f5068' : ['forest', 'fields', 'mountain'].includes(d.kind) ? '#3f5a3a' : '#5a3424') : '#3a2e22');
     }
     // 地点图标
     const r0 = 9 * dpr * Math.min(1.4, 0.7 + zoom * 0.15);
@@ -466,8 +594,15 @@ export function createBigMap({ city, getPlayer, onTravel, hud, minutes }) {
   // ---- 侧栏 ----
   const renderSide = () => {
     const p = getPlayer();
-    if (tab !== 'map') {
-      side.innerHTML = `<p class="dim">${tab === 'town' ? '这是镇上的人画的《鱼的小镇地图》。你现在能走到的地方都在这张图上。' : '《幻想世界地图》。玉海城、大学城、港口……要等铁路修好才能去。'}</p>`;
+    if (tab === 'world') {
+      side.innerHTML = '<div class="bm-card"><div class="bm-title">幻想世界地图</div><div class="dim">手绘的总图：玉海城在正中，西边是 AI 小镇和鱼鱼家，东边和南边是海。</div></div><p class="dim">画是斜着俯瞰的，红色的图钉只是你大概在的位置。</p><div class="bm-sec">图例</div><div class="bm-legend"><span><i class="bm-line bus"></i>37 路公交</span><span><i class="bm-line metro"></i>地铁 1 号线</span><span><i class="bm-line hsr"></i>高铁线</span><span><i class="bm-line hwy"></i>公路</span></div>';
+      return;
+    }
+    if (tab === 'district') {
+      const cur = PAPERS.find((q) => q.id === paperShown) ?? PAPERS[0];
+      const near = PAPERS.find((q) => q.id === paperAt(p.x, p.z));
+      side.innerHTML = `<div class="bm-card"><div class="bm-title">${cur.name}</div><div class="dim">分区手绘图 · ${PAPERS.indexOf(cur) + 1} / ${PAPERS.length}</div>${cur !== near ? `<div class="bm-btns"><button data-act="near">回到我这儿（${near.name}）</button></div>` : '<div class="dim">你现在就在这一带。</div>'}</div><p class="dim">点图下面的名字翻到别的分区。</p>`;
+      side.querySelector('[data-act="near"]')?.addEventListener('click', () => api.setPaper(null));
       return;
     }
     const all = places();
@@ -486,7 +621,7 @@ export function createBigMap({ city, getPlayer, onTravel, hud, minutes }) {
       const [emoji, , cat] = ICON[it.kind];
       if (!cats.has(cat)) cats.set(cat, emoji);
     }
-    html += `<div class="bm-sec">图例</div><div class="bm-legend">${[...cats].map(([cat, e]) => `<span>${e} ${cat}</span>`).join('')}<span><i class="bm-line bus"></i>1 路公交</span><span><i class="bm-line road"></i>石板街</span><span><i class="bm-line lane"></i>土路</span></div>`;
+    html += `<div class="bm-sec">图例</div><div class="bm-legend">${[...cats].map(([cat, e]) => `<span>${e} ${cat}</span>`).join('')}<span><i class="bm-line bus"></i>37 路公交</span><span><i class="bm-line metro"></i>地铁 1 号线</span><span><i class="bm-line hsr"></i>高铁线</span><span><i class="bm-line road"></i>石板街</span><span><i class="bm-line hwy"></i>公路</span><span><i class="bm-line lane"></i>土路</span></div>`;
     side.innerHTML = html;
     side.querySelector('[data-act="wp"]')?.addEventListener('click', () => {
       waypoint = waypoint && waypoint.id === selected.id ? null : { id: selected.id, name: selected.name, x: selected.x, z: selected.z };
@@ -580,12 +715,27 @@ export function createBigMap({ city, getPlayer, onTravel, hud, minutes }) {
       return waypoint;
     },
     explored,
+    /** 'map' 大地图 · 'world' 世界手绘图 · 'district' 分区手绘图 */
     setTab(t) {
-      tab = t;
-      for (const b of root.querySelectorAll('[data-tab]')) b.classList.toggle('on', b.dataset.tab === t);
-      root.classList.toggle('paper', t !== 'map');
-      $('bigmap-paper').src = t === 'town' ? './maps/town.jpg' : t === 'world' ? './maps/world.jpg' : '';
+      tab = ['map', 'world', 'district'].includes(t) ? t : 'map';
+      for (const b of root.querySelectorAll('[data-tab]')) b.classList.toggle('on', b.dataset.tab === tab);
+      root.classList.toggle('paper', tab !== 'map');
+      root.classList.toggle('district', tab === 'district');
+      showPaper();
       renderSide();
+    },
+    /** 分区手绘图翻到哪一张（PAPERS 里的 id）；null = 跟着人走 */
+    setPaper(id) {
+      paperPick = PAPERS.some((q) => q.id === id) ? id : null;
+      if (tab !== 'district') return api.setTab('district');
+      showPaper();
+      renderSide();
+    },
+    get tab() {
+      return tab;
+    },
+    get paper() {
+      return tab === 'district' ? paperShown : tab === 'world' ? 'world' : null;
     },
     open() {
       if (!base) base = bake();
@@ -596,8 +746,8 @@ export function createBigMap({ city, getPlayer, onTravel, hud, minutes }) {
       cx = p.x;
       cz = p.z;
       clampView();
+      paperPick = null;
       api.setTab('map');
-      renderSide();
     },
     close() {
       open = false;
@@ -644,42 +794,45 @@ export function createBigMap({ city, getPlayer, onTravel, hud, minutes }) {
       placeHere(p);
     },
   };
-  // 手绘纸地图上的"你在这儿"：小镇图上 1 像素 ≈ 2 米、镇中心在图正中（plan.js 就是照它摆的）；
-  // 世界图上整个可走的范围只是 AI 小镇那一小块（1 公里 ≈ 110 像素），画一个虚线框
+  // ---- 手绘的纸地图 ----
+  const paper = $('bigmap-paper');
+  const chips = $('bigmap-chips');
+  chips.innerHTML = PAPERS.map((q) => `<button class="tab" data-paper="${q.id}">${q.name}</button>`).join('');
+  for (const b of chips.querySelectorAll('[data-paper]')) b.addEventListener('click', () => api.setPaper(b.dataset.paper));
+  function showPaper() {
+    if (tab === 'map') return;
+    const p = getPlayer();
+    const id = tab === 'world' ? 'world' : (paperPick ?? paperAt(p.x, p.z));
+    if (id !== paperShown || !paper.getAttribute('src')) {
+      paperShown = id;
+      paper.src = `./maps/v3/${id}.jpg`;
+      paper.alt = tab === 'world' ? '幻想世界地图' : (PAPERS.find((q) => q.id === id)?.name ?? '');
+    }
+    for (const b of chips.querySelectorAll('[data-paper]')) b.classList.toggle('on', b.dataset.paper === id);
+  }
+  // 总图上的"你在这儿"：画是斜着俯瞰的，只能大概——横向 1900 米、纵向 1500 米铺满整张图。
+  // 分区图没有靠得住的对应，不画。
   const here = document.createElement('div');
   here.className = 'bm-here';
   here.innerHTML = '<i></i><span>小鲸鱼在这儿</span>';
-  const area = document.createElement('div');
-  area.className = 'bm-area';
-  area.innerHTML = '<span>能走到的地方</span>';
-  $('bigmap-paper').parentElement.append(area, here);
+  paper.parentElement.append(here);
   function placeHere(p) {
-    const show = open && tab !== 'map';
-    here.style.display = area.style.display = show ? '' : 'none';
+    const show = open && tab === 'world';
+    here.style.display = show ? '' : 'none';
     if (!show) return;
-    const view = $('bigmap-paper').parentElement;
+    // 图是 object-fit: contain 摆的：先算出它在框里实际占的那一块
+    const view = paper.parentElement;
     const w = view.clientWidth;
     const h = view.clientHeight;
-    const side = Math.min(w, h);
-    const ox = (w - side) / 2;
-    const oy = (h - side) / 2;
-    const k = side / 1024;
-    let px;
-    let py;
-    if (tab === 'town') {
-      px = 512 + p.x / 2;
-      py = 512 + p.z / 2;
-      area.style.display = 'none';
-    } else {
-      const s0 = 0.11;
-      px = 288 + p.x * s0;
-      py = 293 + p.z * s0;
-      Object.assign(area.style, { left: `${ox + (288 - HALF * s0) * k}px`, top: `${oy + (293 - HALF * s0) * k}px`, width: `${HALF * 2 * s0 * k}px`, height: `${HALF * 2 * s0 * k}px` });
-    }
-    here.classList.toggle('below', tab === 'world');
-    here.style.left = `${ox + px * k}px`;
-    here.style.top = `${oy + py * k}px`;
-    here.style.setProperty('--yaw', `${-p.yaw}rad`);
+    const ar = paper.naturalWidth && paper.naturalHeight ? paper.naturalWidth / paper.naturalHeight : 1800 / 1120;
+    const iw = Math.min(w, h * ar);
+    const ih = iw / ar;
+    const u = Math.min(0.985, Math.max(0.015, p.x / 1900 + 0.5));
+    const v = Math.min(0.985, Math.max(0.015, p.z / 1500 + 0.5));
+    here.classList.toggle('below', v < 0.12);
+    here.classList.toggle('left', u > 0.86);
+    here.style.left = `${(w - iw) / 2 + u * iw}px`;
+    here.style.top = `${(h - ih) / 2 + v * ih}px`;
   }
   return api;
 }

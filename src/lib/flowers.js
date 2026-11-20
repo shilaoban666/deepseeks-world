@@ -191,9 +191,10 @@ function flowerGeometry(subs = 2) {
   return geometry;
 }
 
-export function createFlowers(shared, { height = 0.52, seed = 1 } = {}, heightAt) {
+/** @param o.subs flowers to a cell, 2 or (for a weak graphics card: half the flowers, half the triangles) 1 */
+export function createFlowers(shared, { height = 0.52, seed = 1, subs = 2 } = {}, heightAt) {
   const group = new THREE.Group();
-  const geometry = flowerGeometry();
+  const geometry = flowerGeometry(subs);
   const uniforms = {
     ...shared,
     uCell: { value: RING.cell },

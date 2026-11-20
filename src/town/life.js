@@ -4,7 +4,7 @@
 // 跟着一天的光染色；飞着的鸟上下压一压当扇翅膀。夜里鸟都回窝了。
 import * as THREE from 'three';
 import { COMMON } from '../lib/index.js';
-import { LAKE, SEA, PLAZA, coastX, heightAt, waterAt, riverAt, riverLevel, RIVER, RIVER_HALF, fieldsAt, DISTRICTS } from './plan.js';
+import { LAKE, SEA, PLAZA, HALF, PIERS, coastD, heightAt, waterAt, bridgeAt, riverAt, riverLevel, RIVER, RIVER_HALF, fieldsAt, district } from './plan.js';
 
 const vertex = /* glsl */ `
 ${COMMON}
@@ -47,6 +47,117 @@ void main() {
 `;
 
 /**
+ * 它们各在哪儿：全照 plan.js 的地理来摆（不碰 three，node 里也能跑，方便检查）。
+ * @param random 确定的随机数
+ * @returns flocks [x, z, 半径, 鸟种]；gulls [x, z]；herons [x, z, y]；hoppers [x, z]；farBoats [x, z, 绕圈半径]；moored [名字, 高, x, z, 水面]
+ */
+export function lifeSpots(random = Math.random) {
+  const R = (a, b) => a + random() * (b - a);
+  const D = (id) => district(id);
+  const yuhai = D('yuhai');
+  const flocks = [
+    [PLAZA[0], PLAZA[1], 70, ['birds-barn-swallow', 'birds-common-swift']],
+    [yuhai.x, yuhai.z + 185, 60, ['birds-rock-pigeon', 'birds-collared-dove']], // 南市街
+    [D('aitown').x, D('aitown').z, 70, ['birds-robin', 'birds-great-tit', 'birds-house-sparrow']],
+    [D('fields').x, D('fields').z, 120, ['birds-barn-swallow', 'birds-house-sparrow']],
+    [D('pastoral').x, D('pastoral').z, 70, ['birds-tree-sparrow', 'birds-house-sparrow', 'birds-great-tit']],
+    [D('university').x, D('university').z, 90, ['birds-carrion-crow', 'birds-magpie']],
+    [D('cbd').x, D('cbd').z, 80, ['birds-common-swift', 'birds-rock-pigeon']],
+  ];
+  /** 在 (cx, cz) 周围 r 米里找一处海：有水，而且离岸至少 off 米 */
+  const seaNear = (cx, cz, r, off) => {
+    for (let tries = 0; tries < 60; tries++) {
+      const x = cx + R(-r, r);
+      const z = cz + R(-r, r);
+      if (waterAt(x, z) != null && coastD(x, z) < -off) return [x, z];
+    }
+    return null;
+  };
+  // 海鸥：绕着港口、海滨小镇和灯塔、沙滩、码头外面的海
+  const port = D('port');
+  const seaside = D('lighthouse');
+  const beach = D('beach');
+  const harbor = D('harbor');
+  const gulls = [];
+  for (const [cx, cz, r, n] of [[port.x + 130, port.z, 110, 4], [seaside.x + 40, seaside.z, 110, 3], [beach.x + 40, beach.z + 90, 130, 3], [harbor.x, harbor.z + 150, 90, 2]]) {
+    for (let i = 0; i < n; i++) {
+      const p = seaNear(cx, cz, r, 40);
+      if (p) gulls.push(p);
+    }
+  }
+  // 河滩上的鹭：河两边的浅水里（入海口以外不站）
+  const herons = [];
+  for (let i = 0; i < 9; i++) {
+    const seg = Math.floor(R(1, RIVER.length - 4));
+    const [ax, az] = RIVER[seg];
+    const [bx, bz] = RIVER[seg + 1];
+    const t = random();
+    const len = Math.hypot(bx - ax, bz - az);
+    const side = random() < 0.5 ? -1 : 1;
+    const x = ax + (bx - ax) * t + (-(bz - az) / len) * side * (RIVER_HALF - 1.5);
+    const z = az + (bz - az) * t + ((bx - ax) / len) * side * (RIVER_HALF - 1.5);
+    if (coastD(x, z) < 40 || bridgeAt(x, z)) continue;
+    herons.push([x, z, riverLevel(riverAt(x, z).t) - 0.25]);
+  }
+  // 田里的鸟
+  const fields = D('fields');
+  const hoppers = [];
+  for (let i = 0; i < 14; i++) {
+    const a = R(0, 6.28);
+    const r = R(0, fields.r * 0.8);
+    const x = fields.x + Math.cos(a) * r;
+    const z = fields.z + Math.sin(a) * r;
+    if (fieldsAt(x, z) >= 0.5) hoppers.push([x, z]);
+  }
+  // 远处的船：东边的海三条、南边的海三条；绕的那一圈得整个在海里
+  const farBoats = [];
+  for (const [cx, cz, r] of [[HALF + 80, port.z - 60, 260], [HALF + 60, seaside.z - 150, 220], [HALF + 160, port.z + 220, 240], [beach.x + 60, HALF - 140, 220], [beach.x - 260, HALF - 80, 200], [harbor.x + 260, HALF - 60, 200]]) {
+    for (let tries = 0; tries < 12; tries++) {
+      const rad = R(40, 150);
+      const p = seaNear(cx, cz, r, rad + 50);
+      if (!p) continue;
+      farBoats.push([p[0], p[1], rad]);
+      break;
+    }
+  }
+  // 系着的船：码头港池里（两条浮桥两边）、港口石码头边、海鲜排档前的栈桥边、湖边栈桥头上。
+  // 候选位置里只留真的在水上、又没压着桥板的
+  const pier = (kind, name) => PIERS.filter((p) => p.kind === kind && (!name || p.name === name));
+  const beside = (p, along, across) => [p.x + p.sin * along + p.cos * across, p.z + p.cos * along - p.sin * across];
+  const moored = [];
+  const moor = (name, h, [x, z], level) => {
+    const w = waterAt(x, z);
+    if (w == null || Math.abs(w - level) > 0.5 || bridgeAt(x, z) || w - heightAt(x, z) < 0.6) return;
+    moored.push([name, h, x, z, level]);
+  };
+  const floats = pier('pier', '码头');
+  // （浮桥从岸边往南伸：靠岸那头水浅，船都系在外面半截）
+  if (floats[0]) {
+    moor('transport-fishing-boat', 3.6, beside(floats[0], 16, 7), SEA.level);
+    moor('transport-rowboat', 1.2, beside(floats[0], 12, -6), SEA.level);
+  }
+  if (floats[1]) {
+    moor('transport-sampan', 2.2, beside(floats[1], 8, -7), SEA.level);
+    moor('transport-sailboat', 4.4, beside(floats[1], 18, 8), SEA.level);
+  }
+  const quays = pier('quay');
+  if (quays[0]) {
+    moor('transport-small-ferry', 5.2, beside(quays[0], 8, 16), SEA.level);
+    moor('transport-fishing-boat', 3.8, beside(quays[0], 26, -15), SEA.level);
+  }
+  if (quays[1]) moor('transport-junk-boat', 6.5, beside(quays[1], 14, 17), SEA.level);
+  const view = pier('pier', '观海栈桥')[0];
+  if (view) moor('transport-rowboat', 1.2, beside(view, view.len / 2 - 6, 5), SEA.level);
+  const jetty = pier('pier', '湖边栈桥')[0];
+  if (jetty) {
+    // 栈桥朝湖心的那一头
+    const end = Math.hypot(jetty.x + jetty.sin * 10 - LAKE.x, jetty.z + jetty.cos * 10 - LAKE.z) < Math.hypot(jetty.x - LAKE.x, jetty.z - LAKE.z) ? 1 : -1;
+    moor('transport-rowboat', 1.3, beside(jetty, end * (jetty.len / 2 + 2), 4.5), LAKE.level);
+  }
+  return { flocks, gulls, herons, hoppers, farBoats, moored };
+}
+
+/**
  * @param shared 场地的 uniforms
  * @param plants loadPlantAtlases() 的结果（要有 life）
  * @param random 一个确定的随机数（每次开局都一样）
@@ -64,27 +175,19 @@ export function createLife(shared, plants, { random = Math.random } = {}) {
     things.push({ sp, h, w: (h * sp.w) / Math.max(1, sp.h), x: 0, y: 0, z: 0, vx: -1, flip: 1, flap: 0, ...o });
   };
 
-  // ---- 天上的鸟群：镇子上空、田野上空，一群群绕着圈飞 ----------------------------------------------------------
-  const flockSpots = [
-    [PLAZA[0], PLAZA[1], 70, ['birds-barn-swallow', 'birds-common-swift']],
-    [-60, 140, 60, ['birds-rock-pigeon', 'birds-collared-dove']],
-    [-740, 180, 120, ['birds-barn-swallow', 'birds-house-sparrow']],
-    [-330, 560, 80, ['birds-tree-sparrow', 'birds-house-sparrow', 'birds-great-tit']],
-    [-640, -120, 60, ['birds-robin', 'birds-great-tit']],
-    [200, -200, 90, ['birds-carrion-crow', 'birds-magpie']],
-    [-560, -440, 70, ['birds-common-swift']],
-  ];
-  for (const [cx, cz, rad, kinds] of flockSpots) {
+  const spots = lifeSpots(random);
+
+  // ---- 天上的鸟群：城里、镇上、田野上空，一群群绕着圈飞 --------------------------------------------------------
+  for (const [cx, cz, rad, kinds] of spots.flocks) {
     const n = 5 + Math.floor(random() * 5);
     const base = { cx, cz, rad: rad * R(0.6, 1.1), alt: R(16, 34), speed: R(0.12, 0.22) * (random() < 0.5 ? -1 : 1), a0: R(0, 6.28) };
     for (let i = 0; i < n; i++) {
       thing(pick(kinds), R(0.55, 0.75), { kind: 'fly', f: base, da: R(-0.12, 0.12), dr: R(-6, 6), dy: R(-3, 3), flap: R(9, 14), turn: R(0.004, 0.012), phase: R(0, 6.28) });
     }
   }
-  // ---- 海鸥：海面上空，绕着海滨小镇和沙滩 -----------------------------------------------------------------------
-  for (let i = 0; i < 12; i++) {
-    const z = R(-620, -240);
-    const f = { cx: coastX(z) + R(-20, 120), cz: z, rad: R(30, 70), alt: R(10, 24) - SEA.level - 6, speed: R(0.08, 0.16) * (random() < 0.5 ? -1 : 1), a0: R(0, 6.28) };
+  // ---- 海鸥：港口和海滨小镇东边的海上、沙滩南边的海上、码头外面 -------------------------------------------------
+  for (const [x, z] of spots.gulls) {
+    const f = { cx: x, cz: z, rad: R(30, 70), alt: R(10, 24) - SEA.level - 6, speed: R(0.08, 0.16) * (random() < 0.5 ? -1 : 1), a0: R(0, 6.28) };
     thing(pick(['birds-herring-gull', 'birds-black-headed-gull']), R(0.9, 1.1), { kind: 'fly', f, da: 0, dr: 0, dy: 0, flap: R(4, 6), sea: true, turn: R(0.003, 0.008), phase: R(0, 6.28) });
   }
   // ---- 湖上：鸭子、鸳鸯、大雁、天鹅，慢慢漂 ---------------------------------------------------------------------
@@ -92,53 +195,28 @@ export function createLife(shared, plants, { random = Math.random } = {}) {
     const name = pick(['birds-mallard', 'birds-mallard', 'birds-mandarin-duck', 'birds-mute-swan', 'birds-greylag-goose']);
     const h = name === 'birds-mute-swan' ? 1.2 : name === 'birds-greylag-goose' ? 0.9 : 0.62;
     const a = R(0, 6.28);
-    const k = R(0.2, 0.75);
-    thing(name, h, { kind: 'swim', cx: LAKE.x + Math.cos(a) * LAKE.rx * k, cz: LAKE.z + Math.sin(a) * LAKE.rz * k, rad: R(4, 14), speed: R(0.03, 0.08) * (random() < 0.5 ? -1 : 1), a0: R(0, 6.28), turn: R(0.006, 0.016), phase: R(0, 6.28) });
+    const k = R(0.2, 0.7);
+    thing(name, h, { kind: 'swim', cx: LAKE.x + Math.cos(a) * LAKE.rx * k, cz: LAKE.z + Math.sin(a) * LAKE.rz * k, rad: R(4, 12), speed: R(0.03, 0.08) * (random() < 0.5 ? -1 : 1), a0: R(0, 6.28), turn: R(0.006, 0.016), phase: R(0, 6.28) });
   }
-  // ---- 河滩上的苍鹭、白鹭：站着不动，偶尔挪一步 -------------------------------------------------------------------
-  for (let i = 0; i < 9; i++) {
-    const seg = Math.floor(R(1, RIVER.length - 4));
-    const [ax, az] = RIVER[seg];
-    const [bx, bz] = RIVER[seg + 1];
-    const t = random();
-    const len = Math.hypot(bx - ax, bz - az);
-    const side = random() < 0.5 ? -1 : 1;
-    const x = ax + (bx - ax) * t + (-(bz - az) / len) * side * (RIVER_HALF - 1.5);
-    const z = az + (bz - az) * t + ((bx - ax) / len) * side * (RIVER_HALF - 1.5);
-    const rv = riverAt(x, z);
-    thing(pick(['birds-grey-heron', 'birds-little-egret']), R(1.1, 1.4), { kind: 'stand', x, z, y: riverLevel(rv.t) - 0.25, flip: random() < 0.5 ? 1 : -1 });
+  // ---- 河滩上的苍鹭、白鹭：站着不动 -----------------------------------------------------------------------------
+  for (const [x, z, y] of spots.herons) {
+    thing(pick(['birds-grey-heron', 'birds-little-egret']), R(1.1, 1.4), { kind: 'stand', x, z, y, flip: random() < 0.5 ? 1 : -1 });
   }
   // ---- 田里：乌鸦、喜鹊、麻雀，蹦跶着啄食 ------------------------------------------------------------------------
-  const fields = DISTRICTS.find((d) => d.id === 'fields');
-  for (let i = 0; i < 14; i++) {
-    const a = R(0, 6.28);
-    const r = R(0, fields.r * 0.8);
-    const x = fields.x + Math.cos(a) * r;
-    const z = fields.z + Math.sin(a) * r;
-    if (fieldsAt(x, z) < 0.5) continue;
+  for (const [x, z] of spots.hoppers) {
     thing(pick(['birds-carrion-crow', 'birds-magpie', 'birds-house-sparrow']), R(0.45, 0.6), { kind: 'hop', cx: x, cz: z, rad: R(1, 3), speed: R(0.2, 0.5), a0: R(0, 6.28), phase: R(0, 6.28) });
   }
-  // ---- 船：海上远远地漂、海滨小镇岸边系着几条，湖上一条小帆船和码头边的小木船 -------------------------------------
-  const boats = [
-    ['transport-fishing-boat', 4.2], ['transport-sailboat', 6.5], ['transport-junk-boat', 8], ['transport-small-ferry', 6], ['transport-fishing-boat', 4.2], ['transport-sailboat', 6],
-  ];
-  for (const [name, h] of boats) {
-    for (let tries = 0; tries < 20; tries++) {
-      const z = R(-900, -260);
-      const x = coastX(z) + R(90, 420);
-      if (waterAt(x, z) == null) continue;
-      thing(name, h, { kind: 'boat', cx: x, cz: z, rad: R(40, 160), speed: R(0.004, 0.012) * (random() < 0.5 ? -1 : 1), a0: R(0, 6.28), level: SEA.level, sink: 0.12 });
-      break;
-    }
+  // ---- 船：海上远远地漂；码头的港池里、港口的石码头边系着几条；湖上一条小帆船，栈桥边一条小木船 -----------------
+  const far = ['transport-fishing-boat', 'transport-sailboat', 'transport-junk-boat', 'transport-small-ferry', 'transport-fishing-boat', 'transport-sailboat'];
+  const farH = { 'transport-fishing-boat': 4.2, 'transport-sailboat': 6.5, 'transport-junk-boat': 8, 'transport-small-ferry': 6 };
+  spots.farBoats.forEach(([x, z, rad], i) => {
+    const name = far[i % far.length];
+    thing(name, farH[name], { kind: 'boat', cx: x, cz: z, rad, speed: R(0.004, 0.012) * (random() < 0.5 ? -1 : 1), a0: R(0, 6.28), level: SEA.level, sink: 0.12 });
+  });
+  for (const [name, h, x, z, level] of spots.moored) {
+    thing(name, h, { kind: 'boat', cx: x, cz: z, rad: 0.5, speed: 0.2, a0: R(0, 6.28), level, sink: 0.14 });
   }
-  const sea = DISTRICTS.find((d) => d.id === 'seaside');
-  for (const [name, h, dz] of [['transport-sampan', 2.2, -40], ['transport-fishing-boat', 3.6, 0], ['transport-rowboat', 1.2, 30]]) {
-    const z = sea.z + dz;
-    const x = coastX(z) + 12;
-    thing(name, h, { kind: 'boat', cx: x, cz: z, rad: 0.6, speed: 0.2, a0: R(0, 6.28), level: SEA.level, sink: 0.15 });
-  }
-  thing('transport-sailboat', 4.2, { kind: 'boat', cx: LAKE.x + 30, cz: LAKE.z - 10, rad: 60, speed: 0.012, a0: 1, level: LAKE.level, sink: 0.1 });
-  thing('transport-rowboat', 1.3, { kind: 'boat', cx: LAKE.x - LAKE.rx * 0.72 + 3, cz: LAKE.z + LAKE.rz * 0.65 - 2, rad: 0.4, speed: 0.25, a0: 0, level: LAKE.level, sink: 0.12 });
+  thing('transport-sailboat', 4.2, { kind: 'boat', cx: LAKE.x + 20, cz: LAKE.z - 4, rad: Math.min(LAKE.rx, LAKE.rz) * 0.5, speed: 0.012, a0: 1, level: LAKE.level, sink: 0.1 });
 
   // ---- 画 ------------------------------------------------------------------------------------------------------
   const n = things.length;

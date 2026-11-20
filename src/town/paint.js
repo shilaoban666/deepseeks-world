@@ -13,9 +13,15 @@ out vec3 vLocal;
 void main() {
   vUv = uv;
   vLocal = position;
-  vec4 w = modelMatrix * vec4(position, 1.0);
+  // （实例化的网格：小松树、芦苇——每个实例有自己的位置）
+  #ifdef USE_INSTANCING
+  mat4 mm = modelMatrix * instanceMatrix;
+  #else
+  mat4 mm = modelMatrix;
+  #endif
+  vec4 w = mm * vec4(position, 1.0);
   vWorld = w.xyz;
-  vN = normalize(mat3(modelMatrix) * normal);
+  vN = normalize(mat3(mm) * normal);
   gl_Position = projectionMatrix * viewMatrix * w;
 }
 `;
@@ -150,7 +156,11 @@ uniform float uThick;
 out vec3 vWorld;
 void main() {
   vec3 p = position + normal * uThick;
+  #ifdef USE_INSTANCING
+  vec4 w = modelMatrix * instanceMatrix * vec4(p, 1.0);
+  #else
   vec4 w = modelMatrix * vec4(p, 1.0);
+  #endif
   vWorld = w.xyz;
   gl_Position = projectionMatrix * viewMatrix * w;
 }

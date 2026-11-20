@@ -1,6 +1,6 @@
 // 界面：左上角的状态、底下的提示、右下角的小地图、还有各种面板（商店、烹饪、上网……）。
 // 全部是 DOM，风格走吉卜力：奶油纸、墨蓝字、手写的圆角。
-import { riverAt, RIVER_HALF, riverLevel, SEA, SEA_WEST, heightAt, lakeDistance, pavedAt, forestAt, fieldsAt, mountainAt, DISTRICTS, ROADS, PLAZA, LAKE, HALF, districtAt } from './plan.js';
+import { riverAt, RIVER_HALF, SEA, coastD, snowAt, heightAt, lakeDistance, forestAt, fieldsAt, smooth, DISTRICTS, YARDS, ROADS, BUS_ROUTE, METRO, RAIL, PLAZA, HALF, districtAt } from './plan.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -55,8 +55,8 @@ export function createHud() {
       clearTimeout(toastTimer);
       toastTimer = setTimeout(() => el.toast.classList.remove('on'), ms);
     },
-    /** 打开一个面板；body 是 HTML 字符串，buttons 是 [{label, onClick, primary}] */
-    open(title, body, buttons = [], { dock = false } = {}) {
+    /** 打开一个面板；body 是 HTML 字符串，buttons 是 [{label, onClick, primary, disabled, wide}] */
+    open(title, body, buttons = [], { dock = false, grid = false } = {}) {
       el.panelTitle.textContent = title;
       el.panelBody.innerHTML = body;
       el.panelFoot.innerHTML = '';
@@ -65,6 +65,7 @@ export function createHud() {
         b.textContent = btn.label;
         if (btn.primary) b.className = 'primary';
         if (btn.disabled) b.disabled = true;
+        if (btn.wide) b.classList.add('wide');
         b.addEventListener('click', (e) => {
           e.stopPropagation();
           btn.onClick?.();
@@ -72,6 +73,8 @@ export function createHud() {
         el.panelFoot.appendChild(b);
       }
       el.panel.classList.toggle('dock', dock);
+      // grid：按钮排成两列（车站的目的地一多，一行行排下去太高）
+      el.panelFoot.classList.toggle('grid', grid);
       el.panel.classList.add('on');
       el.root.classList.add('panel-open');
       panelOpen = true;
@@ -96,7 +99,74 @@ export function createHud() {
 // ---- 小地图 ----------------------------------------------------------------------------------------------------
 const MAP_SIZE = 512; // 烘出来的底图边长
 
-/** 把地形烘成一张 512×512 的底图：高度明暗 + 铺装 + 水 + 林 + 田。 */
+/**
+ * 把一串控制点顺成一条光滑的线：均匀 Catmull-Rom（tension 0.5，和 three 的 CatmullRomCurve3 'catmullrom' 一样，
+ * 两头各补一个外推的点）。高铁线在世界里就是这么采的，地图上照样画才对得上。
+ * @param pts [[x, z], ...]；per 每两个控制点之间采几段
+ */
+export function smoothLine(pts, per = 8) {
+  const n = pts.length;
+  if (n < 3) return pts.map((p) => [p[0], p[1]]);
+  const P = (i) => (i < 0 ? [2 * pts[0][0] - pts[1][0], 2 * pts[0][1] - pts[1][1]] : i >= n ? [2 * pts[n - 1][0] - pts[n - 2][0], 2 * pts[n - 1][1] - pts[n - 2][1]] : pts[i]);
+  const out = [];
+  for (let i = 0; i + 1 < n; i++) {
+    const p0 = P(i - 1);
+    const p1 = P(i);
+    const p2 = P(i + 1);
+    const p3 = P(i + 2);
+    for (let k = 0; k < per; k++) {
+      const t = k / per;
+      const t2 = t * t;
+      const t3 = t2 * t;
+      const c = (d) => {
+        const m1 = 0.5 * (p2[d] - p0[d]);
+        const m2 = 0.5 * (p3[d] - p1[d]);
+        return (2 * t3 - 3 * t2 + 1) * p1[d] + (t3 - 2 * t2 + t) * m1 + (-2 * t3 + 3 * t2) * p2[d] + (t3 - t2) * m2;
+      };
+      out.push([c(0), c(1)]);
+    }
+  }
+  out.push([pts[n - 1][0], pts[n - 1][1]]);
+  return out;
+}
+
+// heightAt 现在不便宜（海岸、河、十几块压平的地）：两张地图合用一张 4 米一格的高度表，中间双线性插值——
+// 晕渲、等高线、水边都够细了，烘图的时间省下一大半。
+const GRID = 512;
+let grid = null;
+/** 地图范围里 (x, z) 的高度（查表，第一次用的时候才算）。 */
+export function gridHeight(x, z) {
+  if (!grid) {
+    grid = new Float32Array((GRID + 1) * (GRID + 1));
+    const step = (HALF * 2) / GRID;
+    for (let j = 0; j <= GRID; j++) for (let i = 0; i <= GRID; i++) grid[j * (GRID + 1) + i] = heightAt(-HALF + i * step, -HALF + j * step);
+  }
+  const fx = Math.min(GRID - 0.001, Math.max(0, ((x + HALF) / (HALF * 2)) * GRID));
+  const fz = Math.min(GRID - 0.001, Math.max(0, ((z + HALF) / (HALF * 2)) * GRID));
+  const ix = Math.floor(fx);
+  const iz = Math.floor(fz);
+  const tx = fx - ix;
+  const tz = fz - iz;
+  const o = iz * (GRID + 1) + ix;
+  const a = grid[o] + (grid[o + 1] - grid[o]) * tx;
+  const b = grid[o + GRID + 1] + (grid[o + GRID + 2] - grid[o + GRID + 1]) * tx;
+  return a + (b - a) * tz;
+}
+/** 铺了地的场子（广场、集市的院子、站前、货场）：0~1。路不算——路在地图上是另外画的线。 */
+export function yardAt(x, z) {
+  let p = 1 - smooth(29.5, 31.5, Math.hypot(x - PLAZA[0], z - PLAZA[1]));
+  for (const d of DISTRICTS) {
+    if (!d.yard || Math.abs(x - d.x) > d.yard + 2 || Math.abs(z - d.z) > d.yard + 2) continue;
+    p = Math.max(p, 1 - smooth(d.yard - 1.5, d.yard + 1.5, Math.hypot(x - d.x, z - d.z)));
+  }
+  for (const [yx, yz, yr] of YARDS) {
+    if (!yr || Math.abs(x - yx) > yr + 2 || Math.abs(z - yz) > yr + 2) continue;
+    p = Math.max(p, 1 - smooth(yr - 1.5, yr + 1.5, Math.hypot(x - yx, z - yz)));
+  }
+  return p;
+}
+
+/** 把地形烘成一张 512×512 的底图：高度明暗 + 铺装 + 水 + 沙 + 雪 + 林 + 田，上面再描路、铁路、公交和地铁。 */
 export function bakeMinimap() {
   const canvas = document.createElement('canvas');
   canvas.width = MAP_SIZE;
@@ -108,7 +178,7 @@ export function bakeMinimap() {
   for (let j = 0; j < MAP_SIZE; j++) {
     for (let i = 0; i < MAP_SIZE; i++) {
       const [x, z] = toWorld(i, j);
-      heights[j * MAP_SIZE + i] = heightAt(x, z);
+      heights[j * MAP_SIZE + i] = gridHeight(x, z);
     }
   }
   const at = (i, j) => heights[Math.min(MAP_SIZE - 1, Math.max(0, j)) * MAP_SIZE + Math.min(MAP_SIZE - 1, Math.max(0, i))];
@@ -118,44 +188,52 @@ export function bakeMinimap() {
       const h = at(i, j);
       const hx = at(i + 1, j) - at(i - 1, j);
       const hz = at(i, j + 1) - at(i, j - 1);
-      const shade = Math.max(0.4, Math.min(1.3, 0.92 - hz * 0.12 - hx * 0.08));
-      let r = 138;
-      let gr = 172;
-      let bl = 116;
+      let shade = Math.max(0.5, Math.min(1.25, 0.94 - hz * 0.12 - hx * 0.08));
+      let r = 146;
+      let gr = 180;
+      let bl = 118;
       // 山：越高越灰、越白
-      const m = mountainAt(x, z);
-      const snow = h > 240 ? Math.min(1, (h - 240) / 70) : 0;
+      const m = smooth(150, 300, h);
+      const peak = h > 240 ? Math.min(1, (h - 240) / 70) : 0;
       r = r * (1 - m * 0.5) + 150 * m * 0.5;
       gr = gr * (1 - m * 0.5) + 148 * m * 0.5;
       bl = bl * (1 - m * 0.5) + 146 * m * 0.5;
-      r = r * (1 - snow) + 246 * snow;
-      gr = gr * (1 - snow) + 248 * snow;
-      bl = bl * (1 - snow) + 252 * snow;
       // 林
       const f = forestAt(x, z);
-      r = r * (1 - f * 0.55) + 96 * f * 0.55;
-      gr = gr * (1 - f * 0.4) + 138 * f * 0.4;
-      bl = bl * (1 - f * 0.5) + 100 * f * 0.5;
+      r = r * (1 - f * 0.55) + 92 * f * 0.55;
+      gr = gr * (1 - f * 0.4) + 136 * f * 0.4;
+      bl = bl * (1 - f * 0.5) + 98 * f * 0.5;
       // 田
       const fd = fieldsAt(x, z);
-      r = r * (1 - fd * 0.6) + 208 * fd * 0.6;
-      gr = gr * (1 - fd * 0.6) + 190 * fd * 0.6;
-      bl = bl * (1 - fd * 0.6) + 116 * fd * 0.6;
-      // 铺装（城里）
-      const p = pavedAt(x, z);
-      r = r * (1 - p) + 196 * p;
-      gr = gr * (1 - p) + 188 * p;
-      bl = bl * (1 - p) + 172 * p;
-      // 水
+      r = r * (1 - fd * 0.7) + 226 * fd * 0.7;
+      gr = gr * (1 - fd * 0.7) + 198 * fd * 0.7;
+      bl = bl * (1 - fd * 0.7) + 112 * fd * 0.7;
+      // 雪：雪山小镇那一片，和高处的雪线
+      const snow = Math.max(peak, snowAt(x, z));
+      r = r * (1 - snow) + 244 * snow;
+      gr = gr * (1 - snow) + 246 * snow;
+      bl = bl * (1 - snow) + 250 * snow;
+      // 水、沙滩、铺装
+      const cd = coastD(x, z);
+      const ld = lakeDistance(x, z);
       const rv = riverAt(x, z);
-      if (lakeDistance(x, z) < 1.0 || (rv.d < RIVER_HALF + 2) || (x > SEA_WEST && heightAt(x, z) < SEA.level)) {
-        r = 96;
-        gr = 150;
-        bl = 184;
-      } else if (lakeDistance(x, z) < 1.06) {
-        r = 178;
-        gr = 186;
-        bl = 168;
+      if (ld < 1.0 || (rv.d < RIVER_HALF + 2 && cd > -30) || (h < SEA.level && cd < 60)) {
+        // 海越深越蓝
+        const deep = cd < 0 ? Math.min(1, -cd / 320) : 0;
+        r = 112 - 26 * deep;
+        gr = 168 - 26 * deep;
+        bl = 198 - 12 * deep;
+        shade = 1;
+      } else if (ld < 1.06 || (cd < 160 && h < SEA.level + 2.4)) {
+        r = 232;
+        gr = 218;
+        bl = 176;
+        shade = 1;
+      } else {
+        const p = yardAt(x, z);
+        r = r * (1 - p) + 206 * p;
+        gr = gr * (1 - p) + 198 * p;
+        bl = bl * (1 - p) + 180 * p;
       }
       const k = (j * MAP_SIZE + i) * 4;
       img.data[k] = Math.min(255, r * shade);
@@ -165,27 +243,64 @@ export function bakeMinimap() {
     }
   }
   g.putImageData(img, 0, 0);
-  // 路：深一点的一条线
+  // 线：1 像素 = 4 米，所以都画得比真的宽，雷达里才看得见
   const w2m = (x, z) => [((x + HALF) / (HALF * 2)) * MAP_SIZE, ((z + HALF) / (HALF * 2)) * MAP_SIZE];
-  g.strokeStyle = 'rgba(150,138,120,0.95)';
-  g.lineWidth = Math.max(2, (9 / (HALF * 2)) * MAP_SIZE * 1.6);
-  g.lineCap = 'round';
-  g.lineJoin = 'round';
-  for (const line of ROADS) {
+  const path = (pts) => {
     g.beginPath();
-    line.forEach(([x, z], i) => {
+    pts.forEach(([x, z], i) => {
       const [px, py] = w2m(x, z);
       if (i === 0) g.moveTo(px, py);
       else g.lineTo(px, py);
     });
     g.stroke();
-  }
+  };
+  g.lineCap = 'round';
+  g.lineJoin = 'round';
+  // 土路：细的棕色虚线
+  g.setLineDash([2.5, 2.5]);
+  g.strokeStyle = 'rgba(128,98,62,0.85)';
+  g.lineWidth = 1.2;
+  for (const line of ROADS) if (line.kind === 'lane') path(line);
+  g.setLineDash([]);
+  // 公路（灰米色）和石板街（奶油色）：先一道深边，再填
+  g.strokeStyle = 'rgba(104,90,72,0.7)';
+  g.lineWidth = 3.8;
+  for (const line of ROADS) if (line.kind !== 'lane') path(line);
+  g.lineWidth = 2.5;
+  g.strokeStyle = '#d6cdbb';
+  for (const line of ROADS) if (line.kind === 'road') path(line);
+  g.strokeStyle = '#f8f0da';
+  for (const line of ROADS) if (line.kind === 'street') path(line);
   // 广场
   const [plx, ply] = w2m(PLAZA[0], PLAZA[1]);
-  g.fillStyle = 'rgba(214,204,182,0.95)';
+  g.fillStyle = '#f2e8cf';
+  g.strokeStyle = 'rgba(104,90,72,0.7)';
+  g.lineWidth = 0.7;
   g.beginPath();
   g.arc(plx, ply, (30 / (HALF * 2)) * MAP_SIZE, 0, Math.PI * 2);
   g.fill();
+  g.stroke();
+  // 37 路公交：橙线压在路中间
+  g.strokeStyle = 'rgba(236,138,44,0.95)';
+  g.lineWidth = 1.1;
+  path(BUS_ROUTE);
+  // 地铁 1 号线：紫色虚线
+  g.lineCap = 'butt';
+  g.setLineDash([3, 2]);
+  g.strokeStyle = 'rgba(134,92,196,0.95)';
+  g.lineWidth = 1.5;
+  path(METRO);
+  // 高铁：深色的线，中间白色的节
+  const rail = smoothLine(RAIL, 6);
+  g.setLineDash([]);
+  g.strokeStyle = 'rgba(52,56,66,0.95)';
+  g.lineWidth = 2.4;
+  path(rail);
+  g.setLineDash([3, 3]);
+  g.strokeStyle = 'rgba(250,248,240,0.95)';
+  g.lineWidth = 1.1;
+  path(rail);
+  g.setLineDash([]);
   return canvas;
 }
 
@@ -199,6 +314,8 @@ export function createMinimap(canvas, baked) {
   let full = false;
   let blink = 0;
   let interactables = [];
+  const placeEl = document.getElementById('minimap-place');
+  let placeName = null;
 
   const w2mFull = (x, z) => [((x + HALF) / (HALF * 2)) * W, ((z + HALF) / (HALF * 2)) * H];
 
@@ -232,6 +349,7 @@ export function createMinimap(canvas, baked) {
         const [px, py] = w2mFull(s.x, s.z);
         api.arrow(px, py, s.yaw, 6);
         g.restore();
+        api.place(s);
         return;
       }
       // 雷达：把人周围 520 m 见方画满
@@ -286,12 +404,34 @@ export function createMinimap(canvas, baked) {
       }
       // 人
       api.arrow(W / 2, H / 2, s.yaw, 7);
-      // 指北
-      g.fillStyle = 'rgba(255,255,255,0.75)';
-      g.font = 'bold 11px ui-sans-serif,system-ui,sans-serif';
+      // 指北：一块奶油色的小圆牌，上面一个红尖
+      g.fillStyle = 'rgba(255,249,232,0.86)';
+      g.strokeStyle = 'rgba(79,66,52,0.35)';
+      g.lineWidth = 1;
+      g.beginPath();
+      g.arc(W - 16, 16, 10, 0, Math.PI * 2);
+      g.fill();
+      g.stroke();
+      g.fillStyle = '#c2543f';
+      g.beginPath();
+      g.moveTo(W - 16, 7.5);
+      g.lineTo(W - 12.8, 12.5);
+      g.lineTo(W - 19.2, 12.5);
+      g.closePath();
+      g.fill();
+      g.fillStyle = '#4f4234';
+      g.font = 'bold 10px ui-sans-serif,system-ui,sans-serif';
       g.textAlign = 'center';
-      g.fillText('N', W / 2, 14);
+      g.textBaseline = 'middle';
+      g.fillText('N', W - 16, 19.5);
       g.restore();
+      api.place(s);
+    },
+    /** 小地图底下左边写脚下的地名（s.place 有就用它，比如在屋里） */
+    place(s) {
+      if (!placeEl) return;
+      const name = s.place ?? districtAt(s.x, s.z)?.name ?? '郊外';
+      if (name !== placeName) placeEl.textContent = placeName = name;
     },
     marker(px, py, it) {
       const pulse = 0.6 + 0.4 * Math.sin(blink * 3 + (it.x % 7));
@@ -316,11 +456,16 @@ export function createMinimap(canvas, baked) {
       g.lineTo(0, size * 0.28);
       g.lineTo(-size * 0.66, size * 0.72);
       g.closePath();
-      g.fillStyle = '#ff6a4d';
-      g.fill();
-      g.strokeStyle = '#fff8ee';
-      g.lineWidth = 1.6;
+      // 深色的外圈 + 奶白的内圈：压在草地、屋顶、海上都看得清
+      g.lineJoin = 'round';
+      g.strokeStyle = 'rgba(46,34,28,0.75)';
+      g.lineWidth = 4;
       g.stroke();
+      g.strokeStyle = '#fff8ee';
+      g.lineWidth = 2;
+      g.stroke();
+      g.fillStyle = '#ff5a3c';
+      g.fill();
       g.restore();
     },
   };

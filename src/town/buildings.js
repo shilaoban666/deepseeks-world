@@ -14,6 +14,10 @@ export const PALETTE = {
     [0.95, 0.87, 0.74],
     [0.88, 0.9, 0.86],
     [0.96, 0.91, 0.82],
+    [0.97, 0.97, 0.95], // 6 纯白灰泥
+    [0.93, 0.86, 0.74], // 7 暖米色混凝土
+    [0.94, 0.84, 0.78], // 8 粉米色
+    [0.72, 0.4, 0.3], // 9 砖红
   ],
   roof: [
     [0.64, 0.24, 0.18],
@@ -22,6 +26,11 @@ export const PALETTE = {
     [0.28, 0.3, 0.38],
     [0.46, 0.42, 0.34],
     [0.6, 0.28, 0.22],
+    [0.86, 0.62, 0.2], // 6 皇家金黄琉璃瓦
+    [0.2, 0.56, 0.46], // 7 清真寺绿
+    [0.93, 0.95, 0.98], // 8 雪白
+    [0.34, 0.46, 0.66], // 9 蓝色钢板
+    [0.3, 0.33, 0.4], // 10 青灰中式瓦
   ],
   wood: [
     [0.42, 0.28, 0.17],
@@ -34,7 +43,31 @@ export const PALETTE = {
     [0.74, 0.7, 0.62],
   ],
   // 窗玻璃：映着天的蓝
-  glass: [[0.22, 0.36, 0.5]],
+  glass: [
+    [0.22, 0.36, 0.5],
+    [0.5, 0.68, 0.82], // 1 浅天蓝玻璃
+    [0.6, 0.76, 0.8], // 2 淡青玻璃
+    [0.95, 0.78, 0.45], // 3 暖光窗
+  ],
+  // 漆：吊车、集装箱、列车、雪、霓虹底板
+  // 大件的石作（高架、站房、台基、码头）：颜色比街上的石板暖一点、平一点，纹理用安静的砌石或抹灰
+  mason: [
+    [0.8, 0.77, 0.7], // 0 砌石（桥墩、拱）
+    [0.72, 0.7, 0.65], // 1 深一点的砌石
+    [0.9, 0.87, 0.8], // 2 抹平的浅石（桥面、台基、压顶）
+  ],
+  paint: [
+    [0.45, 0.68, 0.8], // 0 吊车浅蓝
+    [0.88, 0.5, 0.22], // 1 集装箱橙
+    [0.6, 0.5, 0.78], // 2 丁香紫
+    [0.94, 0.96, 0.99], // 3 雪
+    [0.9, 0.72, 0.28], // 4 金
+    [0.95, 0.96, 0.97], // 5 列车白
+    [0.2, 0.4, 0.72], // 6 列车蓝条
+    [0.78, 0.22, 0.16], // 7 朱红
+    [0.88, 0.72, 0.32], // 8 干草黄
+    [0.5, 0.3, 0.75], // 9 霓虹紫
+  ],
   // 布：棚子、遮阳篷、旗（朱红 / 青 / 芥黄 / 米白 / 靛蓝）
   cloth: [
     [0.82, 0.26, 0.2],
@@ -56,7 +89,12 @@ export const PALETTE = {
     [0.62, 0.5, 0.9],
   ],
   // 灯罩里的光、铁
-  glow: [[1.6, 1.25, 0.7]],
+  glow: [
+    [1.6, 1.25, 0.7],
+    [1.5, 0.7, 1.6], // 1 霓虹粉紫
+    [0.7, 1.4, 1.7], // 2 霓虹青
+    [1.7, 1.0, 0.45], // 3 暖橙
+  ],
   iron: [[0.16, 0.18, 0.22]],
   // ---- 街道设施：下面这些颜色只做"底"，真正的质感来自对应的手绘贴图 ----
   bench: [
@@ -106,6 +144,8 @@ const FAMILY_KIND = {
   sign: 'flat',
   glass: 'glass',
   cloth: 'flat',
+  paint: 'flat',
+  mason: 'wall',
   leaf: 'flat',
   flower: 'flat',
   glow: 'glow',
@@ -157,7 +197,9 @@ export class Builder {
     const lit = pal[Math.abs(Number(index) || 0) % pal.length];
     const kind = FAMILY_KIND[family] ?? 'flat';
     const rows = family === 'roof' ? 14 : family === 'wood' ? 8 : 12;
-    const bucket = this.bucket(`${family}#${index}`, { kind, lit, shade: lit.map((c) => c * SHADE), rows, stain: family === 'wall' ? 0.55 : 0.2 });
+    // 按 384 m 的格子分桶：合并出来的每块网格只管自己那一格，镜头外的整块被显卡跳过
+    const cell = `${Math.floor(pos[0] / 384)},${Math.floor(pos[2] / 384)}`;
+    const bucket = this.bucket(`${family}#${index}@${cell}`, { kind, lit, shade: lit.map((c) => c * SHADE), rows, stain: family === 'wall' ? 0.55 : 0.2 });
     const clone = plain(geo);
     this._q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotY);
     this._m.compose(new THREE.Vector3(pos[0], pos[1], pos[2]), this._q, new THREE.Vector3(1, 1, 1));
@@ -181,6 +223,9 @@ export class Builder {
   /** 合并、出 mesh，加进 group。 */
   build(group) {
     const meshes = [];
+    // 同一种颜料各格共用一份材质（和一份墨线材质）
+    const mats = new Map();
+    const inks = new Map();
     for (const [key, b] of this.groups) {
       if (!b.geos.length) continue;
       const geo = mergeGeometries(b.geos, false);
@@ -188,16 +233,26 @@ export class Builder {
       geo.computeBoundingSphere();
       // 按"类别+调色板序号"挑贴图变体：wall#3 用红砖，roof#1 用青瓦……
       // 这样 54 组建筑不会全长一样。没有对应变体就退回该类别的默认（墙0/瓦0/木0/石0）。
-      const [family, index] = key.split('#');
-      const albedo = getAlbedo(`${family}${index ?? '0'}`) ?? undefined;
-      const mat = paintMaterial(this.shared, { lit: b.lit, shade: b.shade, kind: b.kind, rows: b.rows, stain: b.stain, albedo });
+      const [family, index] = key.split('@')[0].split('#');
+      // 新加的几种墙色没有自己的贴图：白墙、米色、粉米色借抹灰墙那张，砖红借砌块那张
+      // 后加的颜色借哪张贴图：白墙、米墙用干净的石灰墙（原来 wall6 那张是冷灰水泥，一上楼就脏了），
+      // 大件石作用桥墩砌石或抹灰——石板路、石阶那两张花纹只适合踩在脚下，贴到整面墙上就花。
+      const TEX = { wall6: 'wall1', wall7: 'wall1', wall8: 'wall1', wall9: 'wall3', mason0: 'bridge2', mason1: 'bridge2', mason2: 'wall1', roof8: 'snow', roof10: 'roof1', roof6: 'roof0' };
+      const tk = `${family}${index ?? '0'}`;
+      const albedo = getAlbedo(TEX[tk] ?? tk) ?? undefined;
+      const mk = key.split('@')[0];
+      if (!mats.has(mk)) mats.set(mk, paintMaterial(this.shared, { lit: b.lit, shade: b.shade, kind: b.kind, rows: b.rows, stain: b.stain, albedo }));
+      const mat = mats.get(mk);
       const mesh = new THREE.Mesh(geo, mat);
       mesh.matrixAutoUpdate = false;
       group.add(mesh);
       meshes.push(mesh);
       // 描边：同一份几何体的倒壳
-      const ink = new THREE.Mesh(geo, outlineMaterial(this.shared, [0.04, 0.05, 0.11], b.kind === 'roof' ? 0.07 : 0.05));
+      const ik = b.kind === 'roof' ? 0.07 : 0.05;
+      if (!inks.has(ik)) inks.set(ik, outlineMaterial(this.shared, [0.04, 0.05, 0.11], ik));
+      const ink = new THREE.Mesh(geo, inks.get(ik));
       ink.matrixAutoUpdate = false;
+      ink.userData.ink = true;
       group.add(ink);
       meshes.push(ink);
       for (const g of b.geos) g.dispose();
@@ -226,7 +281,7 @@ export class Builder {
 const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
 
 /** 人字屋顶：三角截面沿 z 挤出来。 */
-function gableRoof(w, d, h) {
+export function gableRoof(w, d, h) {
   const shape = new THREE.Shape();
   shape.moveTo(-w / 2, 0);
   shape.lineTo(w / 2, 0);
@@ -238,7 +293,7 @@ function gableRoof(w, d, h) {
 }
 
 /** 四坡屋顶：两个截头金字塔叠起来，近看有转折。 */
-function hipRoof(w, d, h) {
+export function hipRoof(w, d, h) {
   const geo = new THREE.CylinderGeometry(0.06, Math.SQRT1_2, h, 4, 1);
   geo.rotateY(Math.PI / 4);
   geo.scale(w, 1, d);

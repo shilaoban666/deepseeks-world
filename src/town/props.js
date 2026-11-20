@@ -307,9 +307,10 @@ export function createLake(shared) {
   // 大海：东边一大片
   {
     // （海在东北角：从 x=380 往东铺一大片，南边那半被陆地盖住）
-    const sg = new THREE.PlaneGeometry(5200, 9000, 1, 1);
+    // （海在东边和南边：铺一整片，陆地自己会把它盖住）
+    const sg = new THREE.PlaneGeometry(14000, 14000, 1, 1);
     sg.rotateX(-Math.PI / 2);
-    sg.translate(380 + 2600, SEA.level, 0);
+    sg.translate(0, SEA.level, 0);
     const sea = new THREE.Mesh(sg, open);
     sea.renderOrder = 5;
     sea.frustumCulled = false;

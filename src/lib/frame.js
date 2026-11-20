@@ -624,6 +624,8 @@ export function createFrame(renderer, field, { samples = 4, fireScale = 0.5, blo
     bloom,
     exposure,
     fireScale,
+    /** false: always run the fire's composite pass, as before (for comparing) */
+    skipIdle: true,
     particles,
     /** A flame to carry: set .position (its foot) and .size (its height in metres, 0 for none). */
     torch: { position: new THREE.Vector3(), size: 0 },
@@ -658,13 +660,16 @@ export function createFrame(renderer, field, { samples = 4, fireScale = 0.5, blo
       renderer.setRenderTarget(rtScene);
       renderer.render(scene, camera);
       const anyFire = state.burning > 0 || frame.torch.size > 0;
+      // No fire, no smoke: the composite would copy the scene as it is, a whole pass over a float target for
+      // nothing. The passes after it read the scene itself.
+      const plain = frame.skipIdle && !anyFire && !particles.count;
       if (anyFire) pass(marchMaterial, rtFire);
-      else {
+      else if (!plain) {
         renderer.setRenderTarget(rtFire);
         renderer.setClearColor(0x000000, 0);
         renderer.clear();
       }
-      pass(compositeMaterial, rtComposite);
+      if (!plain) pass(compositeMaterial, rtComposite);
       if (particles.count) {
         const auto = renderer.autoClear;
         renderer.autoClear = false;
@@ -673,7 +678,9 @@ export function createFrame(renderer, field, { samples = 4, fireScale = 0.5, blo
         renderer.autoClear = auto;
       }
 
-      let src = rtComposite;
+      const hdr = plain ? rtScene : rtComposite;
+      finalMaterial.uniforms.tHdr.value = hdr.texture;
+      let src = hdr;
       for (let i = 0; i < rtDown.length; i++) {
         const m = i === 0 ? bloomFirst : bloomDown;
         m.uniforms.tSrc.value = src.texture;
@@ -703,7 +710,7 @@ export function createFrame(renderer, field, { samples = 4, fireScale = 0.5, blo
      * texture sent in one, so the page keeps answering while it goes: three's own compile does a whole scene in one
      * go, which here held the page for half a second. `onStep(done, of)` is called as it goes.
      */
-    async compile(scene, camera, onStep) {
+    async compile(scene, camera, onStep, { warm = false, wait = null } = {}) {
       renderer.getDrawingBufferSize(size);
       fit(size.x, size.y);
       const turn = () =>
@@ -756,6 +763,50 @@ export function createFrame(renderer, field, { samples = 4, fireScale = 0.5, blo
         await step();
       }
       await Promise.all(jobs);
+      if (warm) await frame.warm(scene, camera, wait, onStep);
+    },
+    /**
+     * Warm: a first frame sends every vertex buffer to the GPU and, on Direct3D, builds the last variants of
+     * the shaders, all inside one draw of the scene: seconds, on a weak card, with the page stopped. So draw
+     * the scene's meshes here a few at a time into one pixel of the scene's target, and let the card finish
+     * (`wait()`) between lots.
+     */
+    async warm(scene, camera, wait, onStep) {
+      const target = renderer.getRenderTarget();
+      const meshes = [];
+      scene.traverseVisible((o) => {
+        if ((o.isMesh || o.isPoints || o.isLine) && o.material) meshes.push(o);
+      });
+      // (everything, not only what the camera faces: or the first look round sends the rest, a hitch at a time)
+      const culled = meshes.map((o) => o.frustumCulled);
+      for (const o of meshes) {
+        o.visible = false;
+        o.frustumCulled = false;
+      }
+      const auto = renderer.autoClear;
+      try {
+        rtScene.scissorTest = true;
+        rtScene.scissor.set(0, 0, 1, 1);
+        renderer.autoClear = false;
+        const LOT = 24;
+        for (let i = 0; i < meshes.length; i += LOT) {
+          const lot = meshes.slice(i, i + LOT);
+          for (const o of lot) o.visible = true;
+          renderer.setRenderTarget(rtScene);
+          renderer.render(scene, camera);
+          renderer.setRenderTarget(target);
+          for (const o of lot) o.visible = false;
+          onStep?.(i + lot.length, meshes.length, true);
+          await (wait ? wait() : new Promise((r) => setTimeout(r, 0)));
+        }
+      } finally {
+        rtScene.scissorTest = false;
+        renderer.autoClear = auto;
+        meshes.forEach((o, i) => {
+          o.visible = true;
+          o.frustumCulled = culled[i];
+        });
+      }
     },
   };
   return frame;

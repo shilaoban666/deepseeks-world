@@ -522,6 +522,20 @@ export function createBackdrop(renderer, hero, side, { width = 8192, ground = 40
     }
     into.scissorTest = false;
   };
+  /** The same, waiting on `wait()` after every strip, so the strips don't queue up on a weak card. */
+  const drawAsync = async (scene, into, w, h, strips, wait) => {
+    const step = Math.ceil(w / strips);
+    for (let i = 0; i < strips; i++) {
+      const previous = renderer.getRenderTarget();
+      into.scissorTest = true;
+      into.scissor.set(i * step, 0, step, h);
+      renderer.setRenderTarget(into);
+      renderer.render(scene, camera);
+      into.scissorTest = false;
+      renderer.setRenderTarget(previous);
+      await wait();
+    }
+  };
   return {
     textures: target.textures,
     el,
@@ -532,6 +546,24 @@ export function createBackdrop(renderer, hero, side, { width = 8192, ground = 40
       draw(paintScene, target, width, height, 48);
       renderer.setRenderTarget(previous);
     },
-    compile: () => Promise.all([renderer.compileAsync(groundScene, camera), renderer.compileAsync(paintScene, camera)]),
+    /** Lets go of the height map, once the strip is painted and will not be painted again (32 MB of it at 4096). */
+    release() {
+      heights.dispose();
+    },
+    /** The same, a strip at a time with `wait()` between: for the loading screen of a weak graphics card. */
+    async paintAsync(wait) {
+      await drawAsync(groundScene, heights, ground, ground, 16, wait);
+      await drawAsync(paintScene, target, width, height, 48, wait);
+    },
+    // (each for the target it will be drawn into, or three compiles it a second time at the first draw: see clouds.js)
+    compile() {
+      const previous = renderer.getRenderTarget();
+      renderer.setRenderTarget(heights);
+      const a = renderer.compileAsync(groundScene, camera);
+      renderer.setRenderTarget(target);
+      const b = renderer.compileAsync(paintScene, camera);
+      renderer.setRenderTarget(previous);
+      return Promise.all([a, b]);
+    },
   };
 }

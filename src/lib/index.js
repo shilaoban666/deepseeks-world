@@ -78,6 +78,7 @@ export function createField({
   recover = 70,
   regrow = 0,
   flowers = true,
+  flowerSubs = 2,
   baked = null,
 } = {}) {
   const extentMin = [centre[0] - extent / 2, centre[1] - extent / 2];
@@ -171,7 +172,7 @@ export function createField({
   const random = mulberry(seed * 31 + 9);
   const clippings = createClippings(shared, state, groundAt, random);
   group.add(clippings.mesh);
-  const flowerBed = flowers ? createFlowers(shared, { height, seed }, groundAt) : null;
+  const flowerBed = flowers ? createFlowers(shared, { height, seed, subs: flowerSubs }, groundAt) : null;
   if (flowerBed) group.add(flowerBed.group);
 
   const wind = { angle: 0, speed: 3, gust: 1 };

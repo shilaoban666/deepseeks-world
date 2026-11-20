@@ -369,7 +369,7 @@ void main() {
  * @param options.size texels along a side of each face of the cube; options.steps the marcher's
  * @param options.live false to draw the clouds once and leave them
  */
-export function createClouds(renderer, hero, { size = 1024, steps = 110, live = true } = {}) {
+export function createClouds(renderer, hero, { size = 1024, steps = 110, live = true, strips = 8 } = {}) {
   const clouds = layout(hero);
   const puffs = [];
   const spheres = [];
@@ -425,13 +425,17 @@ export function createClouds(renderer, hero, { size = 1024, steps = 110, live = 
   // the five faces that can hold cloud (not the one underfoot), each in four strips
   const FACES = [0, 1, 2, 4, 5];
   const STRIPS = 8;
+  // The strips of the slow redraw (update) can be thinner than those of a whole one: a strip of a 2048 cube is half
+  // a million rays of a few hundred steps each, tens of milliseconds a frame on a weak card, and the clouds move
+  // so slowly that taking four times as long over a round shows nowhere.
+  const LIVE = Math.max(STRIPS, Math.min(size, Math.round(strips)));
   let unit = 0;
   let cycleTime = 0;
   let time = 0;
 
-  function draw(face, strip) {
+  function draw(face, strip, of = STRIPS) {
     const previous = renderer.getRenderTarget();
-    const h = size / STRIPS;
+    const h = size / of;
     target.scissorTest = strip >= 0;
     if (strip >= 0) target.scissor.set(0, strip * h, size, h);
     uniforms.uFace.value = face;
@@ -456,6 +460,20 @@ export function createClouds(renderer, hero, { size = 1024, steps = 110, live = 
       for (const face of FACES) draw(face, -1);
       unit = 0;
     },
+    /**
+     * The same, a strip at a time, waiting on `wait()` (the graphics card done with what it was sent) between
+     * strips: no one draw and no queue of draws holds a weak card for long. For the loading screen.
+     */
+    async drawAllAsync(wait) {
+      uniforms.uTime.value = time * 0.015;
+      for (const face of FACES) {
+        for (let strip = 0; strip < STRIPS; strip++) {
+          draw(face, strip);
+          await wait();
+        }
+      }
+      unit = 0;
+    },
     /** One strip of one face a frame: the clouds billow slowly, and nobody pays for it. */
     update(dt) {
       time += dt;
@@ -463,9 +481,17 @@ export function createClouds(renderer, hero, { size = 1024, steps = 110, live = 
       if (unit === 0) cycleTime = time;
       // Keep the slow hand-painted drift while only redrawing one cubemap strip per frame.
       uniforms.uTime.value = time * 0.015;
-      draw(FACES[Math.floor(unit / STRIPS)], unit % STRIPS);
-      unit = (unit + 1) % (FACES.length * STRIPS);
+      draw(FACES[Math.floor(unit / LIVE)], unit % LIVE, LIVE);
+      unit = (unit + 1) % (FACES.length * LIVE);
     },
-    compile: () => renderer.compileAsync(scene, camera),
+    // (for the target it will be drawn into: three keys a program on its target's colour space, and one compiled
+    // for the canvas is compiled again, on the spot, at the first draw into the cube)
+    compile() {
+      const previous = renderer.getRenderTarget();
+      renderer.setRenderTarget(target, 0);
+      const job = renderer.compileAsync(scene, camera);
+      renderer.setRenderTarget(previous);
+      return job;
+    },
   };
 }

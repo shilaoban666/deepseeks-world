@@ -80,6 +80,41 @@
         background: linear-gradient(90deg, var(--blue2), var(--blue));
         transition: width 0.3s;
       }
+      #loading small {
+        display: block;
+        margin-top: 12px;
+        font-size: 12px;
+        opacity: 0.6;
+        min-height: 1em;
+      }
+      #loading.failed .bar {
+        display: none;
+      }
+      #loading-fail {
+        margin-top: 14px;
+        max-width: 520px;
+      }
+      #loading-fail p {
+        margin: 0 0 14px;
+        font-size: 13px;
+        line-height: 1.7;
+        white-space: pre-line;
+      }
+      #loading-fail a {
+        display: inline-block;
+        margin: 0 6px;
+        padding: 8px 20px;
+        border-radius: 20px;
+        background: var(--blue);
+        color: #fff;
+        text-decoration: none;
+        font-size: 14px;
+      }
+      #loading-fail a.minor {
+        background: transparent;
+        color: var(--ink2);
+        border: 1px solid rgba(38, 51, 63, 0.3);
+      }
       /* ---------- HUD ---------- */
       #hud {
         position: fixed;
@@ -1101,15 +1136,54 @@
         margin-right: 4px;
         vertical-align: middle;
       }
-      .bm-line.bus {
-        background: repeating-linear-gradient(90deg, #e88c34 0 5px, transparent 5px 8px);
-      }
       .bm-line.road {
         background: #f8eed6;
         box-shadow: 0 0 0 1.5px #78604a;
       }
       .bm-line.lane {
         background: repeating-linear-gradient(90deg, #8c6c46 0 3px, transparent 3px 6px);
+      }
+      .bm-line.bus {
+        background: #e88c34;
+      }
+      .bm-line.metro {
+        background: repeating-linear-gradient(90deg, #8058be 0 5px, transparent 5px 8px);
+      }
+      .bm-line.hsr {
+        background: repeating-linear-gradient(90deg, #fbf6ea 0 4px, #2e323c 4px 8px);
+        box-shadow: 0 0 0 1.5px #2e323c;
+      }
+      .bm-line.hwy {
+        background: #e4dccb;
+        box-shadow: 0 0 0 1.5px #70645a;
+      }
+      /* 分区手绘图：图下面一排名字，点了翻页 */
+      .bm-chips {
+        display: none;
+        position: absolute;
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        margin: 0;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 5px;
+      }
+      #bigmap.district .bm-chips {
+        display: flex;
+      }
+      .bm-chips .tab {
+        padding: 3px 10px;
+        font-size: 12px;
+        background: rgba(246, 239, 223, 0.94);
+        box-shadow: 0 2px 6px rgba(40, 32, 20, 0.2);
+      }
+      .bm-chips .tab.on {
+        background: var(--blue);
+      }
+      .bm-here.left span {
+        left: auto;
+        right: 12px;
       }
       .bm-here {
         position: absolute;
@@ -1231,6 +1305,17 @@
         margin-top: 5px;
         letter-spacing: 0.05em;
         font-weight: 700;
+        gap: 8px;
+      }
+      #minimap-label span {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      #minimap-place {
+        color: var(--ink);
+        flex: none;
+        max-width: 60%;
       }
       /* ---------- 面板 ---------- */
       #panel {
@@ -1307,6 +1392,14 @@
         color: var(--ink);
         cursor: pointer;
         transition: all 0.12s;
+      }
+      /* 目的地多的时候（车站）：按钮排两列，最后那个"不坐了"占一整行 */
+      #panel-foot.grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+      #panel-foot.grid button.wide {
+        grid-column: 1 / -1;
       }
       #panel-foot button:hover {
         background: #fff;
@@ -1430,7 +1523,7 @@
       <div id="status" class="card">
         <div class="row"><span class="k">金币</span><span class="v" id="stat-coins">0</span></div>
         <div class="row"><span class="k">时间</span><span class="v" id="stat-clock">第 1 天 08:20</span></div>
-        <div class="row"><span class="k">所在</span><span class="v" id="stat-place">清镇野外</span></div>
+        <div class="row"><span class="k">所在</span><span class="v" id="stat-place">鱼鱼家</span></div>
         <div class="k" style="margin-top: 6px">饱食</div>
         <div class="meter hunger"><i id="stat-hunger"></i></div>
         <div class="k">体力</div>
@@ -1452,7 +1545,7 @@
 
       <div id="minimap-wrap" class="card">
         <canvas id="minimap" width="194" height="194"></canvas>
-        <div id="minimap-label"><span>小地图</span><span id="minimap-mode">M 大地图</span></div>
+        <div id="minimap-label"><span id="minimap-place">小地图</span><span id="minimap-mode">M 大地图</span></div>
       </div>
 
       <div id="panel">
@@ -1471,6 +1564,13 @@
         <b>小鲸鱼的世界</b>
         <span id="loading-text">正在铺路…</span>
         <div class="bar"><i id="loading-bar"></i></div>
+        <!-- 自动挑的画质档（小字）；启动失败时的原因和"低画质重试" -->
+        <small id="loading-note"></small>
+        <div id="loading-fail" hidden>
+          <p id="loading-why"></p>
+          <a id="loading-retry" href="?quality=low">低画质重试</a>
+          <a id="loading-retry2" href="?quality=low&amp;dpr=0.5" class="minor">最低画质重试</a>
+        </div>
       </div>
     </div>
 
@@ -1509,8 +1609,8 @@
           <b>地图</b>
           <div class="tabs">
             <button class="tab on" data-tab="map">大地图</button>
-            <button class="tab" data-tab="town">小镇手绘图</button>
-            <button class="tab" data-tab="world">世界地图</button>
+            <button class="tab" data-tab="world">世界手绘图</button>
+            <button class="tab" data-tab="district">分区手绘图</button>
           </div>
           <span class="dim">M / Esc 关闭</span>
           <button class="bm-x" data-close>✕</button>
@@ -1519,6 +1619,7 @@
           <div class="bm-view">
             <canvas id="bigmap-canvas"></canvas>
             <img id="bigmap-paper" alt="" />
+            <div id="bigmap-chips" class="tabs bm-chips"></div>
             <div class="bm-zoom"><button data-zoom="in">＋</button><button data-zoom="out">－</button><button data-zoom="me" title="回到自己">◎</button></div>
           </div>
           <div id="bigmap-side"></div>

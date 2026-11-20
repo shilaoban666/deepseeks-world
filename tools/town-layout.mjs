@@ -2,7 +2,7 @@
 //   node tools/town-layout.mjs
 import * as P from '../src/town/plan.js';
 const out = (k, v) => console.log(k.padEnd(14), v);
-for (const d of P.DISTRICTS) out(d.id, `h=${P.heightAt(d.x, d.z).toFixed(1)} lake=${P.lakeDistance(d.x, d.z).toFixed(2)} river=${P.riverAt(d.x, d.z).d.toFixed(0)} coast=${P.coastX(d.z).toFixed(0)} water=${P.waterAt(d.x, d.z)}`);
+for (const d of P.DISTRICTS) out(d.id, `h=${P.heightAt(d.x, d.z).toFixed(1)} lake=${P.lakeDistance(d.x, d.z).toFixed(2)} river=${P.riverAt(d.x, d.z).d.toFixed(0)} coast=${P.coastD(d.x, d.z).toFixed(0)} water=${P.waterAt(d.x, d.z)}`);
 // 路过不过湖/河/海
 for (const [i, line] of P.ROADS.entries()) {
   for (let k = 0; k + 1 < line.length; k++) {

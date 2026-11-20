@@ -1,13 +1,23 @@
 // 把城里城外拼起来：每个街区放什么、长什么样、能做什么，都在这个文件里。
 // 出来三样东西：一个 group（场景）、一堆碰撞盒（走路别穿墙）、一串交互点（小地图和 E 键都读它）。
+//
+// 这一版照《幻想世界地图》重摆：玉海城（玉海宫、清真寺、老街、南市街）居中，西边 AI 小镇和鱼鱼家，
+// 河西田园小镇，西北雪山小镇，北边月亮湖和湖边小镇，东北大学城，东边 CBD、海滨小镇、港口，
+// 南边高铁站、海鲜排档、沙滩，西南海边新城和码头；一条高架高铁把它们串起来。
+// 画法一点没变：房子还是原作 village.js 那一套手绘的，地标用 buildings.js / landmarks.js 的平涂 + 墨线。
 import * as THREE from 'three';
-import { Builder, PALETTE, house, hall, church, temple, gate, fountain, gym, stall, banner, lamp, bench, stoneLantern, fence } from './buildings.js';
-import { addBuildings, createBuildingMaterial, SHAPES, WALLS, ROOFS, SLATE } from '../valley/village.js';
+import { Builder, hall, temple, gate, fountain, gym, stall, banner, lamp, bench, stoneLantern, fence, hipRoof, gableRoof } from './buildings.js';
+import * as LM from './landmarks.js';
+import { placeActivities } from './activities.js';
+import { addBuildings, createBuildingMaterial, WALLS, ROOFS, SLATE } from '../valley/village.js';
 import { createGrove } from '../valley/trees.js';
-import { createLake, createTrees, createCrops, createRocks, createFlowerClumps, createPigeons, createCritters, roadGeometry, plazaGeometry, roadMaterial, roadMaterialTextured } from './props.js';
+import { createLake, createTrees, createRocks, createFlowerClumps, createPigeons, createCritters, roadGeometry, plazaGeometry, roadMaterial, roadMaterialTextured } from './props.js';
 import { createPlantBatch } from './billboard.js';
 import { paintMaterial, getAlbedo } from './paint.js';
-import { DISTRICTS, ROADS, SEGS, STREET_HALF, PLAZA, HOME, LAKE, SEA, GATE, CITY_R, RIVER, BRIDGES, BUS_ROUTE, BUS_STOPS, RIVER_HALF, GARDENS, riverAt, riverLevel, coastX, plotAt, heightAt, forestAt, fieldsAt, mountainAt, lakeDistance, roadDistance, roadEdge, plazaDistance, cityDistance, fbm, HALF } from './plan.js';
+import {
+  DISTRICTS, district, ROADS, SEGS, STREET_HALF, PLAZA, HOME, YUHAI, RING_R, CITY_R, LAKE, SEA, BRIDGES, PIERS, BUS_ROUTE, BUS_STOPS, METRO_STOPS, RAIL_STATIONS, RIVER_HALF, GARDENS,
+  riverAt, riverLevel, riverPoint, railCurve, coastD, beachAt, snowAt, skiAt, builtAt, plotAt, heightAt, waterAt, forestAt, fieldsAt, mountainAt, lakeDistance, roadEdge, plazaDistance, cityDistance, fbm, smooth, HALF,
+} from './plan.js';
 
 /** 一个固定的随机数发生器：地图每次都长一样。 */
 export function rng(seed = 1) {
@@ -22,12 +32,14 @@ export function rng(seed = 1) {
 }
 
 const pick = (random, arr) => arr[Math.floor(random() * arr.length) % arr.length];
+const TAU = Math.PI * 2;
 
 /** 让一栋房子面朝最近的那条路（取线段上的最近点，不是折点）。 */
 function faceRoad(x, z, fallback = 0) {
   let best = null;
   let bestD = 1e9;
   for (const g of SEGS) {
+    if (x < g.minx - 200 || x > g.maxx + 200 || z < g.minz - 200 || z > g.maxz + 200) continue;
     const dx = g.bx - g.ax;
     const dz = g.bz - g.az;
     const t = Math.min(1, Math.max(0, ((x - g.ax) * dx + (z - g.az) * dz) / (dx * dx + dz * dz || 1)));
@@ -44,59 +56,70 @@ function faceRoad(x, z, fallback = 0) {
   return Math.atan2(best[0] - x, best[1] - z);
 }
 
-/** 沿河 t（0~1）处的点和法线：[x, z, nx, nz] */
-function RSEGSample(t) {
-  let lo = [0, 0];
-  let best = 1e9;
-  // 河不长，直接在折线上按弧长找
-  let total = 0;
-  const lens = [];
-  for (let i = 0; i + 1 < RIVER.length; i++) {
-    lens.push(Math.hypot(RIVER[i + 1][0] - RIVER[i][0], RIVER[i + 1][1] - RIVER[i][1]));
-    total += lens[i];
-  }
-  let s = t * total;
-  for (let i = 0; i < lens.length; i++) {
-    if (s <= lens[i] || i === lens.length - 1) {
-      const k = Math.min(1, s / lens[i]);
-      const dx = (RIVER[i + 1][0] - RIVER[i][0]) / lens[i];
-      const dz = (RIVER[i + 1][1] - RIVER[i][1]) / lens[i];
-      return [RIVER[i][0] + dx * lens[i] * k, RIVER[i][1] + dz * lens[i] * k, -dz, dx];
-    }
-    s -= lens[i];
-  }
-  return [lo[0], lo[1], 1, 0, best];
-}
+// 各处房子的"口音"：墙色、瓦色、常见的形状。形状都是原作那几种，只是配色不同。
+const TOWN_ROOFS = [...ROOFS, ...ROOFS, SLATE, [0.42, 0.46, 0.5]];
+const STYLE = {
+  // 镇上：粉墙、赭红瓦，偶尔一栋青灰瓦
+  euro: { shapes: ['house', 'house', 'tall', 'cottage', 'wing', 'house', 'tall', 'cottage'], walls: WALLS, roofs: TOWN_ROOFS },
+  // 玉海城：木色和米色的墙，青灰的瓦
+  // 玉海城：还是原作那套粉墙暖瓦（这是整个画面的底色），只是多掺几栋青瓦的
+  china: { shapes: ['house', 'house', 'tall', 'cottage', 'wing', 'long', 'house'], walls: WALLS, roofs: [...ROOFS, ...ROOFS, ...ROOFS, SLATE, [0.3, 0.36, 0.46], [0.42, 0.46, 0.5]] },
+  // 海滨小镇：石头墙、橘红瓦
+  coast: { shapes: ['house', 'cottage', 'tall', 'wing', 'house'], walls: [[0.97, 0.96, 0.92], [0.95, 0.92, 0.84], [0.97, 0.95, 0.9], [0.93, 0.9, 0.82]], roofs: [[0.82, 0.42, 0.22], [0.78, 0.36, 0.2], [0.86, 0.5, 0.28]] },
+  // 雪山小镇：原木屋，屋顶盖着雪
+  snow: { shapes: ['cottage', 'house', 'long', 'wing', 'cottage'], walls: [[0.78, 0.58, 0.4], [0.7, 0.5, 0.34], [0.94, 0.9, 0.82], [0.84, 0.66, 0.46]], roofs: [[0.93, 0.95, 0.98], [0.9, 0.93, 0.97]] },
+  // 田园小镇：农舍，红瓦，偶尔一栋木头的
+  farm: { shapes: ['house', 'cottage', 'long', 'wing', 'cottage'], walls: [...WALLS, [0.7, 0.54, 0.38]], roofs: [[0.74, 0.3, 0.2], [0.68, 0.26, 0.18], [0.8, 0.36, 0.22]] },
+};
+const FOOT = { cottage: [7, 10], house: [7.5, 11], wing: [10.5, 11], tall: [7, 8.5], long: [8, 19], church: [9, 22], round: [7.4, 7.4], slim: [3.8, 3.8] };
 
 export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar = 560, density = 1, plants = null, roadTex = false } = {}) {
   const group = new THREE.Group();
   const b = new Builder(shared);
-  const random = rng(20261116);
+  const random = rng(20261120);
   const interactables = [];
   const add = (o) => {
     interactables.push(o);
     return o;
   };
+  const D = (id) => district(id);
 
-  // 房子用原作 village.js 那一套：每种形状真的不一样（小屋/长屋/高屋/带厢房/教堂/圆楼），
-  // 墙色和瓦色按实例给，一栋和另一栋都不同——吉卜力那个味道就在这儿。我们只负责摆位置。
+  // ---- 高铁线：先算出来，后面盖房子、种树都要让开它 -------------------------------------------------------------
+  const railXZ = railCurve(6);
+  const railNear = (x, z, r) => {
+    for (const p of railXZ) {
+      const dx = p[0] - x;
+      const dz = p[1] - z;
+      if (dx > r || dx < -r || dz > r || dz < -r) continue;
+      if (dx * dx + dz * dz < r * r) return true;
+    }
+    return false;
+  };
+
   const painted = [];
   /** 已经占了的地方（圆）：房子、地标、摊位。新东西先问一声。 */
   const taken = [];
-  const free = (x, z, r) => !taken.some((t) => Math.hypot(t[0] - x, t[1] - z) < t[2] + r);
+  const free = (x, z, r) => {
+    for (const t of taken) {
+      const dx = t[0] - x;
+      const dz = t[1] - z;
+      const rr = t[2] + r;
+      if (dx < rr && dx > -rr && dz < rr && dz > -rr && dx * dx + dz * dz < rr * rr) return false;
+    }
+    return true;
+  };
   const claim = (x, z, r) => taken.push([x, z, r]);
-  for (const d of DISTRICTS) {
-    if (['farm', 'fields', 'forest', 'mountain', 'lake', 'residential', 'food', 'plaza', 'snowtown', 'seaside', 'newtown', 'beach'].includes(d.kind)) continue;
-    claim(d.x, d.z, d.kind === 'school' ? 0 : d.kind === 'gym' ? 34 : d.kind === 'home' ? 20 : d.kind === 'market' || d.kind === 'flowermarket' ? 24 : 20);
-  }
-  // 镇上的墙和瓦：比原作多几种，暖色为主，偶尔一栋青灰瓦
-  const TOWN_ROOFS = [...ROOFS, ...ROOFS, SLATE, [0.42, 0.46, 0.5]];
+  /** 能不能盖房子：不在水里、不贴着河海、不在铁路底下。 */
+  const dry = (x, z, r = 0) => riverAt(x, z).d > RIVER_HALF + 14 + r && lakeDistance(x, z) > 1.22 && coastD(x, z) > 34 + r && !railNear(x, z, 9 + r) && Math.abs(x) < HALF - 20 && Math.abs(z) < HALF - 20;
+
+  // 地图上写着的那些铺子
+  const SHOPS = ['面馆', '蔬菜铺', '茶铺', '书店', '裁缝', '杂货', '豆腐', '酱菜', '糕点', '药铺', '花店', '米铺'];
   const paintedHouse = (x, z, opts = {}) => {
-    const { shape = 'house', scale = 1.1, turn = null, wall = null, roof = null } = opts;
+    const { shape = 'house', scale = 1.1, turn = null, wall = null, roof = null, bare = false } = opts;
     const t = turn ?? faceRoad(x, z);
     painted.push({ x, z, turn: t, scale, shape, shop: opts.shop ?? null, wall: wall ?? pick(random, WALLS), roof: roof ?? pick(random, TOWN_ROOFS) });
     // 碰撞盒要轴对齐：取房子占地转过去之后的包围
-    const fp = { cottage: [7, 10], house: [7.5, 11], wing: [10.5, 11], tall: [7, 8.5], long: [8, 19], church: [9, 22], round: [7.4, 7.4], slim: [3.8, 3.8] }[shape] ?? [8, 10];
+    const fp = FOOT[shape] ?? [8, 10];
     const hw = (fp[0] * scale) / 2;
     const hd = (fp[1] * scale) / 2;
     const c = Math.abs(Math.cos(t));
@@ -104,7 +127,7 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     b.collide(x, z, hw * c + hd * s2 + 0.2, hw * s2 + hd * c + 0.2, 16);
     claim(x, z, Math.max(hw, hd) * 0.92);
     // 门口的生活气：石门阶、两盆花；有的挂店招、有的摆长凳或木桶
-    if (shape === 'church' || shape === 'round' || shape === 'slim') return;
+    if (bare || shape === 'church' || shape === 'round' || shape === 'slim') return;
     const gy = heightAt(x, z);
     const fx = Math.sin(t);
     const fz = Math.cos(t);
@@ -115,12 +138,12 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
       b.add(new THREE.CylinderGeometry(0.2, 0.15, 0.36, 8), 'roof#1', front(sx * 1.25, 0.18, 0.5));
       b.add(new THREE.IcosahedronGeometry(0.26, 0), `leaf#${random() < 0.5 ? 0 : 1}`, front(sx * 1.25, 0.5, 0.5));
       b.add(new THREE.IcosahedronGeometry(0.12, 0), `flower#${Math.floor(random() * 5)}`, front(sx * 1.25 + 0.1, 0.7, 0.55));
-      b.add(new THREE.IcosahedronGeometry(0.1, 0), `flower#${Math.floor(random() * 5)}`, front(sx * 1.25 - 0.12, 0.66, 0.42));
     }
     const roll = random();
-    if (opts.shop || (roll < 0.22 && cityDistance(x, z) < 400)) {
+    if (opts.shop || (roll < (opts.shops ?? 0.2) && builtAt(x, z) > 0.5)) {
       // 店招：一根铁杆挑出来，下面挂块木牌
       const name = opts.shop ?? pick(random, SHOPS);
+      painted[painted.length - 1].shop = name;
       b.add(new THREE.BoxGeometry(0.06, 0.06, 1.3), 'iron#0', front(1.9, 3.3, 0.6), t);
       b.add(new THREE.BoxGeometry(0.08, 1.5, 0.74), 'wood#2', front(1.9, 2.5, 0.9), t);
       const text = [...name].slice(0, 3).join('');
@@ -135,23 +158,51 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
       b.add(new THREE.CylinderGeometry(0.36, 0.36, 0.06, 10), 'iron#0', front(2.3, 0.6, 0.5));
     }
   };
-  let lighthouseLamp = null;
-  // 菜地（种植系统）：家门口、田园小镇各一片
-  const gardenPlots = [];
-  // 地图上写着的那些铺子
-  const SHOPS = ['面馆', '蔬菜铺', '茶铺', '书店', '裁缝', '杂货', '豆腐', '酱菜', '糕点', '药铺', '花店', '米铺'];
+  /** 在一个圆里散着盖一片房子。 */
+  const scatter = (cx, cz, r, n, style, { minR = 0, gap = 8, scale = [0.95, 0.28], road = 7, shops = 0.12, turn = 'road' } = {}) => {
+    let made = 0;
+    for (let tries = 0; tries < n * 8 && made < n; tries++) {
+      const a = random() * TAU;
+      const rr = minR + (r - minR) * Math.sqrt(random());
+      const x = cx + Math.cos(a) * rr;
+      const z = cz + Math.sin(a) * rr;
+      if (roadEdge(x, z) < road || !free(x, z, gap) || !dry(x, z) || plazaDistance(x, z) < 40) continue;
+      const t = turn === 'road' ? faceRoad(x, z) + (random() < 0.5 ? Math.PI / 2 : 0) : random() * Math.PI;
+      paintedHouse(x, z, { shape: pick(random, style.shapes), scale: scale[0] + random() * scale[1], turn: t, wall: pick(random, style.walls), roof: pick(random, style.roofs), shops });
+      made++;
+    }
+    return made;
+  };
+  /** 这条街两边盖什么样的房子（null = 不盖，那里有自己的楼）。 */
+  const styleAt = (x, z) => {
+    if (cityDistance(x, z) < RING_R - 26) return STYLE.china;
+    if (Math.hypot(x + 470, z + 100) < 165 || Math.hypot(x - HOME[0], z - HOME[1]) < 60) return STYLE.euro;
+    if (Math.hypot(x - 285, z + 515) < 120) return STYLE.euro;
+    if (Math.hypot(x - 762, z + 182) < 130) return STYLE.coast;
+    return null;
+  };
 
-  // ===== 小鲸鱼的家 ============================================================
+  let lighthouseLamp = null;
+  const lanterns = [];
+  const gardenPlots = [];
+  const spinners = [];
+  const stallGoods = []; // 摊位上立着的货（物件图集）
+  const sakura = []; // 樱花树的位置（立牌）
+  const activityDecorLater = []; // 打磨时放的立牌，等玩法那批一起画
+  const parasols = []; // 阳伞
+  const snowPines = [];
+
+  // ===== 小鲸鱼的家（鱼鱼家）：河湾边的小院，旁边一座水车磨坊 =====================================
   {
     const [hx, hz] = HOME;
     const z = hz - 16;
-    paintedHouse(hx, z, { shape: 'wing', scale: 1.25, turn: 0, wall: [0.97, 0.95, 0.9], roof: [0.24, 0.44, 0.66] });
+    paintedHouse(hx, z, { shape: 'wing', scale: 1.25, turn: 0, wall: [0.97, 0.95, 0.9], roof: [0.24, 0.44, 0.66], bare: true });
     {
       // 门楣上的木牌、门两边的花坛、一条踏脚石小路通到院门
       const gy = heightAt(hx, z);
       const fz = z + (11 * 1.25) / 2;
       b.add(new THREE.BoxGeometry(2.6, 0.9, 0.14), 'wood#2', [hx, gy + 3.5, fz + 0.12]);
-      b.addSign('鱼的家', [hx, gy + 3.5, fz + 0.22], 0, { w: 2.3, h: 0.72, bg: '#22507a', fg: '#fdf6e3' });
+      b.addSign('鱼鱼家', [hx, gy + 3.5, fz + 0.22], 0, { w: 2.3, h: 0.72, bg: '#22507a', fg: '#fdf6e3' });
       b.add(new THREE.BoxGeometry(3.4, 0.14, 1.5), 'cloth#4', [hx, gy + 2.9, fz + 0.8]);
       for (const sx of [-1, 1]) {
         b.add(new THREE.CylinderGeometry(0.06, 0.06, 2.9, 6), 'wood#2', [hx + sx * 1.6, gy + 1.45, fz + 1.5]);
@@ -175,224 +226,185 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     fence(b, hx - 8, hz + 6, hx - 2.2, hz + 6);
     fence(b, hx + 2.2, hz + 6, hx + 8, hz + 6);
     lamp(b, hx - 5, hz + 5);
-    // 院子里的小菜园：西半边（东半边是出门那条石板路）两列四排，八块地（种植系统，见 farming.js）
+    claim(hx, hz - 6, 16);
+    // 院子里的小菜园：西半边两列四排，八块地（种植系统，见 farming.js）
     for (let row = 0; row < 4; row++) {
       for (let col = 0; col < 2; col++) gardenPlots.push({ x: GARDENS[0].x + 1.3 - col * 2.6, z: GARDENS[0].z - 2.4 + row * 1.6, where: '门前的菜地' });
     }
-    add({ id: 'home-door', name: '小鲸鱼的家', kind: 'door', x: hx, z: z + 10.5, r: 2.8, hint: 'E 进屋' });
+    add({ id: 'home-door', name: '鱼鱼家', kind: 'door', x: hx, z: z + 10.5, r: 2.8, hint: 'E 进屋' });
     add({ id: 'home-mailbox', name: '信箱', kind: 'mail', x: hx - 3, z: hz + 4.4, r: 1.8, hint: 'E 看看信箱' });
+    // 水车磨坊：贴着清溪河，轮子在水里慢慢转
+    const mx = hx - 48;
+    const mz = hz - 22;
+    const mill = LM.waterMill(b, { x: mx, z: mz, rotY: Math.PI });
+    if (mill) spinners.push({ kind: 'wheel', ...mill, speed: 0.8 });
+    claim(mx, mz, 9);
+    add({ id: 'watermill', name: '水车磨坊', kind: 'village', x: mx + 2, z: mz + 6, r: 6, hint: 'E 看水车', text: '水车吱呀吱呀地转，磨盘上的麦子变成了面粉。屋檐下挂着两条鲤鱼旗。' });
+    add({ id: 'home-river', name: '家门口的河湾', kind: 'fish', x: hx - 52, z: hz + 12, r: 9, hint: 'E 钓鱼' });
   }
 
-  // ===== 中央广场 ==============================================================
+  // ===== 玉海城 ================================================================================================
   {
+    // 玉海宫：金瓦朱墙，站在高台上，正对着宫前广场和中轴大街
+    const P = D('palace');
+    LM.palace(b, { x: P.x, z: P.z - 4, rotY: 0, name: '玉海宫' });
+    claim(P.x, P.z - 4, 36);
+    claim(P.x, P.z + 20, 14);
+    for (const sx of [-1, 1]) claim(P.x + sx * 19, P.z + 19, 8);
+    for (const sx of [-1, 1]) for (const dz of [34, 46]) stoneLantern(b, P.x + sx * 9, P.z + dz);
+    add({ id: 'palace', name: '玉海宫', kind: 'gate', x: P.x, z: P.z + 26, r: 12, hint: 'E 看看玉海宫', text: '金瓦在太阳底下亮得晃眼。台阶很高，一级一级数上去，一共三十六级。' });
+    // 宫前广场
     const [px, pz] = PLAZA;
     fountain(b, { x: px, z: pz });
     for (let i = 0; i < 8; i++) {
-      const a = (i / 8) * Math.PI * 2 + 0.2;
+      const a = (i / 8) * TAU + 0.2;
       bench(b, px + Math.cos(a) * 17, pz + Math.sin(a) * 17, -a);
       lamp(b, px + Math.cos(a + 0.4) * 24, pz + Math.sin(a + 0.4) * 24);
     }
     add({ id: 'plaza-fountain', name: '广场喷泉', kind: 'wish', x: px, z: pz, r: 7.5, hint: 'E 许个愿' });
     add({ id: 'plaza-board', name: '公告板', kind: 'board', x: px - 12, z: pz - 14, r: 3, hint: 'E 看公告' });
-  }
 
-  // ===== 小吃街 ================================================================
-  {
-    const line = ROADS[5]; // 广场 → 小吃街
-    const from = line[0];
-    const to = line[line.length - 1];
-    const n = 9;
-    for (let i = 1; i <= n; i++) {
-      const t = i / (n + 1);
-      const x = from[0] + (to[0] - from[0]) * t;
-      const z = from[1] + (to[1] - from[1]) * t;
-      const side = i % 2 ? 1 : -1;
-      const nx = -(to[1] - from[1]);
-      const nz = to[0] - from[0];
-      const len = Math.hypot(nx, nz);
-      const ox = x + (nx / len) * 6.5 * side;
-      const oz = z + (nz / len) * 6.5 * side;
-      stall(b, { x: ox, z: oz, rotY: Math.atan2(-(nx / len) * side, -(nz / len) * side), c1: 'cloth#3', c2: pick(random, ['cloth#0', 'cloth#1', 'cloth#2', 'cloth#4']) });
-      if (i % 3 === 0) banner(b, ox, oz, pick(random, ['烤鱼', '白米饭', '糖油粑粑', '酸辣粉', '炸鸡', '奶茶']), Math.atan2(-(nx / len) * side, -(nz / len) * side), 5.0);
+    // 三座城门楼：南门、西门、东门（路从门洞里穿过去）
+    for (const [gx, gz, rot, text] of [[40, 190, 0, '玉海城'], [-206, -58, Math.PI / 2, '西门'], [288, -58, Math.PI / 2, '东门']]) {
+      LM.gateTower(b, { x: gx, z: gz, rotY: rot, text });
+      claim(gx, gz, 12);
+      add({ id: `gate-${text}`, name: text === '玉海城' ? '玉海城南门' : `玉海城${text}`, kind: 'gate', x: gx + (rot ? 0 : 9), z: gz + (rot ? 9 : 0), r: 7, hint: 'E 看看城门' });
     }
-    add({ id: 'food-street', name: '小吃街', kind: 'eat', x: (from[0] + to[0]) / 2, z: (from[1] + to[1]) / 2, r: 40, hint: 'E 吃点什么' });
-  }
 
-  // ===== 网吧 ==================================================================
-  {
-    const d = DISTRICTS.find((x) => x.id === 'netcafe');
-    hall(b, { x: d.x, z: d.z, rotY: faceRoad(d.x, d.z), w: 16, d: 11, h: 7.4, floors: 2, wall: 4, roof: 2, sign: '网吧', windows: 5, awning: 4, signBg: '#22304a' });
-    add({ id: 'netcafe', name: '网吧', kind: 'net', x: d.x, z: d.z, r: 12, hint: 'E 上网' });
-  }
+    // 清真寺：白墙绿顶，两座宣礼塔
+    const M = D('mosque');
+    LM.mosque(b, { x: M.x, z: M.z - 4, rotY: 0 });
+    claim(M.x, M.z - 4, 21);
+    add({ id: 'mosque', name: '清真寺', kind: 'pray', x: M.x, z: M.z + 14, r: 10, hint: 'E 祈祷' });
 
-  // ===== 超市 ==================================================================
-  {
-    const d = DISTRICTS.find((x) => x.id === 'supermarket');
-    hall(b, { x: d.x, z: d.z, rotY: faceRoad(d.x, d.z), w: 24, d: 14, h: 7.6, floors: 2, wall: 1, roof: 0, sign: '超市', windows: 7, awning: 0 });
-    add({ id: 'supermarket', name: '超市', kind: 'shop', x: d.x, z: d.z, r: 14, hint: 'E 逛超市' });
-  }
+    // 夫子庙
+    const T = D('temple');
+    const tr = faceRoad(T.x, T.z);
+    temple(b, { x: T.x, z: T.z, rotY: tr });
+    claim(T.x, T.z, 19);
+    add({ id: 'temple', name: '夫子庙', kind: 'pray', x: T.x + Math.sin(tr) * 14, z: T.z + Math.cos(tr) * 14, r: 12, hint: 'E 上香' });
 
-  // ===== 菜市场 ================================================================
-  {
-    const d = DISTRICTS.find((x) => x.id === 'market');
+    // 书店（看书）、冒险者协会
+    const L = D('library');
+    hall(b, { x: L.x, z: L.z, rotY: faceRoad(L.x, L.z), w: 18, d: 11, h: 8.6, floors: 2, wall: 5, roof: 3, sign: '书店', windows: 6, awning: 1, signBg: '#3a2a1c' });
+    claim(L.x, L.z, 12);
+    add({ id: 'library', name: '书店', kind: 'read', x: L.x, z: L.z, r: 13, hint: 'E 看书' });
+    const G = D('guild');
+    hall(b, { x: G.x, z: G.z, rotY: faceRoad(G.x, G.z), w: 18, d: 12, h: 8, floors: 2, wall: 3, roof: 2, sign: '冒险者协会', windows: 6, awning: 0 });
+    claim(G.x, G.z, 12);
+    add({ id: 'guild', name: '冒险者协会', kind: 'guild', x: G.x, z: G.z, r: 12, hint: 'E 接委托' });
+
+    // 南市街：电影院、电玩店、网吧、超市——老房子的屋檐，亮着霓虹的招牌
+    const C = D('cinema');
+    LM.neonShop(b, { x: C.x, z: C.z, rotY: 0, w: 24, d: 14, h: 10, sign: '玉海电影院', neon: 1, signBg: '#5a2f86', signFg: '#ffe9a8' });
+    claim(C.x, C.z, 15);
+    add({ id: 'cinema', name: '电影院', kind: 'village', x: C.x, z: C.z + 9, r: 9, hint: 'E 看看排片', text: '今天放的是《河湾上的小鲸鱼》。海报上画着一条蓝色的鱼，售票窗口排着三四个人。' });
+    const A = D('arcade');
+    LM.neonShop(b, { x: A.x, z: A.z, rotY: 0, w: 18, d: 12, h: 9, sign: '电玩店', neon: 2, signBg: '#2a3a8a', signFg: '#ffffff' });
+    claim(A.x, A.z, 12);
+    add({ id: 'arcade', name: '电玩店', kind: 'arcade', x: A.x, z: A.z + 8, r: 9, hint: 'E 打电玩' });
+    const N = D('netcafe');
+    hall(b, { x: N.x, z: N.z, rotY: 0, w: 14, d: 11, h: 7.6, floors: 2, wall: 4, roof: 3, sign: '网吧', windows: 5, awning: 4, signBg: '#22304a', flat: true });
+    claim(N.x, N.z, 10);
+    add({ id: 'netcafe', name: '网吧', kind: 'net', x: N.x, z: N.z + 7, r: 9, hint: 'E 上网' });
+    const S = D('supermarket');
+    LM.neonShop(b, { x: S.x, z: S.z, rotY: 0, w: 24, d: 13, h: 9.4, sign: '玉海超市', neon: 3, signBg: '#d8641e', signFg: '#fff6dc' });
+    claim(S.x, S.z, 15);
+    add({ id: 'supermarket', name: '超市', kind: 'shop', x: S.x, z: S.z + 9, r: 10, hint: 'E 逛超市' });
+
+    // 集市：一片布棚
+    const K = D('market');
     for (let i = 0; i < 12; i++) {
       const gx = (i % 4) - 1.5;
       const gz = Math.floor(i / 4) - 1;
-      stall(b, { x: d.x + gx * 5.5, z: d.z + gz * 6, rotY: 0, c1: 'cloth#3', c2: `cloth#${i % 5 === 3 ? 4 : i % 3}` });
+      stall(b, { x: K.x + gx * 5.5, z: K.z + gz * 6, rotY: 0, c1: 'cloth#3', c2: `cloth#${i % 5 === 3 ? 4 : i % 3}` });
     }
-    banner(b, d.x, d.z - 9, '菜市场', 0, 7);
-    add({ id: 'market', name: '菜市场', kind: 'market', x: d.x, z: d.z, r: 20, hint: 'E 买菜' });
-  }
+    banner(b, K.x, K.z - 9.5, '集市', 0, 7);
+    claim(K.x, K.z, 19);
+    add({ id: 'market', name: '集市', kind: 'market', x: K.x, z: K.z, r: 20, hint: 'E 买菜' });
 
-  // ===== 花鸟市场 ==============================================================
-  {
-    const d = DISTRICTS.find((x) => x.id === 'flowermarket');
+    // 花鸟市场：一圈摊位
+    const F = D('flowermarket');
     for (let i = 0; i < 10; i++) {
-      const a = (i / 10) * Math.PI * 2;
-      stall(b, { x: d.x + Math.cos(a) * 15, z: d.z + Math.sin(a) * 15, rotY: -a + Math.PI / 2, c1: 'cloth#3', c2: `cloth#${i % 2 ? 1 : 2}` });
+      const a = (i / 10) * TAU;
+      stall(b, { x: F.x + Math.cos(a) * 14, z: F.z + Math.sin(a) * 14, rotY: -a + Math.PI / 2, c1: 'cloth#3', c2: `cloth#${i % 2 ? 1 : 2}` });
     }
-    banner(b, d.x, d.z - 20, '花鸟市场', 0, 8);
-    add({ id: 'flowermarket', name: '花鸟市场', kind: 'seed', x: d.x, z: d.z, r: 22, hint: 'E 买花苗和种子' });
-  }
+    banner(b, F.x, F.z - 19, '花鸟市场', 0, 8);
+    claim(F.x, F.z, 19);
+    add({ id: 'flowermarket', name: '花鸟市场', kind: 'seed', x: F.x, z: F.z, r: 20, hint: 'E 买花苗和种子' });
 
-  // ===== 图书馆 ================================================================
-  {
-    const d = DISTRICTS.find((x) => x.id === 'library');
-    hall(b, { x: d.x, z: d.z, rotY: faceRoad(d.x, d.z), w: 22, d: 13, h: 9, floors: 2, wall: 5, roof: 3, sign: '图书馆', columns: 6, windows: 7 });
-    add({ id: 'library', name: '图书馆', kind: 'read', x: d.x, z: d.z, r: 14, hint: 'E 看书' });
-  }
-
-  // ===== 学校：小学 / 中学 / 大学 ===============================================
-  {
-    const d = DISTRICTS.find((x) => x.id === 'school');
-    const three = [
-      { name: '清镇市第一小学', x: d.x - 40, z: d.z - 62, w: 22, d: 11, h: 7.2 },
-      { name: '清镇市中学', x: d.x + 22, z: d.z - 24, w: 28, d: 12, h: 9.6 },
-      { name: '清镇大学', x: d.x - 10, z: d.z + 52, w: 34, d: 13, h: 10.8 },
-    ];
-    for (const s of three) {
-      hall(b, { x: s.x, z: s.z, rotY: faceRoad(s.x, s.z), w: s.w, d: s.d, h: s.h, floors: s.h > 8 ? 3 : 2, wall: 0, roof: 5, sign: s.name, windows: 8, columns: 4 });
-      claim(s.x, s.z, s.w * 0.62);
-      add({ id: `school-${s.name}`, name: s.name, kind: 'study', x: s.x, z: s.z, r: 12, hint: 'E 上课' });
-    }
-    // 操场
-    for (let i = 0; i < 6; i++) b.add(new THREE.CylinderGeometry(0.2, 0.2, 0.5, 6), `wood#2`, [d.x + 70, heightAt(d.x + 70, d.z) + 0.25, d.z - 40 + i * 16]);
-  }
-
-  // ===== 教堂 ==================================================================
-  {
-    const d = DISTRICTS.find((x) => x.id === 'church');
-    paintedHouse(d.x, d.z, { shape: 'church', scale: 1.35, turn: faceRoad(d.x, d.z), wall: WALLS[0], roof: SLATE });
-    add({ id: 'church', name: '教堂', kind: 'pray', x: d.x, z: d.z, r: 16, hint: 'E 祈祷' });
-  }
-
-  // ===== 夫子庙 ================================================================
-  {
-    const d = DISTRICTS.find((x) => x.id === 'temple');
-    temple(b, { x: d.x, z: d.z, rotY: faceRoad(d.x, d.z) });
-    for (const [dx, dz] of [[-13, 11], [13, 11], [-13, -11], [13, -11]]) stoneLantern(b, d.x + dx, d.z + dz);
-    add({ id: 'temple', name: '夫子庙', kind: 'pray', x: d.x, z: d.z + 12, r: 14, hint: 'E 上香' });
-  }
-
-  // ===== 电玩厅 ================================================================
-  {
-    const d = DISTRICTS.find((x) => x.id === 'arcade');
-    hall(b, { x: d.x, z: d.z, rotY: faceRoad(d.x, d.z), w: 14, d: 10, h: 7, floors: 2, wall: 2, roof: 1, sign: '电玩厅', windows: 5, awning: 2, signBg: '#7a2a5a' });
-    add({ id: 'arcade', name: '电玩厅', kind: 'arcade', x: d.x, z: d.z, r: 11, hint: 'E 打电玩' });
-  }
-
-  // ===== 体育馆 ================================================================
-  {
-    const d = DISTRICTS.find((x) => x.id === 'gym');
-    gym(b, { x: d.x, z: d.z, rotY: 0 });
-    add({ id: 'gym', name: '体育馆', kind: 'sport', x: d.x, z: d.z + 26, r: 12, hint: 'E 锻炼' });
-  }
-
-  // ===== 冒险者协会 ============================================================
-  {
-    const d = DISTRICTS.find((x) => x.id === 'guild');
-    hall(b, { x: d.x, z: d.z, rotY: faceRoad(d.x, d.z), w: 18, d: 12, h: 8, floors: 2, wall: 3, roof: 0, sign: '冒险者协会', windows: 6, awning: 1 });
-    add({ id: 'guild', name: '冒险者协会', kind: 'guild', x: d.x, z: d.z, r: 12, hint: 'E 接委托' });
-  }
-
-  // ===== 居民区 ================================================================
-  {
-    const rings = [
-      { d: DISTRICTS.find((x) => x.id === 'resA'), n: 16 },
-      { d: DISTRICTS.find((x) => x.id === 'resB'), n: 16 },
-      { d: DISTRICTS.find((x) => x.id === 'resC'), n: 14 },
-    ];
-    for (const { d, n } of rings) {
-      for (let i = 0; i < n; i++) {
-        const a = (i / n) * Math.PI * 2 + random() * 0.5;
-        const r = d.r * (0.2 + random() * 0.8);
-        const x = d.x + Math.cos(a) * r;
-        const z = d.z + Math.sin(a) * r;
-        if (roadDistance(x, z) < 12 || plazaDistance(x, z) < 34) continue;
-        if (!free(x, z, 9)) continue;
-        paintedHouse(x, z, { shape: pick(random, ['house', 'cottage', 'tall', 'wing']), scale: 1.0 + random() * 0.3, turn: faceRoad(x, z) + (random() < 0.5 ? Math.PI / 2 : 0) });
-      }
-      add({ id: `res-${d.id}`, name: d.name, kind: 'home', x: d.x, z: d.z, r: d.r * 0.5, hint: null });
-    }
-  }
-
-  // ===== 城门：清镇市 ==========================================================
-  {
-    const [gx, gz] = GATE;
-    gate(b, { x: gx, z: gz, rotY: 0, text: '清镇市' });
-    // 城墙往两边延一段
-    for (const side of [-1, 1]) {
-      for (let i = 1; i <= 5; i++) {
-        const x = gx + side * (8 + i * 3.2);
-        b.add(new THREE.BoxGeometry(3.2, 5 + i * 0.3, 2.2), `stone#0`, [x, heightAt(x, gz) + (5 + i * 0.3) / 2, gz]);
-      }
-    }
-    add({ id: 'gate', name: '清镇市城门', kind: 'gate', x: gx, z: gz + 12, r: 12, hint: 'E 看看城门' });
-  }
-
-  // ===== 农村 ==================================================================
-  {
-    const d = DISTRICTS.find((x) => x.id === 'farm');
-    for (let i = 0; i < 9; i++) {
-      const a = (i / 9) * Math.PI * 2;
-      const r = 30 + random() * 60;
-      const x = d.x + Math.cos(a) * r;
-      const z = d.z + Math.sin(a) * r;
-      if (roadDistance(x, z) < 10) continue;
-      paintedHouse(x, z, { shape: pick(random, ['house', 'cottage', 'long']), scale: 1.05 + random() * 0.3, turn: random() * Math.PI });
-      fence(b, x - 7, z + 6, x + 7, z + 6, 0.9);
-      if (random() < 0.6) fence(b, x - 7, z + 6, x - 7, z - 6, 0.9);
-    }
-    // 谷仓
-    hall(b, { x: d.x + 18, z: d.z - 26, rotY: 0.4, w: 14, d: 9, h: 6, floors: 1, wall: 3, roof: 4, windows: 4, sign: '种子铺' });
-    add({ id: 'farm', name: '农村', kind: 'farm', x: d.x, z: d.z + 30, r: 26, hint: 'E 找农夫聊天' });
-    add({ id: 'farm-seeds', name: '种子铺', kind: 'seed', x: d.x + 18, z: d.z - 20, r: 9, hint: 'E 买种子' });
-    // 租的菜地：plan.GARDENS 里定好的那块（那里不长草），三排四列，一圈矮篱笆，插块牌子
+    // 老街：沿街两排小吃摊，夜里一路灯串
     {
-      const { x: cx, z: cz } = GARDENS[1];
-      for (let row = 0; row < 3; row++) {
-        for (let col = 0; col < 4; col++) gardenPlots.push({ x: cx - 3.9 + col * 2.6, z: cz - 2 + row * 2, where: '租的菜地' });
+      const line = [[130, -40], [125, 40]];
+      const [from, to] = line;
+      const n = 9;
+      const len = Math.hypot(to[0] - from[0], to[1] - from[1]);
+      const nx = -(to[1] - from[1]) / len;
+      const nz = (to[0] - from[0]) / len;
+      for (let i = 1; i <= n; i++) {
+        const t = i / (n + 1);
+        const side = i % 2 ? 1 : -1;
+        const ox = from[0] + (to[0] - from[0]) * t + nx * 6.6 * side;
+        const oz = from[1] + (to[1] - from[1]) * t + nz * 6.6 * side;
+        const rot = Math.atan2(-nx * side, -nz * side);
+        stall(b, { x: ox, z: oz, rotY: rot, c1: 'cloth#3', c2: pick(random, ['cloth#0', 'cloth#1', 'cloth#2', 'cloth#4']) });
+        claim(ox, oz, 3);
+        if (i % 3 === 0) banner(b, ox, oz, pick(random, ['烤鱼', '白米饭', '糖油粑粑', '酸辣粉', '炸鸡', '奶茶']), rot, 5.0);
       }
-      fence(b, cx - 6, cz - 3.6, cx + 6, cz - 3.6, 0.8);
-      fence(b, cx - 6, cz + 3.6, cx + 6, cz + 3.6, 0.8);
-      fence(b, cx - 6, cz - 3.6, cx - 6, cz + 3.6, 0.8);
-      banner(b, cx + 7.5, cz, '租的菜地', Math.PI / 2, 3);
-      claim(cx, cz, 9);
+      add({ id: 'food-street', name: '老街小吃', kind: 'eat', x: 128, z: 0, r: 36, hint: 'E 吃点什么' });
     }
   }
 
-  // ===== 河鲜集市：一圈摊位，摊上摆着鱼、虾、鱼干 =================================
-  const stallGoods = []; // 摊位上立着的货（物件图集）
+  // ===== AI 小镇 ===============================================================================================
   {
-    const d = DISTRICTS.find((x) => x.id === 'fishmarket');
+    const d = D('aitown');
+    // 那栋写着 AI 的白楼
+    hall(b, { x: d.x + 8, z: d.z - 20, rotY: 0, w: 17, d: 11, h: 11.4, floors: 3, wall: 1, roof: 3, sign: 'AI', windows: 6, flat: true, signBg: '#f4f7fb', signFg: '#2a5fd0' });
+    claim(d.x + 8, d.z - 20, 12);
+    add({ id: 'ailab', name: 'AI 实验室', kind: 'study', x: d.x + 8, z: d.z - 12, r: 9, hint: 'E 上课' });
+    // 玻璃花房
+    const gx = d.x + 78;
+    const gz = d.z - 26;
+    LM.greenhouse(b, { x: gx, z: gz, rotY: 0, w: 20, d: 12, h: 8 });
+    claim(gx, gz, 13);
+    add({ id: 'greenhouse', name: '玻璃花房', kind: 'seed', x: gx, z: gz + 9, r: 8, hint: 'E 买花苗和种子' });
+    // 小广场：长椅、路灯
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * TAU + 0.6;
+      bench(b, d.x + Math.cos(a) * 11, d.z + Math.sin(a) * 11, -a);
+    }
+    claim(d.x, d.z, 9);
+  }
+
+  // ===== 丰收田园：种子铺、租的菜地 =============================================================================
+  {
+    const d = D('farm');
+    hall(b, { x: d.x + 22, z: d.z - 30, rotY: faceRoad(d.x + 22, d.z - 30), w: 14, d: 9, h: 6, floors: 1, wall: 3, roof: 4, windows: 4, sign: '种子铺' });
+    claim(d.x + 22, d.z - 30, 10);
+    add({ id: 'farm', name: '丰收田园', kind: 'farm', x: d.x + 6, z: d.z - 6, r: 14, hint: 'E 找农夫聊天' });
+    add({ id: 'farm-seeds', name: '种子铺', kind: 'seed', x: d.x + 22, z: d.z - 24, r: 9, hint: 'E 买种子' });
+    const { x: cx, z: cz } = GARDENS[1];
+    for (let row = 0; row < 3; row++) {
+      for (let col = 0; col < 4; col++) gardenPlots.push({ x: cx - 3.9 + col * 2.6, z: cz - 2 + row * 2, where: '租的菜地' });
+    }
+    fence(b, cx - 6, cz - 3.6, cx + 6, cz - 3.6, 0.8);
+    fence(b, cx - 6, cz + 3.6, cx + 6, cz + 3.6, 0.8);
+    fence(b, cx - 6, cz - 3.6, cx - 6, cz + 3.6, 0.8);
+    banner(b, cx + 7.5, cz, '租的菜地', Math.PI / 2, 3);
+    claim(cx, cz, 9);
+    for (const [dx, dz] of [[30, 44], [44, 30], [16, 52]]) LM.haystack(b, d.x + dx, d.z + dz, 0.9 + random() * 0.3);
+  }
+
+  // ===== 河鲜集市：河边一条木栈台，摊上摆着鱼、虾、鱼干 ===========================================================
+  {
+    const d = D('fishmarket');
     for (let i = 0; i < 9; i++) {
-      const a = (i / 9) * Math.PI * 2 + 0.3;
+      const a = (i / 9) * TAU + 0.3;
       const x = d.x + Math.cos(a) * 11;
       const z = d.z + Math.sin(a) * 11;
       stall(b, { x, z, rotY: -a + Math.PI / 2, c1: 'cloth#3', c2: `cloth#${[4, 1, 0][i % 3]}` });
       stallGoods.push({ x, z, y: heightAt(x, z) + 1.0, h: 0.5, name: ['fish', 'shrimp', 'dried-fish'][i % 3] });
     }
-    // 晒鱼干的架子
     for (let i = 0; i < 2; i++) {
       const x = d.x - 3 + i * 6;
       const gy = heightAt(x, d.z);
@@ -400,39 +412,46 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
       b.add(new THREE.BoxGeometry(3.4, 0.07, 0.07), 'wood#2', [x, gy + 2.3, d.z]);
       for (let k = 0; k < 5; k++) stallGoods.push({ x: x - 1.2 + k * 0.6, z: d.z, y: gy + 1.5, h: 0.42, name: 'dried-fish' });
     }
-    banner(b, d.x, d.z + 16, '河鲜集市', 0, 7);
+    banner(b, d.x, d.z - 17, '河鲜集市', Math.PI, 7);
+    claim(d.x, d.z, 17);
     add({ id: 'fishmarket', name: '河鲜集市', kind: 'fishmarket', x: d.x, z: d.z, r: 15, hint: 'E 逛河鲜集市' });
+    add({ id: 'fishmarket-pier', name: '集市栈台', kind: 'fish', x: -397, z: 190, r: 8, hint: 'E 钓鱼' });
   }
 
-  // ===== 雪山小镇：青灰瓦的木屋，挤在山脚 ==========================================
+  // ===== 新新区 CBD：一片玻璃幕墙的高楼，中间是市民广场 ===========================================================
   {
-    const d = DISTRICTS.find((x) => x.id === 'snowtown');
-    for (let i = 0; i < 12; i++) {
-      const a = (i / 12) * Math.PI * 2 + random() * 0.4;
-      const r = 14 + random() * 46;
-      const x = d.x + Math.cos(a) * r;
-      const z = d.z + Math.sin(a) * r;
-      if (roadEdge(x, z) < 6 || !free(x, z, 8) || riverAt(x, z).d < 30) continue;
-      paintedHouse(x, z, { shape: pick(random, ['cottage', 'house', 'long']), scale: 0.95 + random() * 0.25, turn: random() * Math.PI, wall: pick(random, [WALLS[3], WALLS[5], [0.62, 0.5, 0.4]]), roof: pick(random, [SLATE, [0.36, 0.4, 0.46], [0.5, 0.52, 0.56]]) });
+    const TOWERS = [
+      [405, -152, 22, 22, 70, 1, 0], [408, -205, 20, 20, 46, 2, 1], [490, -172, 24, 22, 86, 1, 1], [494, -228, 20, 18, 52, 0, 0], [578, -202, 22, 22, 62, 2, 0],
+      [400, -48, 22, 20, 42, 2, 2], [562, -100, 20, 20, 54, 1, 2], [628, -108, 18, 18, 38, 2, 0], [418, 8, 26, 16, 28, 2, 2], [540, -18, 20, 20, 58, 1, 1], [470, -292, 18, 18, 34, 2, 2],
+    ];
+    for (const [x, z, w, dd, h, glass, style] of TOWERS) {
+      if (!free(x, z, w * 0.6) || roadEdge(x, z) < Math.max(w, dd) / 2 + 1) continue;
+      LM.tower(b, { x, z, rotY: 0, w, d: dd, h, glass, style });
+      claim(x, z, Math.max(w, dd) * 0.72);
     }
-    add({ id: 'snowtown', name: '雪山小镇', kind: 'village', x: d.x, z: d.z, r: 22, hint: 'E 和镇上的人聊聊', text: '木屋的烟囱冒着白烟。再往北，就是雪山了。' });
+    const c = D('civic');
+    fountain(b, { x: c.x, z: c.z });
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * TAU + 0.4;
+      bench(b, c.x + Math.cos(a) * 13, c.z + Math.sin(a) * 13, -a);
+      lamp(b, c.x + Math.cos(a + 0.5) * 19, c.z + Math.sin(a + 0.5) * 19);
+      sakura.push([c.x + Math.cos(a + 0.25) * 27, c.z + Math.sin(a + 0.25) * 27]);
+    }
+    claim(c.x, c.z, 22);
+    add({ id: 'civic', name: '市民广场', kind: 'wish', x: c.x, z: c.z, r: 7.5, hint: 'E 许个愿' });
+    add({ id: 'cbd', name: '新新区 CBD', kind: 'village', x: 446, z: -100, r: 10, hint: 'E 看看', text: '楼一栋比一栋高，玻璃上映着云。午休的人端着咖啡，在市民广场的喷泉边坐成一排。' });
+    // 体育馆
+    const g = D('gym');
+    gym(b, { x: g.x, z: g.z, rotY: 0 });
+    claim(g.x, g.z, 30);
+    add({ id: 'gym', name: '体育馆', kind: 'sport', x: g.x, z: g.z + 26, r: 12, hint: 'E 锻炼' });
   }
 
-  // ===== 海滨小镇：白墙蓝瓦，沿着海岸排开；一座灯塔 ================================
+  // ===== 海滨小镇：崖上的石头房子，橘红的瓦；尽头一座红白灯塔 =====================================================
   {
-    const d = DISTRICTS.find((x) => x.id === 'seaside');
-    const BLUE = [[0.26, 0.42, 0.62], [0.32, 0.5, 0.68], [0.2, 0.36, 0.56]];
-    for (let i = 0; i < 16; i++) {
-      const a = (i / 16) * Math.PI * 2 + random() * 0.4;
-      const r = 16 + random() * 62;
-      const x = d.x + Math.cos(a) * r;
-      const z = d.z + Math.sin(a) * r;
-      if (roadEdge(x, z) < 6 || !free(x, z, 8) || x > coastX(z) - 85) continue;
-      paintedHouse(x, z, { shape: pick(random, ['cottage', 'house', 'tall', 'wing']), scale: 0.95 + random() * 0.25, turn: faceRoad(x, z) + (random() < 0.5 ? Math.PI / 2 : 0), wall: [0.97, 0.97, 0.95], roof: pick(random, BLUE) });
-    }
-    add({ id: 'seaside', name: '海滨小镇', kind: 'village', x: d.x, z: d.z, r: 22, hint: 'E 和镇上的人聊聊', text: '白墙蓝瓦，晾着渔网。海风里有一点咸味。' });
-    // 灯塔：红白相间的塔身、一圈平台、玻璃灯室、红顶
-    const L = DISTRICTS.find((x) => x.id === 'lighthouse');
+    const d = D('seaside');
+    add({ id: 'seaside', name: '海滨小镇', kind: 'village', x: d.x - 14, z: d.z + 6, r: 12, hint: 'E 和镇上的人聊聊', text: '石头墙，橘红瓦，晾着渔网。海风里有一点咸味，崖下的浪一下一下拍着礁石。' });
+    const L = D('lighthouse');
     const gy = heightAt(L.x, L.z);
     b.add(new THREE.CylinderGeometry(4.2, 4.8, 2.4, 20), 'stone#2', [L.x, gy + 0.6, L.z]);
     for (let i = 0; i < 6; i++) {
@@ -441,72 +460,239 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     }
     const top = gy + 1.8 + 6 * 3.4;
     b.add(new THREE.CylinderGeometry(2.7, 2.7, 0.3, 20), 'iron#0', [L.x, top + 0.15, L.z]);
-    for (let k = 0; k < 10; k++) b.add(new THREE.CylinderGeometry(0.05, 0.05, 1.0, 5), 'iron#0', [L.x + Math.cos((k / 10) * 6.283) * 2.6, top + 0.8, L.z + Math.sin((k / 10) * 6.283) * 2.6]);
+    for (let k = 0; k < 10; k++) b.add(new THREE.CylinderGeometry(0.05, 0.05, 1.0, 5), 'iron#0', [L.x + Math.cos((k / 10) * TAU) * 2.6, top + 0.8, L.z + Math.sin((k / 10) * TAU) * 2.6]);
     b.add(new THREE.CylinderGeometry(1.5, 1.5, 2.2, 12), 'glow#0', [L.x, top + 1.4, L.z]);
     lighthouseLamp = [L.x, top + 1.4, L.z];
     b.add(new THREE.ConeGeometry(2.0, 1.8, 12), 'cloth#0', [L.x, top + 3.4, L.z]);
-    b.add(new THREE.BoxGeometry(1.2, 2.2, 0.2), 'wood#0', [L.x, gy + 2.2, L.z + 4.3]);
+    b.add(new THREE.BoxGeometry(1.2, 2.2, 0.2), 'wood#0', [L.x - 4.3, gy + 2.2, L.z], Math.PI / 2);
     b.collide(L.x, L.z, 4.6, 4.6, 26);
     claim(L.x, L.z, 8);
-    add({ id: 'lighthouse', name: '灯塔', kind: 'village', x: L.x, z: L.z + 7, r: 8, hint: 'E 看海', text: '海一直铺到天边。远处有两三点白帆。' });
+    add({ id: 'lighthouse', name: '灯塔', kind: 'village', x: L.x - 8, z: L.z, r: 8, hint: 'E 看海', text: '海一直铺到天边。远处有两三点白帆，港口的吊机像几只长脚的鸟。' });
   }
 
-  // ===== 高铁站：玻璃和白墙的大厅 + 站台 + 一列车 ==================================
-  const trainSpots = [];
+  // ===== 港口：仓库、吊机、集装箱，两条伸进海里的石码头 ===========================================================
   {
-    const d = DISTRICTS.find((x) => x.id === 'station');
-    const gy = heightAt(d.x, d.z);
-    const rotY = Math.PI / 2; // 正面朝西（朝镇子）
-    const at = (lx, ly, lz) => [d.x + lx * Math.cos(rotY) + lz * Math.sin(rotY), gy + ly, d.z - lx * Math.sin(rotY) + lz * Math.cos(rotY)];
-    const put = (geo, key, lx, ly, lz) => b.add(geo, key, at(lx, ly, lz), rotY);
-    put(new THREE.BoxGeometry(46, 1.0, 22), 'stone#2', 0, -0.2, 0);
-    put(new THREE.BoxGeometry(40, 9, 16), 'wall#1', 0, 4.8, 0);
-    // 一整面玻璃幕墙，白色的竖框
-    put(new THREE.BoxGeometry(36, 6.4, 0.2), 'glass#0', 0, 5.0, 8.06);
-    for (let i = 0; i <= 12; i++) put(new THREE.BoxGeometry(0.3, 6.6, 0.3), 'wall#1', -18 + i * 3, 5.0, 8.16);
-    put(new THREE.BoxGeometry(36.4, 0.3, 0.34), 'wall#1', 0, 5.0, 8.16);
-    // 弧形的大屋顶：三段叠起来
-    for (let i = 0; i < 3; i++) put(new THREE.BoxGeometry(44 - i * 9, 0.7, 20 - i * 2), i === 0 ? 'iron#0' : 'wall#4', 0, 9.6 + i * 0.7, 0);
-    put(new THREE.BoxGeometry(48, 0.4, 5), 'iron#0', 0, 7.4, 10.4);
-    for (const lx of [-20, -10, 0, 10, 20]) put(new THREE.CylinderGeometry(0.3, 0.3, 7.4, 10), 'wall#1', lx, 3.7, 12.4);
-    put(new THREE.BoxGeometry(8, 3.4, 0.24), 'glass#0', 0, 2.0, 8.2);
-    // 背面（朝站台）和两侧：一排高窗、一条蓝色腰线
-    put(new THREE.BoxGeometry(36, 3.2, 0.2), 'glass#0', 0, 6.2, -8.06);
-    for (let i = 0; i <= 12; i++) put(new THREE.BoxGeometry(0.3, 3.4, 0.3), 'wall#1', -18 + i * 3, 6.2, -8.14);
-    put(new THREE.BoxGeometry(40.2, 0.5, 16.2), 'cloth#4', 0, 3.6, 0);
-    for (const sx of [-1, 1]) put(new THREE.BoxGeometry(0.2, 3.2, 12), 'glass#0', sx * 20.06, 6.2, 0);
-    // 站台上的长椅和站名牌
-    for (let i = 0; i < 5; i++) put(new THREE.BoxGeometry(2.4, 0.12, 0.5), 'wood#1', -24 + i * 12, 1.2, -12.4);
-    b.addSign('AI 小镇', at(0, 3.6, -11.2), rotY + Math.PI, { w: 4, h: 0.8, bg: '#ffffff', fg: '#1f4b7a' });
-    b.addSign('高铁站', at(0, 8.4, 8.3), rotY, { w: 8, h: 1.6, bg: '#1f4b7a', fg: '#ffffff' });
-    b.collide(d.x, d.z, 8.5, 20.5, 12);
-    // 站台和铁轨（在大厅东边，南北向）
-    put(new THREE.BoxGeometry(70, 0.9, 5), 'stone#0', 0, 0.25, -13);
-    put(new THREE.BoxGeometry(70, 0.3, 6), 'iron#0', 0, 5.2, -13);
-    for (let i = 0; i < 8; i++) put(new THREE.CylinderGeometry(0.16, 0.16, 5, 8), 'wall#1', -31 + i * 9, 2.7, -13);
-    for (const lz of [-18.2, -19.7]) put(new THREE.BoxGeometry(220, 0.16, 0.14), 'iron#0', 0, 0.2, lz);
-    for (let i = 0; i < 74; i++) put(new THREE.BoxGeometry(0.3, 0.12, 2.6), 'wood#2', -109 + i * 3, 0.08, -18.95);
-    b.collide(at(0, 0, -19)[0], at(0, 0, -19)[2], 1.6, 60, 4);
-    trainSpots.push({ x: at(4, 0, -19)[0], z: at(4, 0, -19)[2], y: gy + 0.2, h: 4.6, name: 'train' });
-    claim(d.x, d.z, 34);
-    add({ id: 'station', name: '高铁站', kind: 'station', x: at(0, 0, 14)[0], z: at(0, 0, 14)[2], r: 12, hint: 'E 看车次' });
-  }
-
-  // ===== 高铁新城：几栋新盖的楼 ====================================================
-  {
-    const d = DISTRICTS.find((x) => x.id === 'newtown');
-    const spots = [[-30, -20, 24, 12, 13], [10, -34, 20, 12, 16], [36, 6, 22, 12, 12], [-12, 22, 26, 12, 10], [-50, 30, 18, 11, 9]];
-    for (const [dx, dz, w, dd, h] of spots) {
-      const x = d.x + dx;
-      const z = d.z + dz;
-      if (!free(x, z, w * 0.55)) continue;
-      hall(b, { x, z, rotY: faceRoad(x, z), w, d: dd, h, floors: Math.round(h / 3.2), wall: [1, 4, 5][Math.abs(dx) % 3], roof: 3, windows: Math.round(w / 2.6), flat: true });
-      claim(x, z, w * 0.6);
+    for (const [x, z] of [[737, 8], [737, 182]]) {
+      LM.warehouse(b, { x, z, rotY: Math.PI / 2, w: 30, d: 16, h: 7 });
+      claim(x, z, 18);
     }
-    add({ id: 'newtown', name: '高铁新城', kind: 'village', x: d.x, z: d.z, r: 24, hint: 'E 看看', text: '楼是新的，街上人还不多。工地的围挡上写着：明年通车。' });
+    LM.warehouse(b, { x: 668, z: 196, rotY: Math.PI / 2, w: 26, d: 14, h: 6.4 });
+    claim(668, 196, 16);
+    for (const [x, z] of [[762, 26], [762, 116]]) {
+      LM.crane(b, { x, z, rotY: Math.PI / 2, h: 24 });
+      claim(x, z, 7);
+    }
+    for (const [x, z, rot, n] of [[742, 62, 0, 5], [748, 82, Math.PI / 2, 4], [738, 128, 0, 6], [752, 156, Math.PI / 2, 4], [716, 150, 0.2, 3]]) {
+      LM.containers(b, { x, z, rotY: rot, n });
+      claim(x, z, 6);
+    }
+    add({ id: 'port', name: '港口', kind: 'village', x: 722, z: 96, r: 10, hint: 'E 看看码头', text: '吊机把箱子一只只吊上船。工人说，下一班去大学城的货船傍晚才开。' });
+    add({ id: 'port-pier', name: '港口码头', kind: 'fish', x: 846, z: 48, r: 9, hint: 'E 钓鱼' });
   }
 
-  // ===== 石桥：路跨过清溪河的地方 ==================================================
+  // ===== 大学城：红砖楼、钟楼、樱花草坪，东边是观海台 =============================================================
+  {
+    const d = D('university');
+    const halls = [
+      { name: '玉海大学', x: d.x, z: d.z - 44, rot: 0, w: 40, d: 15, h: 11.4, columns: 6 },
+      { name: '玉海中学', x: d.x - 62, z: d.z - 30, rot: Math.PI / 2, w: 30, d: 13, h: 9.6, columns: 4 },
+      { name: '玉海第一小学', x: d.x + 70, z: d.z + 14, rot: -Math.PI / 2, w: 30, d: 13, h: 8.4, columns: 4 },
+      { name: '图书馆', x: d.x - 34, z: d.z + 52, rot: Math.PI, w: 26, d: 13, h: 9, columns: 4 },
+    ];
+    for (const s of halls) {
+      hall(b, { x: s.x, z: s.z, rotY: s.rot, w: s.w, d: s.d, h: s.h, floors: s.h > 9.4 ? 3 : 2, wall: 9, roof: 0, sign: s.name, windows: Math.round(s.w / 3.6), columns: s.columns });
+      claim(s.x, s.z, s.w * 0.6);
+      const fx = Math.sin(s.rot);
+      const fz = Math.cos(s.rot);
+      add({ id: `school-${s.name}`, name: s.name, kind: s.name === '图书馆' ? 'read' : 'study', x: s.x + fx * 10, z: s.z + fz * 10, r: 10, hint: s.name === '图书馆' ? 'E 看书' : 'E 上课' });
+    }
+    LM.clockTower(b, { x: d.x + 30, z: d.z - 46, rotY: 0, h: 36 });
+    claim(d.x + 30, d.z - 46, 6);
+    for (const [dx, dz] of [[-16, -14], [16, -14], [-28, 10], [28, 12], [0, 22], [-44, 24], [46, -8]]) sakura.push([d.x + dx, d.z + dz]);
+    for (let i = 0; i < 4; i++) bench(b, d.x - 9 + i * 6, d.z + 8, 0);
+    // 观海台：崖边一圈栏杆、两条长椅
+    const vx = 808;
+    const vz = -512;
+    for (let i = 0; i < 9; i++) {
+      const a0 = -1.3 + (i / 9) * 2.6;
+      const a1 = -1.3 + ((i + 1) / 9) * 2.6;
+      fence(b, vx + Math.cos(a0) * 12, vz + Math.sin(a0) * 12, vx + Math.cos(a1) * 12, vz + Math.sin(a1) * 12, 1.1);
+    }
+    bench(b, vx + 5, vz - 4, -Math.PI / 2);
+    bench(b, vx + 5, vz + 4, -Math.PI / 2);
+    add({ id: 'viewpoint', name: '观海台', kind: 'village', x: vx, z: vz, r: 9, hint: 'E 看海', text: '崖下是海，海上是云。风很大，把校服的衣角吹得哗啦哗啦响。' });
+  }
+
+  // ===== 湖边小镇：红瓦小镇，尖顶教堂，两条木栈桥伸进月亮湖 =======================================================
+  {
+    const d = D('lakeside');
+    paintedHouse(d.x + 22, d.z + 44, { shape: 'church', scale: 1.2, turn: faceRoad(d.x + 22, d.z + 44), wall: WALLS[0], roof: [0.72, 0.3, 0.2] });
+    add({ id: 'church', name: '教堂', kind: 'pray', x: d.x + 22, z: d.z + 44, r: 15, hint: 'E 祈祷' });
+    add({ id: 'lakeside', name: '湖边小镇', kind: 'village', x: d.x + 4, z: d.z + 12, r: 10, hint: 'E 和镇上的人聊聊', text: '红瓦的小房子挤在湖边。咖啡店把桌子摆到了水边，阳伞下有人在画湖。' });
+    for (const [x, z] of [[176, -520], [182, -496], [172, -470]]) parasols.push([x, z]);
+  }
+
+  // ===== 高铁站：玻璃拱顶的大厅，铁路从背后的高架上过 =============================================================
+  const stationHall = { x: 20, z: 398 };
+
+  // ===== 海鲜排档：沙滩边一圈棚子和桌子 ===========================================================================
+  {
+    const d = D('seafood');
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * TAU + 0.2;
+      const x = d.x + Math.cos(a) * 15;
+      const z = d.z + Math.sin(a) * 15;
+      stall(b, { x, z, rotY: -a + Math.PI / 2, c1: i % 2 ? 'cloth#3' : 'cloth#2', c2: `cloth#${[0, 4, 1][i % 3]}` });
+      stallGoods.push({ x, z, y: heightAt(x, z) + 1.0, h: 0.5, name: ['shrimp', 'fish', 'dried-fish'][i % 3] });
+      claim(x, z, 2.6);
+    }
+    banner(b, d.x, d.z - 21, '海鲜排档', 0, 8);
+    for (const [dx, dz] of [[-5, -4], [5, -3], [0, 5], [-7, 6], [8, 6]]) parasols.push([d.x + dx, d.z + dz]);
+    claim(d.x, d.z, 10);
+    add({ id: 'seafood', name: '海鲜排档', kind: 'eat', x: d.x, z: d.z, r: 16, hint: 'E 吃海鲜' });
+    add({ id: 'beach-pier', name: '观海栈桥', kind: 'fish', x: 574, z: 534, r: 9, hint: 'E 钓鱼' });
+  }
+
+  // ===== 海边新城：一排排米色的公寓楼；码头、海堤、小灯塔 =========================================================
+  {
+    const BLOCKS = [
+      [-842, 298, 0, 7, 7], [-806, 296, 0, 9, 8], [-770, 300, 0, 6, 6], [-704, 298, 0, 8, 7], [-668, 300, 0, 6, 8],
+      [-842, 366, Math.PI, 6, 8], [-800, 364, Math.PI, 8, 6], [-700, 364, Math.PI, 7, 7], [-660, 366, Math.PI, 5, 6],
+      [-842, 432, 0, 8, 6], [-800, 434, 0, 6, 7], [-696, 432, 0, 9, 8], [-656, 434, 0, 6, 7],
+    ];
+    for (const [x, z, rot, floors, wall] of BLOCKS) {
+      if (!free(x, z, 13) || !dry(x, z, 6)) continue;
+      LM.apartment(b, { x, z, rotY: rot, w: 26, d: 13, floors, wall });
+      claim(x, z, 16);
+    }
+    for (const [x, z] of [[-770, 404], [-762, 392], [-778, 414], [-722, 300], [-756, 366], [-640, 400], [-720, 436]]) sakura.push([x, z]);
+    for (let i = 0; i < 3; i++) bench(b, -774 + i * 5, 398, 0);
+    add({ id: 'newtown', name: '海边新城', kind: 'village', x: -744, z: 344, r: 10, hint: 'E 看看', text: '楼是新的，阳台上晾着被子。楼下的樱花开了，老人在树下下棋。' });
+    // 码头
+    const lampAt = LM.beacon(b, { x: -836, z: 632, rotY: 0, h: 9, y: SEA.level + 2.3 });
+    if (lampAt) lanterns.push(lampAt);
+    add({ id: 'harbor', name: '码头', kind: 'village', x: -734, z: 496, r: 9, hint: 'E 看看码头', text: '小渔船挤在港湾里，桅杆轻轻碰着。海堤外面浪大，里面的水平得像一面镜子。' });
+    add({ id: 'harbor-pier', name: '码头栈桥', kind: 'fish', x: -705, z: 554, r: 8, hint: 'E 钓鱼' });
+  }
+
+  // ===== 田园小镇：红瓦农舍、两座风车、谷仓和草垛 =================================================================
+  {
+    const d = D('pastoral');
+    const w1 = LM.windmill(b, { x: d.x - 42, z: d.z - 36, rotY: 0.5, h: 13, wood: false });
+    if (w1) spinners.push({ kind: 'sails', ...w1, speed: 0.5 });
+    claim(d.x - 42, d.z - 36, 9);
+    const w2 = LM.windmill(b, { x: -962, z: -30, rotY: 1.2, h: 14, wood: true });
+    if (w2) spinners.push({ kind: 'sails', ...w2, speed: 0.42 });
+    claim(-962, -30, 9);
+    hall(b, { x: d.x + 44, z: d.z - 34, rotY: faceRoad(d.x + 44, d.z - 34), w: 18, d: 10, h: 6.4, floors: 1, wall: 3, roof: 0, windows: 4, sign: '谷仓' });
+    claim(d.x + 44, d.z - 34, 12);
+    for (const [x, z] of [[-905, -40], [-880, 10], [-930, 80], [-840, 120], [-800, 30], [-790, -50], [-900, 150], [-950, 20]]) LM.haystack(b, x, z, 0.9 + random() * 0.4);
+    add({ id: 'pastoral', name: '田园小镇', kind: 'village', x: d.x + 4, z: d.z + 8, r: 10, hint: 'E 和镇上的人聊聊', text: '风车慢慢地转。麦子黄了，拖拉机在田里来来回回，晒谷场上铺着一地金子。' });
+    add({ id: 'windmill', name: '老风车', kind: 'village', x: -956, z: -24, r: 8, hint: 'E 看风车', text: '木头风车有一百岁了，叶片上的帆布补了又补。转起来的时候，整座塔都在轻轻地哼。' });
+  }
+
+  // ===== 雪山小镇：原木屋、冰塘、雪人 =============================================================================
+  {
+    const d = D('snowtown');
+    LM.icePond(b, { x: d.x - 14, z: d.z + 18, r: 10 });
+    claim(d.x - 14, d.z + 18, 12);
+    for (const [dx, dz] of [[2, 12], [-28, 8], [10, 28], [-30, 34]]) LM.snowman(b, d.x + dx, d.z + dz, 0.9 + random() * 0.3);
+    for (const [dx, dz] of [[26, -10], [-40, -12], [34, 30]]) LM.logPile(b, d.x + dx, d.z + dz, 1);
+    add({ id: 'snowtown', name: '雪山小镇', kind: 'village', x: d.x + 6, z: d.z + 4, r: 10, hint: 'E 和镇上的人聊聊', text: '木屋的烟囱冒着白烟，孩子们在冰塘上滑冰。再往北，就是雪山了。' });
+    add({ id: 'icepond', name: '冰塘', kind: 'play', x: d.x - 14, z: d.z + 18, r: 9, hint: 'E 滑一会儿冰' });
+  }
+
+  // ===== 镇上的房子：先散着盖各个镇，再沿石板街排两排 =============================================================
+  scatter(-460, -112, 120, 34, STYLE.euro, { minR: 16, shops: 0.18 });
+  scatter(D('lakeside').x, D('lakeside').z, 92, 26, STYLE.euro, { minR: 10, shops: 0.2 });
+  scatter(D('seaside').x, D('seaside').z, 96, 34, STYLE.coast, { minR: 8, shops: 0.14, gap: 7.5 });
+  scatter(D('pastoral').x, D('pastoral').z, 82, 16, STYLE.farm, { minR: 10, shops: 0.05, gap: 10, turn: 'any' });
+  scatter(D('snowtown').x, D('snowtown').z, 84, 22, STYLE.snow, { minR: 16, shops: 0.06, gap: 10, turn: 'any' });
+  scatter(-452, 62, 56, 4, STYLE.farm, { minR: 20, shops: 0, gap: 10, turn: 'any' });
+
+  const lampSpots = [];
+  const treeSpots = []; // 行道树
+  {
+    for (const line of ROADS) {
+      if (line.kind !== 'street') continue;
+      let carry = 4;
+      for (let i = 0; i + 1 < line.length; i++) {
+        const [ax, az] = line[i];
+        const [bx, bz] = line[i + 1];
+        const len = Math.hypot(bx - ax, bz - az);
+        const ux = (bx - ax) / len;
+        const uz = (bz - az) / len;
+        const nx = -uz;
+        const nz = ux;
+        const style = styleAt((ax + bx) / 2, (az + bz) / 2);
+        for (const side of [-1, 1]) {
+          if (!style) break;
+          let t = carry + (side > 0 ? 3 : 0);
+          while (t < len - 3) {
+            const shape = pick(random, style.shapes);
+            const scale = 0.95 + random() * 0.22;
+            const eaves = random() < 0.55 || shape === 'long'; // 屋檐朝街（长边贴街），否则山墙朝街
+            const fp = FOOT[shape];
+            const along = (eaves ? fp[1] : fp[0]) * scale;
+            const deep = (eaves ? fp[0] : fp[1]) * scale;
+            const setback = STREET_HALF + 1.6 + random() * 1.6;
+            const px = ax + ux * (t + along / 2) + nx * side * (setback + deep / 2);
+            const pz = az + uz * (t + along / 2) + nz * side * (setback + deep / 2);
+            const r = Math.max(along, deep) * 0.5;
+            const ok = plazaDistance(px, pz) > 36 + r && roadEdge(px, pz) > deep / 2 + 0.6 && free(px, pz, r * 0.95) && dry(px, pz) && cityDistance(px, pz) < CITY_R + 10 + (style === STYLE.china ? 0 : 1e4);
+            if (ok && random() < 0.86) {
+              // 局部 +z 指向街
+              const face = Math.atan2(-nx * side, -nz * side);
+              paintedHouse(px, pz, { shape, scale, turn: face + (eaves ? Math.PI / 2 : 0), wall: pick(random, style.walls), roof: pick(random, style.roofs), shops: style === STYLE.china ? 0.34 : 0.2 });
+              t += along + 1.2 + random() * 2.8;
+            } else {
+              // 空出来的地方种一棵行道树
+              if (free(px, pz, 3) && roadEdge(px, pz) > 2 && plazaDistance(px, pz) > 33) treeSpots.push([ax + ux * (t + 3) + nx * side * (STREET_HALF + 2.8), az + uz * (t + 3) + nz * side * (STREET_HALF + 2.8)]);
+              t += 9 + random() * 5;
+            }
+          }
+        }
+        // 路灯：每 26 m 一盏，左右交替
+        for (let t = 8; t < len; t += 26) {
+          const side = Math.round(t / 26) % 2 ? 1 : -1;
+          const lx = ax + ux * t + nx * side * (STREET_HALF + 0.5);
+          const lz = az + uz * t + nz * side * (STREET_HALF + 0.5);
+          if (plazaDistance(lx, lz) < 32 || !free(lx, lz, 0.4)) continue;
+          lampSpots.push([lx, lz, Math.atan2(-nx * side, -nz * side)]);
+        }
+        carry = 2;
+      }
+    }
+    // 城与城之间的公路：隔得远一点也立一盏灯
+    for (const g of SEGS) {
+      if (g.kind !== 'road') continue;
+      const len = Math.hypot(g.bx - g.ax, g.bz - g.az);
+      for (let t = 20; t < len; t += 58) {
+        const side = Math.round(t / 58) % 2 ? 1 : -1;
+        const lx = g.ax + ((g.bx - g.ax) * t) / len - ((g.bz - g.az) / len) * side * (STREET_HALF + 0.9);
+        const lz = g.az + ((g.bz - g.az) * t) / len + ((g.bx - g.ax) / len) * side * (STREET_HALF + 0.9);
+        if (!free(lx, lz, 0.6) || riverAt(lx, lz).d < RIVER_HALF + 6) continue;
+        lampSpots.push([lx, lz, Math.atan2((g.bz - g.az) * side, -(g.bx - g.ax) * side)]);
+      }
+    }
+    for (const [lx, lz, r] of lampSpots) lamp(b, lx, lz, r);
+  }
+  // 广场一圈：高一点的房子把广场围起来，街口留着
+  {
+    const [px, pz] = PLAZA;
+    for (let i = 0; i < 22; i++) {
+      const a = (i / 22) * TAU + 0.07;
+      const x = px + Math.cos(a) * 41;
+      const z = pz + Math.sin(a) * 41;
+      // 北边留空：从广场要能一眼看到玉海宫
+      if (roadEdge(x, z) < 5.2 || !free(x, z, 4.4) || (z < pz - 22 && Math.abs(x - px) < 34)) continue;
+      paintedHouse(x, z, { shape: i % 3 ? 'tall' : 'house', scale: 1.02 + random() * 0.14, turn: Math.atan2(px - x, pz - z) + (i % 3 ? 0 : Math.PI / 2), wall: pick(random, STYLE.china.walls), roof: pick(random, STYLE.china.roofs), shops: 0.4 });
+    }
+  }
+  // 玉海城的巷子里：把空地填上，老城才挤挤挨挨的
+  scatter(YUHAI[0], YUHAI[1], CITY_R - 8, 150, STYLE.china, { gap: 7.2, road: 6.5, shops: 0.16, scale: [0.9, 0.3] });
+
+  // ===== 石桥：路跨过清溪河的地方 ================================================================================
   for (const br of BRIDGES) {
     const cos = Math.cos(br.rot);
     const sin = Math.sin(br.rot);
@@ -532,97 +718,293 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
       put(new THREE.BoxGeometry(0.34, 0.9, br.len), 'stone#2', sx * (br.w / 2 - 0.17), 0.45, 0);
       for (let i = 0; i <= 6; i++) put(new THREE.BoxGeometry(0.5, 1.25, 0.5), 'stone#0', sx * (br.w / 2 - 0.17), 0.62, -br.len / 2 + (i * br.len) / 6);
     }
+    claim(br.x, br.z, br.len / 2 + 6);
     add({ id: `bridge-${br.name}`, name: br.name, kind: 'village', x: br.x, z: br.z, r: 5, hint: 'E 看河', text: '河水清得能看见卵石。有小鱼逆着水往上游。' });
   }
 
-  // ===== 公交站牌 ==================================================================
+  // ===== 栈桥、木栈台、海堤、石码头 ==============================================================================
+  {
+    const moles = [];
+    for (const p of PIERS) {
+      const sin = Math.sin(p.rot);
+      const cos = Math.cos(p.rot);
+      const a = [p.x - sin * (p.len / 2), p.z - cos * (p.len / 2)];
+      const e = [p.x + sin * (p.len / 2), p.z + cos * (p.len / 2)];
+      if (p.kind === 'mole') moles.push({ a, e, top: p.deck });
+      else if (p.kind === 'quay') {
+        b.add(new THREE.BoxGeometry(p.w, 9, p.len), 'stone#2', [p.x, p.deck - 4.5, p.z], p.rot);
+        b.add(new THREE.BoxGeometry(p.w + 0.5, 0.3, p.len + 0.5), 'stone#1', [p.x, p.deck - 0.1, p.z], p.rot);
+        for (let k = 0; k <= 5; k++) for (const sx of [-1, 1]) b.add(new THREE.CylinderGeometry(0.26, 0.32, 0.7, 8), 'iron#0', [p.x + sin * (-p.len / 2 + 6 + k * ((p.len - 12) / 5)) + cos * sx * (p.w / 2 - 0.8), p.deck + 0.35, p.z + cos * (-p.len / 2 + 6 + k * ((p.len - 12) / 5)) - sin * sx * (p.w / 2 - 0.8)]);
+      } else LM.pier(b, { x: a[0], z: a[1], rotY: p.rot, len: p.len, w: p.w, top: p.deck });
+      claim(p.x, p.z, Math.min(p.len, 30) / 2);
+    }
+    // 海堤：把三段连成一条，两边堆着大石头
+    if (moles.length) LM.breakwater(b, [moles[0].a, moles[0].e, moles[1].e, moles[2].e], { top: moles[0].top });
+  }
+
+  // ===== 公交站牌（37 路）和地铁口（1 号线）======================================================================
   for (const st of BUS_STOPS) {
     const gy = heightAt(st.x, st.z - 5);
     b.add(new THREE.CylinderGeometry(0.06, 0.06, 2.8, 6), 'iron#0', [st.x, gy + 1.4, st.z - 5]);
-    b.add(new THREE.BoxGeometry(3.4, 0.12, 1.4), 'cloth#1', [st.x + 1.4, gy + 2.5, st.z - 5]);
+    b.add(new THREE.BoxGeometry(3.4, 0.12, 1.4), 'cloth#2', [st.x + 1.4, gy + 2.5, st.z - 5]);
     b.add(new THREE.BoxGeometry(2.6, 0.12, 0.5), 'wood#1', [st.x + 1.4, gy + 0.5, st.z - 5.3]);
     for (const dx of [0.2, 2.6]) b.add(new THREE.CylinderGeometry(0.05, 0.05, 2.5, 6), 'iron#0', [st.x + dx, gy + 1.25, st.z - 5.5]);
-    b.addSign(`1路 ${st.name}`, [st.x, gy + 2.2, st.z - 4.9], 0, { w: 2.2, h: 0.5, bg: '#e8a13a', fg: '#3a2a1c' });
-    add({ id: `bus-${st.name}`, name: `公交站 · ${st.name}`, kind: 'bus', x: st.x + 1, z: st.z - 4, r: 5, hint: 'E 坐 1 路公交', stop: st.name });
+    b.addSign(`37路 ${st.name}`, [st.x, gy + 2.2, st.z - 4.9], 0, { w: 2.6, h: 0.5, bg: '#e8a13a', fg: '#3a2a1c' });
+    claim(st.x + 1.2, st.z - 5, 2.6);
+    add({ id: `bus-${st.name}`, name: `公交站 · ${st.name}`, kind: 'bus', line: '37 路公交', x: st.x + 1, z: st.z - 4, r: 5, hint: 'E 坐 37 路公交', stop: st.name });
+  }
+  for (const st of METRO_STOPS) {
+    const gy = heightAt(st.x, st.z);
+    b.add(new THREE.BoxGeometry(4.2, 0.3, 5.2), 'stone#2', [st.x, gy + 0.05, st.z]);
+    for (const [dx, dz] of [[-1.8, -2.3], [1.8, -2.3], [-1.8, 2.3], [1.8, 2.3]]) b.add(new THREE.CylinderGeometry(0.09, 0.09, 2.8, 6), 'iron#0', [st.x + dx, gy + 1.5, st.z + dz]);
+    b.add(new THREE.BoxGeometry(4.6, 0.2, 5.6), 'paint#9', [st.x, gy + 2.95, st.z]);
+    b.add(new THREE.BoxGeometry(3.6, 1.0, 0.12), 'glass#2', [st.x, gy + 0.9, st.z - 2.3]);
+    b.addSign(`Ⓜ ${st.name}`, [st.x, gy + 2.5, st.z + 2.86], 0, { w: 3.6, h: 0.6, bg: '#6a48b0', fg: '#ffffff' });
+    b.collide(st.x, st.z - 2.3, 1.9, 0.2, 3);
+    claim(st.x, st.z, 4);
+    add({ id: `metro-${st.name}`, name: `地铁 · ${st.name}`, kind: 'bus', line: '地铁 1 号线', x: st.x, z: st.z + 1, r: 4.5, hint: 'E 坐地铁 1 号线', stop: st.name });
   }
 
-  // ===== 沿街的房子：每条石板街两边各一排，山墙和屋檐交替着朝街 =====================
-  const lampSpots = [];
-  const treeSpots = []; // 行道树
+  // ===== 高铁：站房、小站、高架、会跑的车 ========================================================================
+  let train = null;
+  const rail = (() => {
+    const ground = railXZ.map(([x, z]) => Math.max(heightAt(x, z), waterAt(x, z) ?? -99));
+    const blur = (arr, r) => {
+      const out = new Array(arr.length);
+      let sum = 0;
+      const n = arr.length;
+      for (let i = -r; i <= r; i++) sum += arr[Math.min(n - 1, Math.max(0, i))];
+      for (let i = 0; i < n; i++) {
+        out[i] = sum / (2 * r + 1);
+        sum += arr[Math.min(n - 1, i + r + 1)] - arr[Math.max(0, i - r)];
+      }
+      return out;
+    };
+    let y = ground.map((g) => g + 7.5);
+    for (let pass = 0; pass < 4; pass++) y = blur(y, 24).map((v, i) => Math.max(v, ground[i] + 3.4));
+    y = blur(y, 5).map((v, i) => Math.max(v, ground[i] + 2.6));
+    const path = railXZ.map(([x, z], i) => [x, y[i], z]);
+    const cum = [0];
+    for (let i = 1; i < path.length; i++) cum.push(cum[i - 1] + Math.hypot(path[i][0] - path[i - 1][0], path[i][2] - path[i - 1][2]));
+    const nearest = (x, z) => {
+      let best = 0;
+      let bd = 1e9;
+      railXZ.forEach((p, i) => {
+        const d2 = (p[0] - x) ** 2 + (p[1] - z) ** 2;
+        if (d2 < bd) {
+          bd = d2;
+          best = i;
+        }
+      });
+      return best;
+    };
+    return { path, cum, nearest };
+  })();
   {
-    const shapes = ['house', 'house', 'tall', 'cottage', 'wing', 'house', 'tall', 'cottage'];
-    for (const line of ROADS) {
-      let carry = 4;
-      for (let i = 0; i + 1 < line.length; i++) {
-        const [ax, az] = line[i];
-        const [bx, bz] = line[i + 1];
-        const len = Math.hypot(bx - ax, bz - az);
-        const ux = (bx - ax) / len;
-        const uz = (bz - az) / len;
-        const nx = -uz;
-        const nz = ux;
-        if (cityDistance((ax + bx) / 2, (az + bz) / 2) > 380) continue;
-        for (const side of [-1, 1]) {
-          let t = carry + (side > 0 ? 3 : 0);
-          while (t < len - 3) {
-            const shape = pick(random, shapes);
-            const scale = 0.95 + random() * 0.22;
-            const eaves = random() < 0.55; // 屋檐朝街（长边贴街），否则山墙朝街
-            const fp = { cottage: [7, 10], house: [7.5, 11], wing: [10.5, 11], tall: [7, 8.5] }[shape];
-            const along = (eaves ? fp[1] : fp[0]) * scale;
-            const deep = (eaves ? fp[0] : fp[1]) * scale;
-            const setback = STREET_HALF + 1.6 + random() * 1.6;
-            const px = ax + ux * (t + along / 2) + nx * side * (setback + deep / 2);
-            const pz = az + uz * (t + along / 2) + nz * side * (setback + deep / 2);
-            const r = Math.max(along, deep) * 0.5;
-            const ok = plazaDistance(px, pz) > 36 + r && roadEdge(px, pz) > deep / 2 + 0.6 && free(px, pz, r * 0.95) && cityDistance(px, pz) < 400 && lakeDistance(px, pz) > 1.3 && Math.hypot(px - HOME[0], pz - (HOME[1] - 8)) > 30;
-            if (ok && random() < 0.84) {
-              // 局部 +z 指向街
-              const face = Math.atan2(-nx * side, -nz * side);
-              paintedHouse(px, pz, { shape, scale, turn: face + (eaves ? Math.PI / 2 : 0) });
-              t += along + 1.2 + random() * 2.8;
-            } else {
-              // 空出来的地方种一棵行道树
-              if (ok === false && free(px, pz, 3) && roadEdge(px, pz) > 2 && plazaDistance(px, pz) > 33) treeSpots.push([ax + ux * t + nx * side * (STREET_HALF + 2.4), az + uz * t + nz * side * (STREET_HALF + 2.4)]);
-              else if (ok) treeSpots.push([ax + ux * (t + 4) + nx * side * (STREET_HALF + 3.5), az + uz * (t + 4) + nz * side * (STREET_HALF + 3.5)]);
-              t += 9 + random() * 5;
-            }
-          }
-        }
-        // 路灯：每 26 m 一盏，左右交替
-        for (let t = 8; t < len; t += 26) {
-          const side = Math.round(t / 26) % 2 ? 1 : -1;
-          const lx = ax + ux * t + nx * side * (STREET_HALF + 0.5);
-          const lz = az + uz * t + nz * side * (STREET_HALF + 0.5);
-          if (plazaDistance(lx, lz) < 32) continue;
-          lampSpots.push([lx, lz, Math.atan2(-nx * side, -nz * side)]);
-        }
-        carry = 2;
+    // 总站
+    const si = rail.nearest(20, 372);
+    const gy = heightAt(stationHall.x, stationHall.z);
+    LM.grandStation(b, { x: stationHall.x, z: stationHall.z, rotY: 0, w: 70, d: 30, h: 18, sign: '高铁站', y: gy, platformY: rail.path[si][1] - gy - 0.2 });
+    claim(stationHall.x, stationHall.z, 40);
+    claim(stationHall.x, stationHall.z + 30, 16);
+    RAIL_STATIONS.find((s) => s.main).exit = [stationHall.x, stationHall.z + 30];
+    add({ id: 'station', name: '高铁站', kind: 'station', stop: '高铁站', x: stationHall.x, z: stationHall.z + 26, r: 12, hint: 'E 看车次' });
+    for (const sx of [-1, 1]) for (let k = 0; k < 3; k++) lamp(b, stationHall.x + sx * (14 + k * 12), stationHall.z + 34, 0);
+    for (const sx of [-1, 1]) bench(b, stationHall.x + sx * 8, stationHall.z + 40, 0);
+    // 四个小站：站房朝着镇子那一边
+    const toward = { 雪山高铁站: 'snowtown', 田园高铁站: 'pastoral', 大学城站: 'university', 湖边小镇站: 'lakeside' };
+    for (const st of RAIL_STATIONS) {
+      if (st.main) continue;
+      const i = rail.nearest(st.x, st.z);
+      const p = rail.path[i];
+      const q = rail.path[Math.min(rail.path.length - 1, i + 1)];
+      const o = rail.path[Math.max(0, i - 1)];
+      const tl = Math.hypot(q[0] - o[0], q[2] - o[2]) || 1;
+      const tx = (q[0] - o[0]) / tl;
+      const tz = (q[2] - o[2]) / tl;
+      let rot = Math.atan2(-tz, tx); // 局部 x 沿着铁轨
+      const town = D(toward[st.name]);
+      if (Math.sin(rot) * (town.x - p[0]) + Math.cos(rot) * (town.z - p[2]) < 0) rot += Math.PI;
+      LM.smallStation(b, { x: p[0], z: p[2], rotY: rot, name: st.name, deckY: p[1] });
+      const ex = p[0] + Math.sin(rot) * 20;
+      const ez = p[2] + Math.cos(rot) * 20;
+      st.exit = [ex, ez];
+      claim(p[0] + Math.sin(rot) * 10, p[2] + Math.cos(rot) * 10, 13);
+      add({ id: `station-${st.name}`, name: st.name, kind: 'station', stop: st.name, x: ex, z: ez, r: 7, hint: 'E 看车次' });
+    }
+    // 高架：有路、有河、有房子的地方不立桥墩
+    LM.viaduct(b, rail.path, { width: 8, pierEvery: 24, groundAt: heightAt, skip: (x, z) => roadEdge(x, z) < 4 || riverAt(x, z).d < RIVER_HALF + 3 || lakeDistance(x, z) < 1.06 || !free(x, z, 1.6) || heightAt(x, z) < SEA.level + 0.3 });
+    // 两头钻进山里：一座石头的隧道口
+    for (const end of [0, rail.path.length - 1]) {
+      const p = rail.path[end];
+      const q = rail.path[end ? end - 1 : 1];
+      const rot = Math.atan2(q[0] - p[0], q[2] - p[2]);
+      b.add(new THREE.BoxGeometry(15, 13, 5), 'stone#0', [p[0] - Math.sin(rot) * 1.5, p[1] + 2, p[2] - Math.cos(rot) * 1.5], rot);
+      b.add(new THREE.BoxGeometry(8.6, 6.4, 5.4), 'iron#0', [p[0] - Math.sin(rot) * 1.4, p[1] + 3.3, p[2] - Math.cos(rot) * 1.4], rot);
+      b.add(new THREE.BoxGeometry(16, 1, 6), 'stone#1', [p[0] - Math.sin(rot) * 1.5, p[1] + 8.8, p[2] - Math.cos(rot) * 1.5], rot);
+    }
+    const stops = RAIL_STATIONS.map((s) => rail.cum[rail.nearest(s.x, s.z)]).sort((p, q) => p - q);
+    train = LM.createTrain(shared, rail.path.slice(6, rail.path.length - 6), { cars: 5, speed: 34, stops: stops.map((s) => s - rail.cum[6]).filter((s) => s > 30), dwell: 8, loop: false, accel: 2.2 });
+    if (train?.group) group.add(train.group);
+  }
+
+  // ===== 打磨：亭子、牌坊、海滩小屋、货轮、CBD 的裙楼和街心花园 ==================================================
+  const paved = []; // 铺石板的小广场：[x, z, 半径]
+  {
+    /** 一座小亭子：四根朱红柱子、青灰的攒尖顶、四角起翘 */
+    const pavilion = (x, z, s = 1) => {
+      const gy = heightAt(x, z);
+      b.add(new THREE.CylinderGeometry(3.6 * s, 3.9 * s, 0.5, 8), 'stone#2', [x, gy + 0.2, z]);
+      for (const [dx, dz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) b.add(new THREE.CylinderGeometry(0.2 * s, 0.2 * s, 3.2 * s, 8), 'paint#7', [x + dx * 2.2 * s, gy + 0.45 + 1.6 * s, z + dz * 2.2 * s]);
+      b.add(new THREE.BoxGeometry(5.2 * s, 0.3 * s, 5.2 * s), 'cloth#1', [x, gy + 0.45 + 3.3 * s, z]);
+      b.add(hipRoof(7 * s, 7 * s, 2.4 * s), 'roof#10', [x, gy + 0.45 + 3.45 * s + 1.2 * s, z]);
+      for (const [dx, dz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+        const tip = new THREE.BoxGeometry(1.6 * s, 0.2 * s, 0.4 * s);
+        tip.rotateZ(0.4 * dx);
+        b.add(tip, 'roof#10', [x + dx * 3.2 * s, gy + 0.45 + 3.75 * s, z + dz * 3.2 * s], -dx * dz * Math.PI / 4);
+      }
+      b.add(new THREE.SphereGeometry(0.32 * s, 8, 6), 'paint#4', [x, gy + 0.45 + 6.1 * s, z]);
+      for (const sx of [-1, 1]) b.add(new THREE.BoxGeometry(0.4, 0.45, 3.2 * s), 'wood#1', [x + sx * 2.2 * s, gy + 0.9, z]);
+      for (const [dx, dz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) b.collide(x + dx * 2.2 * s, z + dz * 2.2 * s, 0.3, 0.3, 4);
+      claim(x, z, 5 * s);
+    };
+    // 环城绿带上四座亭子，月亮湖南岸、大学城观海台边、家门口的河湾各一座
+    for (const [x, z, name, text] of [
+      [40 - 258, -60 + 70, '听风亭', '风从河那边吹过来，带着一点麦子的味道。'],
+      [40 + 250, -60 + 96, '望海亭', '天气好的时候，能看见东边港口的吊机。'],
+      [40 + 120, -60 - 232, '松月亭', '北边就是月亮湖。夜里月亮会掉进湖里。'],
+      [40 - 110, -60 + 242, '樱雪亭', '春天的时候，樱花瓣会落满亭子的台阶。'],
+      [-20, -428, '湖心亭', '湖面很静，偶尔有鱼跳起来，啪的一声。'],
+      [778, -534, '观潮亭', '潮水一下一下拍着崖脚。'],
+      [-632, 26, '河湾亭', '清溪河在这里拐了个弯，水声很轻。'],
+    ]) {
+      if (!free(x, z, 5) || roadEdge(x, z) < 5 || !dry(x, z, 2)) continue;
+      pavilion(x, z, 1);
+      add({ id: `pavilion-${name}`, name, kind: 'village', x: x + 4.6, z, r: 5, hint: 'E 坐一会儿', text });
+      sakura.push([x - 7, z + 5], [x + 6, z - 7]);
+    }
+    // 牌坊：老街、南市街的街口
+    for (const [x, z, rot, text] of [[130, -96, 0, '老街'], [-168, 126, Math.PI / 2, '南市街'], [40, 20, 0, '玉海城'], [-470, -176, 0, 'AI 小镇']]) {
+      gate(b, { x, z, rotY: rot, text });
+      claim(x, z, 9);
+    }
+    // 中轴大街两边一路石灯笼
+    for (let z = -8; z < 150; z += 22) for (const sx of [-1, 1]) if (free(40 + sx * 5.4, z, 0.6)) stoneLantern(b, 40 + sx * 5.4, z);
+
+    // CBD：几栋矮一点的裙楼把空地围起来，街心花园种一圈樱花
+    for (const [x, z, w, dd, h, glass, style] of [[470, 22, 24, 16, 22, 1, 0], [520, 60, 20, 18, 30, 2, 1], [392, 70, 22, 16, 18, 2, 2], [330, 40, 20, 16, 24, 1, 2], [600, -30, 22, 18, 26, 2, 0], [452, 92, 26, 14, 14, 1, 2]]) {
+      if (!free(x, z, w * 0.62) || roadEdge(x, z) < Math.max(w, dd) / 2 + 1 || !dry(x, z, 6)) continue;
+      LM.tower(b, { x, z, rotY: 0, w, d: dd, h, glass, style });
+      claim(x, z, Math.max(w, dd) * 0.72);
+    }
+    for (let i = 0; i < 14; i++) {
+      const a = (i / 14) * TAU;
+      const x = 430 + Math.cos(a) * 30;
+      const z = 44 + Math.sin(a) * 22;
+      if (free(x, z, 2.4) && roadEdge(x, z) > 3) {
+        sakura.push([x, z]);
+        claim(x, z, 2.2);
       }
     }
-    for (const [lx, lz, r] of lampSpots) lamp(b, lx, lz, r);
-  }
+    for (let i = 0; i < 4; i++) bench(b, 422 + i * 5.5, 44, 0);
+    for (let z = -190; z < 10; z += 19) for (const sx of [-1, 1]) if (free(449 + sx * 7.5, z, 2) && roadEdge(449 + sx * 7.5, z) > 2.5) sakura.push([449 + sx * 7.5, z]);
 
-  // 广场一圈：高一点的房子把广场围起来，街口留着
-  {
-    const [px, pz] = PLAZA;
-    for (let i = 0; i < 22; i++) {
-      const a = (i / 22) * Math.PI * 2 + 0.07;
-      const x = px + Math.cos(a) * 40.5;
-      const z = pz + Math.sin(a) * 40.5;
-      if (roadEdge(x, z) < 5.2 || !free(x, z, 4.4)) continue;
-      paintedHouse(x, z, { shape: i % 3 ? 'tall' : 'house', scale: 1.02 + random() * 0.14, turn: Math.atan2(px - x, pz - z) + (i % 3 ? 0 : Math.PI / 2) });
+    // 沙滩后面一排彩色的更衣小屋，一座救生员的瞭望台
+    {
+      const HUT = ['cloth#0', 'cloth#1', 'cloth#2', 'cloth#4', 'paint#1', 'paint#2'];
+      let n = 0;
+      for (let x = 236; x < 372 && n < 9; x += 7.2) {
+        let z = 400;
+        while (z < 640 && coastD(x, z) > 118) z += 2;
+        if (z >= 640 || !free(x, z, 3) || roadEdge(x, z) < 6) continue;
+        const gy = heightAt(x, z);
+        b.add(new THREE.BoxGeometry(3.4, 3, 3.6), n % 2 ? 'wall#6' : HUT[n % HUT.length], [x, gy + 1.5, z]);
+        b.add(gableRoof(4.2, 4.4, 1.5), HUT[(n + 2) % HUT.length], [x, gy + 3, z]);
+        b.add(new THREE.BoxGeometry(1.1, 2, 0.12), 'wood#0', [x, gy + 1, z + 1.84]);
+        b.add(new THREE.BoxGeometry(3.8, 0.24, 1.4), 'wood#1', [x, gy + 0.1, z + 2.4]);
+        b.collide(x, z, 1.8, 1.9, 5);
+        claim(x, z, 3);
+        n++;
+      }
+      let lx = 470;
+      let lz = 400;
+      while (lz < 640 && coastD(lx, lz) > 62) lz += 2;
+      const gy = heightAt(lx, lz);
+      for (const [dx, dz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) b.add(new THREE.CylinderGeometry(0.12, 0.14, 4.4, 6), 'wood#1', [lx + dx * 1.2, gy + 2.2, lz + dz * 1.2]);
+      b.add(new THREE.BoxGeometry(3.2, 0.2, 3.2), 'wood#1', [lx, gy + 4.4, lz]);
+      b.add(new THREE.BoxGeometry(2.6, 1.8, 2.6), 'wall#6', [lx, gy + 5.4, lz]);
+      b.add(hipRoof(3.8, 3.8, 1.2), 'cloth#0', [lx, gy + 6.9, lz]);
+      b.add(new THREE.BoxGeometry(0.3, 4.6, 1), 'wood#2', [lx, gy + 2.2, lz + 2.1]);
+      b.collide(lx, lz, 1.5, 1.5, 7);
+      claim(lx, lz, 3.5);
+      add({ id: 'lifeguard', name: '救生员瞭望台', kind: 'village', x: lx + 3, z: lz, r: 4, hint: 'E 看看', text: '救生员在台上打瞌睡，红白相间的救生圈挂在栏杆上。今天浪不大，适合冲浪。' });
     }
+
+    // 港口：一艘靠在码头上的货轮
+    {
+      const sx = 836;
+      const sz = 93;
+      const y0 = SEA.level;
+      const hull = new THREE.BoxGeometry(64, 6.4, 13);
+      b.add(hull, 'paint#7', [sx, y0 + 0.2, sz]);
+      b.add(new THREE.BoxGeometry(64.4, 3.4, 13.4), 'cloth#4', [sx, y0 + 4.2, sz]);
+      const bow = new THREE.CylinderGeometry(6.7, 6.7, 9.6, 3);
+      bow.rotateY(Math.PI / 2 + Math.PI / 6);
+      b.add(bow, 'cloth#4', [sx + 35.2, y0 + 1.1, sz], Math.PI);
+      b.add(new THREE.BoxGeometry(62, 0.3, 12.4), 'wood#1', [sx, y0 + 6, sz]);
+      b.add(new THREE.BoxGeometry(10, 9, 11), 'paint#5', [sx - 24, y0 + 10.6, sz]);
+      b.add(new THREE.BoxGeometry(10.4, 1.2, 11.4), 'glass#0', [sx - 24, y0 + 12.6, sz]);
+      b.add(new THREE.BoxGeometry(11.4, 0.4, 12.4), 'paint#5', [sx - 24, y0 + 15.2, sz]);
+      b.add(new THREE.CylinderGeometry(1.5, 1.8, 5, 12), 'paint#7', [sx - 27, y0 + 17.6, sz]);
+      b.add(new THREE.CylinderGeometry(1.56, 1.56, 1, 12), 'iron#0', [sx - 27, y0 + 19.2, sz]);
+      const BOX = ['paint#1', 'cloth#1', 'cloth#0', 'paint#2', 'cloth#2', 'wall#6'];
+      for (let i = 0; i < 7; i++) for (let j = 0; j < 2; j++) for (let k = 0; k < (i + j) % 3 + 1; k++) b.add(new THREE.BoxGeometry(6, 2.5, 4.6), BOX[(i * 3 + j + k) % BOX.length], [sx - 12 + i * 6.3, y0 + 7.4 + k * 2.55, sz - 2.6 + j * 5.2]);
+      add({ id: 'cargo-ship', name: '货轮「玉海号」', kind: 'village', x: 812, z: 60, r: 9, hint: 'E 看看货轮', text: '船身上刷着「玉海号」三个字。水手说，装满了就走，去很远的地方。' });
+    }
+
+    // 湖边小镇：水边的咖啡座，一排矮栏杆
+    for (let z = -536; z < -456; z += 9) if (free(188, z, 1)) fence(b, 188, z, 188, z + 9, 0.9);
+    for (const [x, z] of [[196, -508], [200, -488], [194, -470]]) activityDecorLater.push({ name: 'infra-picnic-table', x, z, h: 0.9, r: 0.6 });
+    // 田园小镇：晒谷场、沿着土路的木栅栏
+    fence(b, -900, -118, -930, -108, 1);
+    fence(b, -930, -108, -958, -64, 1);
+    for (const [x, z] of [[-838, -172], [-830, -180], [-846, -182]]) LM.haystack(b, x, z, 0.8);
+    // 铺石板的小广场：高铁站前、市民广场、AI 小镇、大学城、集市、清真寺、夫子庙、码头
+    paved.push([722, 72, 30], [738, 130, 26], [20, 434, 30], [492, -62, 24], [-460, -112, 18], [640, -470, 16], [170, 62, 17], [-118, -132, 13], [196, -196, 15], [-735, 492, 20], [-165, -8, 17], [804, -512, 12]);
   }
 
-  // ===== 收尾：合并建筑 + 把画出来的那片房子实例化 ==================================
+  // ===== 各区的特色玩法（滑雪、开船、冲浪、采摘……）：道具和交互点都在 activities.js 里 =====
+  /** 玩法要的手绘立牌（life 图集）：[{ name, x, z, h, y? }]，后面和街景小物一起画 */
+  const activityDecor = [];
+  const activities = placeActivities({ THREE, b, LM, add, claim, free, dry, district, random, gardenPlots, parasols, sakura, lanterns, decor: activityDecor, shared, group });
+
+  // ===== 收尾：合并建筑 + 把画出来的那片房子实例化 ================================================================
   const buildingMeshes = b.build(group);
   if (painted.length) {
-    addBuildings(group, createBuildingMaterial({ uniforms: shared }), painted, heightAt);
+    // 按 400 m 的格子分批实例化：看不见的那几格显卡直接跳过（原来一整城的房子每帧都要过一遍顶点）
+    const material = createBuildingMaterial({ uniforms: shared });
+    const cells = new Map();
+    for (const h of painted) {
+      const key = `${Math.floor((h.x + HALF) / 400)},${Math.floor((h.z + HALF) / 400)}`;
+      if (!cells.has(key)) cells.set(key, []);
+      cells.get(key).push(h);
+    }
+    for (const list of cells.values()) {
+      const before = group.children.length;
+      addBuildings(group, material, list, heightAt);
+      for (let i = before; i < group.children.length; i++) {
+        const mesh = group.children[i];
+        mesh.computeBoundingSphere?.();
+        if (mesh.boundingSphere) {
+          mesh.boundingSphere.radius += 6;
+          mesh.frustumCulled = true;
+        }
+      }
+    }
   }
   buildingMeshes.painted = painted.length;
 
-  // ===== 路面和广场 ============================================================
+  // ===== 路面和广场 ============================================================================================
   {
     const geo = roadGeometry(SEGS.filter((g) => !g.lane), STREET_HALF * 2 + 1.2);
     // ?roadtex=1 时用手绘贴图版（鹅卵石路 + 石板广场），否则仍是程序化画的那条
@@ -634,30 +1016,90 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     const plaza = new THREE.Mesh(plazaGeometry(PLAZA, 31.5), plazaAlb ? roadMaterialTextured(shared, plazaAlb, { scale: 0.2, lit: [0.68, 0.64, 0.58] }) : roadMaterial(shared, 1));
     plaza.matrixAutoUpdate = false;
     group.add(plaza);
+    // 各处的小广场：同一种石板地
+    for (const [x, z, r] of paved) {
+      const m = new THREE.Mesh(plazaGeometry([x, z], r), plaza.material);
+      m.matrixAutoUpdate = false;
+      group.add(m);
+    }
   }
 
-  // ===== 树 ====================================================================
+  // ===== 雪：雪山小镇那一片，地上盖一层贴着地形的雪 ===============================================================
+  {
+    const STEP = 4;
+    const x0 = -984;
+    const z0 = -980;
+    const nx = Math.round(484 / STEP);
+    const nz = Math.round(656 / STEP);
+    const pos = [];
+    const uv = [];
+    const keep = [];
+    for (let j = 0; j <= nz; j++) {
+      for (let i = 0; i <= nx; i++) {
+        const x = x0 + i * STEP;
+        const z = z0 + j * STEP;
+        const s = snowAt(x, z);
+        const k = smooth(0.12, 0.6, s);
+        const h = heightAt(x, z);
+        // 边上往地里沉：雪和草地的交界就成了一条参差的线；路上踩实了，薄一点
+        const trodden = 1 - smooth(-0.5, 1.6, roadEdge(x, z));
+        // 一点点雪堆的起伏：平涂的明暗两色才有地方落
+        const drift = (fbm(x / 13 + 1.7, z / 13 - 4.2, 2, 131) - 0.5) * 2.6 * k * (1 - trodden);
+        pos.push(x, h - 0.9 + 1.25 * k - 0.36 * trodden + Math.max(-0.12, drift), z);
+        uv.push(x / 9, z / 9);
+        keep.push(s > 0.02 && h < 150 && waterAt(x, z) == null);
+      }
+    }
+    const idx = [];
+    for (let j = 0; j < nz; j++) {
+      for (let i = 0; i < nx; i++) {
+        const a = j * (nx + 1) + i;
+        const c = a + nx + 1;
+        if (!(keep[a] || keep[a + 1] || keep[c] || keep[c + 1])) continue;
+        idx.push(a, c, a + 1, a + 1, c, c + 1);
+      }
+    }
+    if (idx.length) {
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+      geo.setIndex(idx);
+      geo.computeVertexNormals();
+      geo.computeBoundingSphere();
+      const snow = new THREE.Mesh(geo, paintMaterial(shared, { lit: [0.96, 0.97, 1.0], shade: [0.76, 0.84, 0.97], kind: 'flat' }));
+      snow.matrixAutoUpdate = false;
+      group.add(snow);
+    }
+  }
+
+  // ===== 树 ====================================================================================================
   // 用原作那一套会"长"的树：城里是行道树和院子里的树，城外成丛成片，林子里连成一体。
   const grove = [];
   const pines = [];
   {
-    const TAU = Math.PI * 2;
     const tree = (x, z, kind, scale) => {
       if (lakeDistance(x, z) < 1.16 || Math.abs(x) > HALF - 30 || Math.abs(z) > HALF - 30) return false;
-      if (riverAt(x, z).d < RIVER_HALF + 5 || x > coastX(z) - 70 || !free(x, z, 1.5)) return false;
+      if (riverAt(x, z).d < RIVER_HALF + 5 || coastD(x, z) < 52 || !free(x, z, 1.5) || railNear(x, z, 6)) return false;
       if (roadEdge(x, z) < (kind === 0 ? 4 : 1.6)) return false;
+      if (skiAt(x, z).k > 0.8) return false;
+      if (snowAt(x, z) > 0.3) {
+        // 雪地里是松
+        snowPines.push([x, z, scale]);
+        return true;
+      }
       grove.push([x, z, kind, scale, random() * TAU]);
       return true;
     };
     const mid = () => 1 + Math.floor(random() * 3);
-    // 镇上的大树：广场边、家的院子、庙前、教堂边、学校操场、村口——眼睛想看到一棵的地方
-    for (const [x, z, s] of [[PLAZA[0] - 22, PLAZA[1] + 20, 0.82], [HOME[0] - 15, HOME[1] - 3, 0.9], [-246, -196, 0.9], [-186, -120, 0.8], [-296, -6, 0.95], [-612, 500, 1.0], [214, 204, 0.8], [GATE[0] + 26, GATE[1] + 30, 0.9], [300, 126, 0.85]]) {
+    // 眼睛想看到一棵大树的地方：宫前、家的院子、庙前、小镇广场、校园、村口
+    for (const [x, z, s] of [[PLAZA[0] - 23, PLAZA[1] + 19, 0.82], [HOME[0] - 15, HOME[1] - 3, 0.9], [HOME[0] + 22, HOME[1] + 16, 0.85], [-448, -100, 0.9], [176, -178, 0.85], [-140, -150, 0.85], [640, -452, 0.95], [-880, -128, 1.0], [270, -486, 0.85], [-436, 40, 0.9], [70, 258, 0.9], [-300, -90, 0.9], [760, -150, 0.8]]) {
       if (tree(x, z, 0, s)) claim(x, z, 5);
     }
     // 行道树
     for (const [x, z] of treeSpots) {
       if (!free(x, z, 2.2) || random() > 0.8) continue;
-      if (tree(x, z, mid(), 0.5 + random() * 0.22)) claim(x, z, 3);
+      if (cityDistance(x, z) < RING_R && random() < 0.45) sakura.push([x, z]);
+      else if (tree(x, z, mid(), 0.5 + random() * 0.22)) claim(x, z, 3);
     }
     // 院子里、屋后：每栋房子背后有一半的机会长一棵
     for (const h of painted.slice()) {
@@ -670,19 +1112,43 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
       if (random() < 0.4) tree(x, z, 7 + (random() < 0.5 ? 0 : 1), 0.8 + random() * 0.8);
       else if (tree(x, z, mid(), 0.5 + random() * 0.3)) claim(x, z, 3);
     }
+    // 环城绿带：老城和环城路之间一圈树，樱花一团一团的
+    for (let i = 0; i < 150; i++) {
+      const a = (i / 150) * TAU + random() * 0.03;
+      const r = CITY_R + 8 + random() * (RING_R - CITY_R - 22);
+      const x = YUHAI[0] + Math.cos(a) * r;
+      const z = YUHAI[1] + Math.sin(a) * r;
+      if (!free(x, z, 3) || roadEdge(x, z) < 4) continue;
+      if (random() < 0.42) {
+        sakura.push([x, z]);
+        claim(x, z, 2.6);
+      } else if (tree(x, z, random() < 0.2 ? 0 : mid(), 0.6 + random() * 0.4)) claim(x, z, 3.4);
+    }
+    // 公路两边：隔一段一棵
+    for (const g of SEGS) {
+      if (g.kind !== 'road') continue;
+      const len = Math.hypot(g.bx - g.ax, g.bz - g.az);
+      for (let t = 12; t < len; t += 24 + random() * 16) {
+        const side = random() < 0.5 ? 1 : -1;
+        const x = g.ax + ((g.bx - g.ax) * t) / len - ((g.bz - g.az) / len) * side * (STREET_HALF + 4 + random() * 3);
+        const z = g.az + ((g.bz - g.az) * t) / len + ((g.bx - g.ax) / len) * side * (STREET_HALF + 4 + random() * 3);
+        if (!free(x, z, 3) || fieldsAt(x, z) > 0.3 || builtAt(x, z) > 0.6) continue;
+        if (tree(x, z, mid(), 0.55 + random() * 0.3)) claim(x, z, 3);
+      }
+    }
     // 城外：按噪声成丛（copse），丛里中间的树大、边上的小，脚下有灌木
     const step = 30;
     for (let gx = -HALF + 40; gx < HALF - 40; gx += step) {
       for (let gz = -HALF + 40; gz < HALF - 40; gz += step) {
         const x = gx + (random() - 0.5) * step;
         const z = gz + (random() - 0.5) * step;
+        if (coastD(x, z) < 52) continue;
         const h = heightAt(x, z);
         const forest = forestAt(x, z);
-        const cd = cityDistance(x, z);
         if (fieldsAt(x, z) > 0.3) continue;
         if (h > 120) {
           // 山上是松
-          if (h < 250 && random() < 0.75 * density) for (let k = 0; k < 4; k++) pines.push({ x: x + (random() - 0.5) * 26, z: z + (random() - 0.5) * 26, s: 0.9 + random() * 0.9, tier: 2 });
+          if (h < 165 && random() < 0.75 * density) for (let k = 0; k < 4; k++) pines.push({ x: x + (random() - 0.5) * 26, z: z + (random() - 0.5) * 26, s: 0.9 + random() * 0.9, tier: 2 });
           continue;
         }
         if (forest > 0.3) {
@@ -693,9 +1159,9 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
           continue;
         }
         const wild = fbm(x / 150 + 12.3, z / 150 - 4.1, 3, 83);
-        if (cd < CITY_R - 40) {
-          // 城里的空地：小公园（不占街和房子）
-          if (wild > 0.6 && free(x, z, 7) && random() < 0.55) {
+        if (builtAt(x, z) > 0.5) {
+          // 城镇里的空地：小公园（不占街和房子）
+          if (wild > 0.56 && free(x, z, 7) && random() < 0.6) {
             tree(x, z, mid(), 0.6 + random() * 0.3);
             tree(x + 5 + random() * 3, z + random() * 6 - 3, 7, 0.8 + random() * 0.6);
             claim(x, z, 4);
@@ -719,13 +1185,24 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
         }
       }
     }
+    // 雪山小镇四周：一圈落了雪的松
+    for (let i = 0; i < 900; i++) {
+      const a = random() * TAU;
+      const r = 20 + random() * 200;
+      const x = -752 + Math.cos(a) * r;
+      const z = -556 + Math.sin(a) * r;
+      const s = snowAt(x, z);
+      if (s < 0.05 || (s > 0.9 && random() < 0.25) || skiAt(x, z).k > 0.8 || !free(x, z, 3.2) || roadEdge(x, z) < 3.5 || railNear(x, z, 7)) continue;
+      snowPines.push([x, z, 0.7 + random() * 0.9]);
+      claim(x, z, 2.2);
+    }
     // 湖边一圈灌木和几棵柳一样垂着的树
     for (let i = 0; i < 46; i++) {
       const a = random() * TAU;
       const k = 1.2 + random() * 0.22;
       const x = LAKE.x + Math.cos(a) * LAKE.rx * k;
       const z = LAKE.z + Math.sin(a) * LAKE.rz * k;
-      if (lakeDistance(x, z) < 1.17) continue;
+      if (lakeDistance(x, z) < 1.17 || builtAt(x, z) > 0.5) continue;
       if (random() < 0.3) tree(x, z, mid(), 0.7 + random() * 0.4);
       else tree(x, z, 7 + (random() < 0.5 ? 0 : 1), 0.8 + random() * 0.9);
     }
@@ -744,11 +1221,21 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     return true;
   };
   if (treeIndex.size) {
-    // 山上：针叶树
-    for (const p of pines) card(p.x, p.z, 13 + Math.floor(random() * 12), 7 + p.s * 4.5);
-  } else if (pines.length) group.add(createTrees(shared, pines));
+    // 山上、雪地里：针叶树
+    const FIRS = [13, 15, 16, 17, 20];
+    for (const p of pines) card(p.x, p.z, pick(random, FIRS), 7 + p.s * 4.5);
+    for (const [x, z, sc] of snowPines) card(x, z, pick(random, [13, 15, 16, 17]), 6.5 + sc * 4);
+  } else {
+    for (const [x, z, sc] of snowPines) pines.push({ x, z, s: 0.8 + sc * 0.4, tier: 2 });
+    if (pines.length) group.add(createTrees(shared, pines));
+  }
 
   // 菜地：每块一个交互点（地和作物的样子交给 farming.js）
+  // 果园种植区：树下保留观赏树，南侧增加可播种的手绘果树地块。
+  {
+    const d = D('orchard');
+    for (let i = 0; i < 6; i++) gardenPlots.push({ x: d.x - 20 + (i % 3) * 8, z: d.z + 45 + Math.floor(i / 3) * 4, where: '果园种植区' });
+  }
   gardenPlots.forEach((p, i) => {
     p.id = i;
     p.y = heightAt(p.x, p.z);
@@ -756,33 +1243,38 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     add({ id: `plot-${i}`, name: p.where, kind: 'plot', plot: i, x: p.x, z: p.z, r: 1.15, hint: 'E 看看菜地' });
   });
 
-  // 石头：山上和湖边
+  // 石头：山上、湖边、海崖下
   const rockPlaces = [];
-  for (let i = 0; i < 240; i++) {
-    const a = random() * Math.PI * 2;
-    const r = 560 + random() * (HALF - 580);
-    const x = Math.cos(a) * r;
-    const z = Math.sin(a) * r;
+  for (let i = 0; i < 260; i++) {
+    const x = -HALF + random() * HALF * 2;
+    const z = -HALF + random() * HALF * 1.2;
     if (mountainAt(x, z) < 0.15) continue;
     rockPlaces.push({ x, z, s: 1.2 + random() * 3.4, r: random() * 6 });
   }
   for (let i = 0; i < 40; i++) {
-    const a = random() * Math.PI * 2;
+    const a = random() * TAU;
     const x = LAKE.x + Math.cos(a) * LAKE.rx * (1.02 + random() * 0.12);
     const z = LAKE.z + Math.sin(a) * LAKE.rz * (1.02 + random() * 0.12);
+    if (builtAt(x, z) > 0.5) continue;
     rockPlaces.push({ x, z, s: 0.7 + random() * 1.1, r: random() * 6 });
+  }
+  for (let i = 0; i < 70; i++) {
+    // 海滨小镇和大学城的崖脚：一堆礁石
+    const x = 780 + random() * 180;
+    const z = -600 + random() * 520;
+    const cd = coastD(x, z);
+    if (cd > 14 || cd < -22) continue;
+    rockPlaces.push({ x, z, s: 1.4 + random() * 2.6, r: random() * 6 });
   }
   group.add(createRocks(shared, rockPlaces));
 
   // 野花：城外多
   const flowerPlaces = [];
-  for (let i = 0; i < 260; i++) {
-    const a = random() * Math.PI * 2;
-    const r = 300 + random() * (HALF - 340);
-    const x = Math.cos(a) * r;
-    const z = Math.sin(a) * r;
-    if (lakeDistance(x, z) < 1.2 || heightAt(x, z) > 260) continue;
-    if (fieldsAt(x, z) > 0.4) continue;
+  for (let i = 0; i < 420; i++) {
+    const x = -HALF + 30 + random() * (HALF * 2 - 60);
+    const z = -HALF + 30 + random() * (HALF * 2 - 60);
+    if (lakeDistance(x, z) < 1.2 || heightAt(x, z) > 200 || coastD(x, z) < 40 || snowAt(x, z) > 0.2) continue;
+    if (fieldsAt(x, z) > 0.4 || builtAt(x, z) > 0.7 || riverAt(x, z).d < RIVER_HALF + 3) continue;
     flowerPlaces.push({ x, z, r: 3 + random() * 5 });
   }
   // 野花：有图集就用 139 张手绘立牌（会摇、会跟着光变），否则退回程序化的低模花丛
@@ -791,7 +1283,7 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     for (const p of flowerPlaces) {
       const n = 10 + Math.floor(random() * 9);
       for (let i = 0; i < n; i++) {
-        const a = random() * Math.PI * 2;
+        const a = random() * TAU;
         const r = random() * (p.r ?? 3);
         const x = p.x + Math.cos(a) * r;
         const z = p.z + Math.sin(a) * r;
@@ -811,56 +1303,64 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
   const pigeons = createPigeons(shared, 26, PLAZA);
   group.add(pigeons);
   const critterPlaces = [];
-  for (let i = 0; i < 30; i++) {
-    const a = random() * Math.PI * 2;
-    const r = 340 + random() * 500;
-    const x = Math.cos(a) * r;
-    const z = Math.sin(a) * r;
-    if (lakeDistance(x, z) < 1.2) continue;
+  for (let i = 0; i < 60; i++) {
+    const x = -HALF + 60 + random() * (HALF * 2 - 120);
+    const z = -HALF + 60 + random() * (HALF * 2 - 120);
+    if (critterPlaces.length >= 30 || waterAt(x, z) != null || coastD(x, z) < 40 || heightAt(x, z) > 120 || builtAt(x, z) > 0.8) continue;
     critterPlaces.push({ x, z, kind: random() < 0.35 ? 'cat' : 'rabbit' });
   }
   for (let i = 0; i < 6; i++) {
-    const a = (i / 6) * Math.PI * 2;
+    const a = (i / 6) * TAU;
     critterPlaces.push({ x: PLAZA[0] + Math.cos(a) * 26, z: PLAZA[1] + Math.sin(a) * 26, kind: 'cat' });
   }
+  for (const [x, z] of [[HOME[0] + 5, HOME[1] + 2], [-452, -104], [128, 12], [290, -492], [-852, -140]]) critterPlaces.push({ x, z, kind: 'cat' });
   const critters = createCritters(shared, critterPlaces);
   group.add(critters);
 
-  // 湖
+  // 湖、河、海
   const lake = createLake(shared);
   group.add(lake);
-  add({ id: 'lake-shore', name: '月亮湖边', kind: 'fish', x: LAKE.x - LAKE.rx * 0.95, z: LAKE.z, r: 14, hint: 'E 钓鱼' });
-  add({ id: 'lake-boat', name: '小码头', kind: 'fish', x: LAKE.x - LAKE.rx * 0.72, z: LAKE.z + LAKE.rz * 0.65, r: 12, hint: 'E 钓鱼' });
+  add({ id: 'lake-shore', name: '月亮湖边', kind: 'fish', x: 138, z: -512, r: 10, hint: 'E 钓鱼' });
+  add({ id: 'lake-boat', name: '湖边栈桥', kind: 'fish', x: 130, z: -470, r: 10, hint: 'E 钓鱼' });
+  add({ id: 'lake-south', name: '月亮湖南岸', kind: 'fish', x: 36, z: -432, r: 12, hint: 'E 钓鱼' });
 
-  // ===== 手绘立牌：花果树、柳树、棕榈；摊上的货、田里的菜；公交、高铁、蜻蜓 ============
+  // ===== 手绘立牌：樱花、柳树、棕榈；摊上的货、田里的菜；公交、蜻蜓 ================================================
   let bus = null;
   let flies = null;
   if (plants?.tree?.length && treeIndex.size) {
-    // 镇上：会开花、结果的树（樱、梅、苹果、橘……）种在广场边和各家院子里
+    // 樱花和别的花果树：玉海城的绿带、街口，各镇的院子里
+    for (const [x, z] of sakura) card(x, z, pick(random, [29, 28, 36, 29, 26]), 5.2 + random() * 2.2);
     for (const h of painted) {
-      if (random() > 0.16 || cityDistance(h.x, h.z) > 420) continue;
-      const a = random() * Math.PI * 2;
+      if (random() > 0.14) continue;
+      const a = random() * TAU;
       const x = h.x + Math.cos(a) * 9.5;
       const z = h.z + Math.sin(a) * 9.5;
-      if (!free(x, z, 2.6) || roadEdge(x, z) < 1.5) continue;
+      if (!free(x, z, 2.6) || roadEdge(x, z) < 1.5 || snowAt(x, z) > 0.2) continue;
       if (card(x, z, 25 + Math.floor(random() * 12), 4.6 + random() * 1.6)) claim(x, z, 2.5);
     }
     // 月亮湖和河边：柳树、芦竹
-    for (let i = 0; i < 26; i++) {
-      const a = random() * Math.PI * 2;
+    for (let i = 0; i < 30; i++) {
+      const a = random() * TAU;
       card(LAKE.x + Math.cos(a) * LAKE.rx * 1.12, LAKE.z + Math.sin(a) * LAKE.rz * 1.12, 49 + (i % 2), 7 + random() * 2.5);
     }
-    for (let t = 0.04; t < 0.9; t += 0.02) {
-      if (random() < 0.45) continue;
+    for (let t = 0.03; t < 0.9; t += 0.014) {
+      if (random() < 0.4) continue;
       // 沿河找岸：从中线往两侧各退十几米
-      const s0 = RSEGSample(t);
+      const s0 = riverPoint(t);
       const side = random() < 0.5 ? 1 : -1;
-      card(s0[0] + s0[2] * side * (RIVER_HALF + 7 + random() * 6), s0[1] + s0[3] * side * (RIVER_HALF + 7 + random() * 6), random() < 0.6 ? 49 + Math.floor(random() * 2) : 57 + Math.floor(random() * 3), 6 + random() * 3);
+      const off = RIVER_HALF + 7 + random() * 6;
+      const x = s0[0] - s0[3] * side * off;
+      const z = s0[1] + s0[2] * side * off;
+      if (!free(x, z, 2) || roadEdge(x, z) < 2) continue;
+      card(x, z, random() < 0.6 ? 49 + Math.floor(random() * 2) : 57 + Math.floor(random() * 3), 6 + random() * 3);
     }
-    // 沙滩：棕榈
-    for (let z = -780; z < -170; z += 22 + random() * 26) {
-      const x = coastX(z) - 62 - random() * 26;
-      if (free(x, z, 3)) card(x, z, 37 + Math.floor(random() * 3), 7.5 + random() * 2.5);
+    // 沙滩：一排排棕榈
+    for (let x = 150; x < 660; x += 13 + random() * 16) {
+      for (let z = 400; z < 640; z += 6) {
+        if (coastD(x, z) > 104 + random() * 26) continue;
+        if (beachAt(x, z) > 0.5 && free(x, z, 3) && roadEdge(x, z) > 3) card(x, z, 37 + Math.floor(random() * 3), 7.5 + random() * 2.5);
+        break;
+      }
     }
     // 树的立牌交给笔触收尾去"刷"（alpha 0.9），不描墨线、边缘收紧——这样和会长的树是一种画法，不像贴纸
     group.add(createPlantBatch(shared, plants.tree, treeCards, { alpha: 0.9, cutoff: 0.82 }));
@@ -869,41 +1369,41 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     const names = new Map(plants.critter[0].sprites.map((sp, i) => [sp.name, i]));
     const goods = [];
     for (const g of stallGoods) goods.push({ ...g, sprite: names.get(g.name) });
-    // 蔬菜田园：每块菜地种一种菜（白菜、萝卜、番茄、辣椒……），沿着地块的方向一行行排；
+    // 麦田和菜地：每块菜地种一种菜（白菜、萝卜、番茄、辣椒……），沿着地块的方向一行行排；
     // 手绘的作物在 farm 图集里（tools/pack-extra.py），没有就退回大头菜
     const farmIdx = new Map((plants.farm?.[0]?.sprites ?? []).map((sp, i) => [sp.name, i]));
     const farmCards = [];
     {
-      const d = DISTRICTS.find((x) => x.id === 'fields');
       const VEG = [['napa-cabbage', 0.7], ['radish', 0.62], ['tomato', 0.9], ['chilli', 0.75], ['potato', 0.7], ['peanut', 0.55], ['soybean', 0.8], ['sweet-potato', 0.6], ['taro', 0.95], ['garlic', 0.55], ['sugar-beet', 0.6], ['pea', 0.85], ['broad-bean', 0.85], ['tobacco', 1.1]];
       const TALL = [['sunflower', 1.9], ['rapeseed', 1.0], ['maize', 2.0], ['sorghum', 1.9], ['cotton', 1.1], ['sugarcane', 2.2]];
       const U = [0.82, 0.57];
       const V = [-0.57, 0.82];
-      for (let x = d.x - 160; x < d.x + 160; x += 1.0) {
-        for (let z = d.z - 160; z < d.z + 160; z += 1.0) {
-          // 只在行上种：沿地块方向每 1.6 m 一行、行里每 1.2 m 一棵
-          const u = x * U[0] + z * U[1];
-          const v = x * V[0] + z * V[1];
-          if (Math.abs(v / 1.6 - Math.round(v / 1.6)) > 0.32 || Math.abs(u / 1.2 - Math.round(u / 1.2)) > 0.42) continue;
-          if (fieldsAt(x, z) < 0.5 || riverAt(x, z).d < RIVER_HALF + 8) continue;
-          const p = plotAt(x, z);
-          if (p.edge < 0.95) continue;
-          let pick = null;
-          if (p.kind === 1) pick = VEG[Math.floor(p.id * 9973) % VEG.length];
-          else if (p.kind === 0 && p.id < 0.2) pick = TALL[Math.floor(p.id * 7919) % TALL.length];
-          if (!pick) continue;
-          const name = `plant-${pick[0]}`;
-          const idx = farmIdx.get(name);
-          const y = heightAt(x, z) - 0.04;
-          if (idx != null) farmCards.push({ x: x + (random() - 0.5) * 0.25, z: z + (random() - 0.5) * 0.25, y, h: pick[1] * (0.85 + random() * 0.3), sprite: idx });
-          else if (p.kind === 1 && random() < 0.5) goods.push({ x, z, y, h: 0.55, sprite: names.get('turnip') });
+      for (const [fx, fz, fr] of [[D('fields').x, D('fields').z, 150], [-415, 92, 46]]) {
+        for (let x = fx - fr; x < fx + fr; x += 1.0) {
+          for (let z = fz - fr; z < fz + fr; z += 1.0) {
+            // 只在行上种：沿地块方向每 1.6 m 一行、行里每 1.2 m 一棵
+            const u = x * U[0] + z * U[1];
+            const v = x * V[0] + z * V[1];
+            if (Math.abs(v / 1.6 - Math.round(v / 1.6)) > 0.32 || Math.abs(u / 1.2 - Math.round(u / 1.2)) > 0.42) continue;
+            if (fieldsAt(x, z) < 0.5 || riverAt(x, z).d < RIVER_HALF + 8) continue;
+            const p = plotAt(x, z);
+            if (p.edge < 0.95) continue;
+            let crop = null;
+            if (p.kind === 1) crop = VEG[Math.floor(p.id * 9973) % VEG.length];
+            else if (p.kind === 0 && p.id < 0.14) crop = TALL[Math.floor(p.id * 7919) % TALL.length];
+            if (!crop) continue;
+            const idx = farmIdx.get(`plant-${crop[0]}`);
+            const y = heightAt(x, z) - 0.04;
+            if (idx != null) farmCards.push({ x: x + (random() - 0.5) * 0.25, z: z + (random() - 0.5) * 0.25, y, h: crop[1] * (0.85 + random() * 0.3), sprite: idx });
+            else if (p.kind === 1 && random() < 0.5) goods.push({ x, z, y, h: 0.55, sprite: names.get('turnip') });
+          }
         }
       }
-      add({ id: 'pick-fields', name: '菜地', kind: 'pick', x: d.x, z: d.z, r: 40, hint: 'E 摘点菜' });
+      add({ id: 'pick-fields', name: '菜地', kind: 'pick', x: D('fields').x + 40, z: D('fields').z - 20, r: 40, hint: 'E 摘点菜' });
     }
-    // 果园：田园小镇北边，一排排结果的树；树下掉了几个果子
+    // 果园：一排排结果的树
     {
-      const d = DISTRICTS.find((x) => x.id === 'orchard');
+      const d = D('orchard');
       const KINDS = [['apple', '苹果'], ['pear', '梨'], ['peach', '桃'], ['persimmon', '柿子'], ['mandarin', '橘子'], ['cherry', '樱桃'], ['loquat', '枇杷'], ['pomegranate', '石榴'], ['plum', '李子'], ['jujube', '枣']];
       for (let r = 0; r < 7; r++) {
         const kind = KINDS[(r * 3) % KINDS.length];
@@ -911,15 +1411,12 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
         for (let c = 0; c < 10; c++) {
           const x = d.x - 36 + c * 8 + (r % 2) * 4;
           const z = d.z - 27 + r * 9;
-          if (idx == null || riverAt(x, z).d < RIVER_HALF + 6) continue;
+          if (idx == null || riverAt(x, z).d < RIVER_HALF + 6 || roadEdge(x, z) < 2.5) continue;
           farmCards.push({ x, z, y: heightAt(x, z) - 0.1, h: 4.6 + random() * 1.2, sprite: idx, tree: true });
           claim(x, z, 2.5);
         }
         add({ id: `orchard-${r}`, name: `${kind[1]}树`, kind: 'orchard', fruit: kind[1], x: d.x - 36 + 40, z: d.z - 27 + r * 9, r: 7, hint: `E 摘${kind[1]}` });
       }
-      fence(b, d.x - 44, d.z - 34, d.x + 48, d.z - 34, 1.0);
-      fence(b, d.x - 44, d.z + 34, d.x + 48, d.z + 34, 1.0);
-      banner(b, d.x - 46, d.z, '果园', Math.PI / 2, 4);
     }
     // 作物矮，保留手绘线条和墨线；果树和别的树一样交给笔触去"刷"，不像贴纸
     const crops = farmCards.filter((c) => !c.tree);
@@ -927,13 +1424,11 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     if (crops.length) group.add(createPlantBatch(shared, plants.farm, crops, { alpha: 0.16 }));
     if (fruitTrees.length) group.add(createPlantBatch(shared, plants.farm, fruitTrees, { alpha: 0.9, cutoff: 0.82 }));
     group.userData.farmCards = farmCards.length;
-    for (const t of trainSpots) goods.push({ ...t, sprite: names.get('train') });
     const still = createPlantBatch(shared, plants.critter, goods, { alpha: 0.16, sway: 0 });
-    // （货和车不该随风摆：把相位以外的摆幅关掉——立牌着色器按高度摆，这里把它们的随机角清零即可）
     group.add(still);
     group.userData.goods = goods.length;
 
-    // 1 路公交：一块沿着路线来回开的立牌
+    // 37 路公交：一块沿着路线来回开的立牌
     const busBatch = createPlantBatch(shared, plants.critter, [{ x: BUS_ROUTE[0][0], z: BUS_ROUTE[0][1], y: 0, h: 3.1, sprite: names.get('bus') }], { alpha: 0.16, sway: 0 });
     group.add(busBatch);
     const route = [];
@@ -975,10 +1470,10 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     // 蜻蜓：河面和湖面上一群，绕着各自的点打转
     const homes = [];
     for (let i = 0; i < 46; i++) {
-      const t = 0.03 + random() * 0.9;
-      const s0 = RSEGSample(t);
+      const t = 0.03 + random() * 0.85;
+      const s0 = riverPoint(t);
       const off = (random() - 0.5) * 22;
-      homes.push({ x: s0[0] + s0[2] * off, z: s0[1] + s0[3] * off, y: riverLevel(t) + 1.0 + random() * 1.6, r: 2 + random() * 5, w: 0.5 + random() * 0.9, p: random() * 6.28 });
+      homes.push({ x: s0[0] - s0[3] * off, z: s0[1] + s0[2] * off, y: riverLevel(t) + 1.0 + random() * 1.6, r: 2 + random() * 5, w: 0.5 + random() * 0.9, p: random() * 6.28 });
     }
     const flyBatch = createPlantBatch(shared, plants.critter, homes.map((h) => ({ x: h.x, z: h.z, y: h.y, h: 0.34, sprite: names.get('dragonfly') })), { alpha: 0.16, sway: 0 });
     group.add(flyBatch);
@@ -999,30 +1494,32 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
   if (plants?.life?.length) {
     const lifeNames = new Map(plants.life[0].sprites.map((sp, i) => [sp.name, i]));
     const decor = [];
+    const VEHICLES = {
+      'transport-city-bicycle': '城市自行车',
+      'transport-cargo-bike': '货运自行车',
+      'transport-scooter': '小电驴',
+      'transport-rowboat': '小木船',
+      'transport-kayak': '皮划艇',
+      'transport-canoe': '独木舟',
+      'transport-ox-cart': '牛车',
+      'transport-wheelbarrow': '独轮车',
+      'transport-handcart': '手推车',
+    };
     const put = (name, x, z, h, { force = false, r = 0.8, y = null } = {}) => {
-      const sprite = lifeNames.get(name);
-      if (sprite == null) return false;
+      const sp = lifeNames.get(name);
+      if (sp == null) return false;
       if (!force && (!free(x, z, r) || roadEdge(x, z) < 0.4)) return false;
-      decor.push({ x, z, y: y ?? heightAt(x, z), h, sprite });
+      decor.push({ x, z, y: y ?? heightAt(x, z), h, sprite: sp });
       // 交通工具同时作为可交互的乘坐点：素材仍由 life 图集绘制，交互数据独立于装饰批次。
-      if (name.startsWith('transport-')) {
-        const labels = {
-          'transport-city-bicycle': '城市自行车',
-          'transport-cargo-bike': '货运自行车',
-          'transport-scooter': '小电驴',
-          'transport-rowboat': '小木船',
-          'transport-kayak': '皮划艇',
-          'transport-canoe': '独木舟',
-          'transport-ox-cart': '牛车',
-          'transport-wheelbarrow': '独轮车',
-          'transport-handcart': '手推车',
-        };
-        add({ id: `vehicle-${name}-${Math.round(x)}-${Math.round(z)}`, name: labels[name] ?? '交通工具', kind: 'vehicle', vehicle: name, x, z, r: Math.max(1.8, r + 0.8), hint: 'E 乘坐' });
-      }
-      if (name === 'infra-stone-lantern') (b.lanterns ??= []).push([x, (y ?? heightAt(x, z)) + h * 0.62, z]);
+      if (name.startsWith('transport-')) add({ id: `vehicle-${name}-${Math.round(x)}-${Math.round(z)}`, name: VEHICLES[name] ?? '交通工具', kind: 'vehicle', vehicle: name, x, z, r: Math.max(1.8, r + 0.8), hint: 'E 乘坐' });
+      if (name === 'infra-stone-lantern') lanterns.push([x, (y ?? heightAt(x, z)) + h * 0.62, z]);
       claim(x, z, r);
       return true;
     };
+    const festoon = (x, z, o) => {
+      if (put('infra-festoon-pole', x, z, 4.6, { r: 0.4, ...o })) festoons.push([x, heightAt(x, z) + 4.3, z]);
+    };
+    for (const d of [...activityDecorLater, ...activityDecor]) put(d.name, d.x, d.z, d.h, { force: true, r: d.r ?? 0.8, y: d.y ?? null });
     // 家门口
     {
       const [hx, hz] = HOME;
@@ -1030,122 +1527,123 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
       put('infra-flower-bed', hx + 3.2, hz + 5.0, 0.8, { force: true });
       put('infra-planter-box', hx - 6.6, hz + 4.4, 0.9, { force: true });
       put('transport-city-bicycle', hx + 6.6, hz - 5.5, 1.1, { force: true });
+      put('transport-rowboat', hx - 50, hz + 20, 1.0, { r: 2 });
     }
-    // 中央广场：一圈花坛、钟、告示板、电话亭、信箱、串灯杆、自行车
+    // 宫前广场：一圈花坛、钟、告示板、电话亭、信箱、串灯杆、自行车
     {
       const [px, pz] = PLAZA;
       for (let i = 0; i < 8; i++) {
-        const a = (i / 8) * Math.PI * 2 + 0.2 + Math.PI / 8;
+        const a = (i / 8) * TAU + 0.2 + Math.PI / 8;
         put(i % 2 ? 'infra-flower-bed' : 'infra-urn-planter', px + Math.cos(a) * 20.5, pz + Math.sin(a) * 20.5, i % 2 ? 0.85 : 1.3, { force: true });
       }
       for (let i = 0; i < 8; i++) {
-        const a = (i / 8) * Math.PI * 2 + 0.6;
-        const x = px + Math.cos(a) * 29;
-        const z = pz + Math.sin(a) * 29;
-        if (put('infra-festoon-pole', x, z, 4.6, { force: true, r: 0.4 })) festoons.push([x, heightAt(x, z) + 4.3, z]);
+        const a = (i / 8) * TAU + 0.6;
+        festoon(px + Math.cos(a) * 29, pz + Math.sin(a) * 29, { force: true });
       }
       put('infra-street-clock', px + 25, pz - 9, 3.4, { force: true });
-      put('infra-notice-board', px - 25, pz + 9, 2.2, { force: true });
+      put('infra-notice-board', px - 12, pz - 14, 2.2, { force: true });
       put('infra-phone-booth', px + 14, pz + 25, 2.7, { force: true });
       put('infra-mailbox', px - 16, pz - 24, 1.35, { force: true });
-      put('infra-fire-hydrant', px + 31, pz + 3, 0.85, { force: true });
       put('infra-litter-bin', px - 31, pz - 3, 1.0, { force: true });
-      put('infra-bike-rack', px + 4, pz - 31, 0.8, { force: true });
-      for (let i = 0; i < 3; i++) put('transport-city-bicycle', px + 1.5 + i * 2.4, pz - 32.5, 1.1, { force: true, r: 0.3 });
-      put('transport-scooter', px + 10, pz - 32, 1.1, { force: true });
+      put('infra-bike-rack', px + 22, pz + 20, 0.8, { force: true });
+      for (let i = 0; i < 3; i++) put('transport-city-bicycle', px + 20.5 + i * 2.4, pz + 21.5, 1.1, { force: true, r: 0.3 });
+      put('transport-scooter', px - 24, pz + 18, 1.1, { force: true });
     }
-    // 小吃街：两边串灯杆，夜里一路亮着
-    {
-      const line = [[110, 60], [40, 120], [-30, 160]];
-      for (let i = 0; i + 1 < line.length; i++) {
-        const [ax, az] = line[i];
-        const [bx, bz] = line[i + 1];
-        const len = Math.hypot(bx - ax, bz - az);
-        const nx = -(bz - az) / len;
-        const nz = (bx - ax) / len;
-        for (let d = 36; d < len; d += 16) {
-          for (const side of [-1, 1]) {
-            const x = ax + ((bx - ax) * d) / len + nx * side * 5.2;
-            const z = az + ((bz - az) * d) / len + nz * side * 5.2;
-            if (put('infra-festoon-pole', x, z, 4.6, { r: 0.4 })) festoons.push([x, heightAt(x, z) + 4.3, z]);
-          }
-        }
-      }
-      const fd = DISTRICTS.find((d) => d.id === 'food');
-      put('infra-market-stall', fd.x + 12, fd.z - 8, 2.4);
-      put('infra-parasol', fd.x - 10, fd.z + 10, 2.4);
-      put('infra-picnic-table', fd.x - 10, fd.z + 10.2, 0.9, { force: true, r: 0.2 });
-      put('infra-kiosk', fd.x + 4, fd.z + 16, 2.6);
+    // 老街和南市街：两边串灯杆，夜里一路亮着
+    for (const [[ax, az], [bx, bz]] of [[[130, -44], [125, 40]], [[-175, 126], [-40, 128]], [[46, 126], [176, 114]], [[40, 60], [40, 150]]]) {
+      const len = Math.hypot(bx - ax, bz - az);
+      const nx = -(bz - az) / len;
+      const nz = (bx - ax) / len;
+      for (let d = 6; d < len; d += 17) for (const side of [-1, 1]) festoon(ax + ((bx - ax) * d) / len + nx * side * 5.0, az + ((bz - az) * d) / len + nz * side * 5.0, { force: true });
     }
-    // 游乐场：居民区·东边上找一块空地
-    for (const [cx, cz] of [[178, 262], [250, 160], [160, 300], [280, 260]]) {
-      if (!free(cx, cz, 14) || roadEdge(cx, cz) < 10) continue;
+    put('infra-market-stall', 142, -12, 2.4);
+    put('infra-kiosk', 114, 22, 2.6);
+    put('infra-parasol', 140, 18, 2.4);
+    put('infra-picnic-table', 140, 18.2, 0.9, { force: true, r: 0.2 });
+    // 游乐场：AI 小镇边上找一块空地
+    for (const [cx, cz] of [[-398, -160], [-520, -160], [-400, -40], [-530, -20], [-380, -200]]) {
+      if (!free(cx, cz, 14) || roadEdge(cx, cz) < 10 || !dry(cx, cz, 8)) continue;
       const pieces = [['infra-swing-set', -6, -4, 2.4], ['infra-slide', 5, -5, 2.4], ['infra-seesaw', -6, 5, 1.0], ['infra-merry-go-round', 4, 4, 1.4], ['infra-sandbox', 0, 9, 0.7], ['infra-rocking-horse', -1, -1, 1.0], ['infra-picnic-table', 10, 2, 0.9], ['infra-gazebo', -11, 2, 4.0]];
       for (const [n, dx, dz, h] of pieces) put(n, cx + dx, cz + dz, h, { force: true, r: 1.2 });
       claim(cx, cz, 14);
       add({ id: 'playground', name: '游乐场', kind: 'play', x: cx, z: cz, r: 10, hint: 'E 荡一会儿秋千' });
       break;
     }
-    // 夫子庙：一圈石灯笼
-    {
-      const t = DISTRICTS.find((d) => d.id === 'temple');
+    // 夫子庙、清真寺、玉海宫前：石灯笼
+    for (const id of ['temple', 'mosque']) {
+      const t = D(id);
       for (let i = 0; i < 6; i++) {
-        const a = (i / 6) * Math.PI * 2 + 0.3;
-        put('infra-stone-lantern', t.x + Math.cos(a) * 21, t.z + Math.sin(a) * 21, 1.8, { r: 0.6 });
+        const a = (i / 6) * TAU + 0.3;
+        put('infra-stone-lantern', t.x + Math.cos(a) * 23, t.z + Math.sin(a) * 23, 1.8, { r: 0.6 });
       }
     }
-    // 沙滩：一排阳伞，沙上倒扣着小船
-    {
-      for (let z = -380; z < -200; z += 22) {
-        const x = coastX(z) - 34 + Math.sin(z) * 4;
-        put('infra-parasol', x, z, 2.5, { r: 1.5 });
+    // 阳伞：沙滩上一片，海鲜排档和湖边咖啡座几把
+    for (const [x, z] of parasols) put('infra-parasol', x, z, 2.5, { force: true, r: 1.2 });
+    for (let x = 170; x < 640; x += 15 + random() * 12) {
+      for (let z = 400; z < 640; z += 5) {
+        if (coastD(x, z) > 52 + random() * 34) continue;
+        if (beachAt(x, z) > 0.5 && heightAt(x, z) > SEA.level + 0.5) put('infra-parasol', x, z, 2.5, { r: 1.5 });
+        break;
       }
-      put('transport-rowboat', coastX(-300) - 22, -306, 1.0, { r: 2 });
-      put('transport-kayak', coastX(-250) - 24, -246, 0.6, { r: 2 });
-      put('transport-canoe', coastX(-340) - 22, -334, 0.7, { r: 2 });
     }
-    // 田园小镇：独轮车、板车、牛车、压水井、石井
-    {
-      const f = DISTRICTS.find((d) => d.id === 'farm');
-      put('transport-ox-cart', f.x - 22, f.z + 44, 2.0, { r: 2.5 });
-      put('transport-wheelbarrow', f.x + 26, f.z - 14, 0.8);
-      put('transport-handcart', f.x - 8, f.z - 30, 1.0);
-      put('infra-water-pump', f.x + 6, f.z + 18, 1.3);
-      put('infra-stone-well', f.x - 30, f.z - 4, 2.0, { r: 1.4 });
-      put('infra-weather-vane', f.x + 18, f.z - 26, 1.4, { force: true, y: heightAt(f.x + 18, f.z - 26) + 7.6 });
-      const o = DISTRICTS.find((d) => d.id === 'orchard');
-      put('transport-wheelbarrow', o.x + 44, o.z + 6, 0.8);
-      put('transport-handcart', o.x + 46, o.z - 12, 1.0);
-      const sn = DISTRICTS.find((d) => d.id === 'snowtown');
-      put('infra-stone-well', sn.x + 6, sn.z + 4, 2.0, { r: 1.4 });
-    }
-    // 高铁站前：车棚、售货亭
-    {
-      const st = interactables.find((i) => i.id === 'station');
-      if (st) {
-        put('infra-kiosk', st.x + 6, st.z + 14, 2.6);
-        put('infra-bike-rack', st.x - 2, st.z + 16, 0.8);
-        for (let i = 0; i < 4; i++) put('transport-city-bicycle', st.x - 4 + i * 2.2, st.z + 17.5, 1.1, { force: true, r: 0.3 });
-        put('transport-cargo-bike', st.x + 12, st.z + 17, 1.1);
+    for (const [name, x, h] of [['transport-rowboat', 300, 1.0], ['transport-kayak', 352, 0.6], ['transport-canoe', 452, 0.7], ['transport-kayak', 520, 0.6]]) {
+      for (let z = 440; z < 640; z += 4) {
+        if (coastD(x, z) > 40) continue;
+        if (heightAt(x, z) > SEA.level + 0.4) put(name, x, z, h, { r: 2 });
+        break;
       }
+    }
+    // 丰收田园、田园小镇、果园、雪山小镇：独轮车、板车、牛车、压水井、石井
+    {
+      const f = D('farm');
+      put('transport-ox-cart', f.x + 30, f.z + 20, 2.0, { r: 2.5 });
+      put('transport-wheelbarrow', f.x + 10, f.z - 20, 0.8);
+      put('infra-water-pump', f.x - 12, f.z - 26, 1.3);
+      const p = D('pastoral');
+      put('transport-handcart', p.x + 30, p.z - 22, 1.0);
+      put('transport-ox-cart', p.x - 20, p.z + 40, 2.0, { r: 2.5 });
+      put('infra-stone-well', p.x + 2, p.z - 6, 2.0, { r: 1.4 });
+      put('transport-wheelbarrow', p.x + 40, p.z + 26, 0.8);
+      const o = D('orchard');
+      put('transport-wheelbarrow', o.x + 46, o.z + 6, 0.8);
+      put('transport-handcart', o.x + 48, o.z - 12, 1.0);
+      const sn = D('snowtown');
+      put('infra-stone-well', sn.x + 16, sn.z - 2, 2.0, { r: 1.4 });
+    }
+    // 高铁站前：售货亭、车棚
+    {
+      const sx = stationHall.x;
+      const sz = stationHall.z + 34;
+      put('infra-kiosk', sx + 26, sz + 4, 2.6);
+      put('infra-kiosk', sx - 28, sz + 4, 2.6);
+      put('infra-bike-rack', sx - 14, sz + 12, 0.8);
+      for (let i = 0; i < 4; i++) put('transport-city-bicycle', sx - 16 + i * 2.2, sz + 13.5, 1.1, { force: true, r: 0.3 });
+      put('transport-cargo-bike', sx + 16, sz + 13, 1.1);
+      put('infra-street-clock', sx, sz + 14, 3.4);
+    }
+    // 各镇的小广场和码头：电话亭、信箱、长椅边的花箱
+    for (const [x, z] of [[-452, -104], [296, -500], [752, -170], [-742, 318], [640, -452], [492, -40], [-852, -138], [-734, 488], [722, 110]]) {
+      put('infra-phone-booth', x + 4, z + 3, 2.7);
+      put('infra-mailbox', x - 4, z + 3, 1.35);
+      put('infra-flower-bed', x, z + 6, 0.85);
+      put('transport-city-bicycle', x + 7, z + 6, 1.1, { r: 0.6 });
     }
     // 街上：店门口零星的花箱、吊篮
-    for (let i = 0; i < 70; i++) {
-      const s0 = SEGS[Math.floor(random() * SEGS.length)];
-      if (s0.lane) continue;
+    const streets = SEGS.filter((g) => g.kind === 'street');
+    for (let i = 0; i < 150; i++) {
+      const s0 = streets[Math.floor(random() * streets.length)];
       const t = random();
       const len = Math.hypot(s0.bx - s0.ax, s0.bz - s0.az) || 1;
       const side = random() < 0.5 ? -1 : 1;
       const x = s0.ax + (s0.bx - s0.ax) * t - ((s0.bz - s0.az) / len) * side * 5.4;
       const z = s0.az + (s0.bz - s0.az) * t + ((s0.bx - s0.ax) / len) * side * 5.4;
-      if (cityDistance(x, z) > 360) continue;
       put(pick(random, ['infra-planter-box', 'infra-flower-bed', 'infra-urn-planter', 'infra-litter-bin', 'infra-topiary']), x, z, 0.9 + random() * 0.4, { r: 1.2 });
     }
     group.add(createPlantBatch(shared, plants.life, decor, { alpha: 0.16, sway: 0 }));
     group.userData.decor = decor.length;
   }
   group.userData.festoons = festoons;
-  // 灯串：每根串灯杆和最近的一两根相连（广场一圈、小吃街两排）
+  // 灯串：每根串灯杆和最近的一两根相连（广场一圈、老街两排）
   const strings = [];
   {
     const used = new Map();
@@ -1164,25 +1662,30 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     });
   }
 
-  // 树丛里的小径旁：采花点
-  for (let i = 0; i < 8; i++) {
-    const a = (i / 8) * Math.PI * 2 + 0.4;
-    const r = 520 + (i % 3) * 90;
-    const x = Math.cos(a) * r;
-    const z = Math.sin(a) * r;
-    add({ id: `wild-${i}`, name: '野花丛', kind: 'gather', x, z, r: 9, hint: 'E 采一把野花' });
+  // 风车的叶片、水车的轮子：单独的网格，慢慢转
+  const spin = spinners.length ? LM.createSpinners(shared, spinners) : null;
+  if (spin?.group) group.add(spin.group);
+
+  // 野外的小径旁：采花点
+  {
+    let n = 0;
+    for (let i = 0; i < 400 && n < 10; i++) {
+      const p = flowerPlaces[Math.floor(random() * flowerPlaces.length)];
+      if (!p || builtAt(p.x, p.z) > 0.2 || interactables.some((it) => it.kind === 'gather' && Math.hypot(it.x - p.x, it.z - p.z) < 220)) continue;
+      add({ id: `wild-${n++}`, name: '野花丛', kind: 'gather', x: p.x, z: p.z, r: 9, hint: 'E 采一把野花' });
+    }
   }
 
   // 每栋房子都有一个轻量级 E 交互点；店铺优先打开商店，其余建筑提供参观提示。
   for (let i = 0; i < painted.length; i++) {
     const h = painted[i];
+    if (h.shape === 'church' || (i === 0 && !h.shop)) continue;
     add({ id: `building-${i}`, name: h.shop ? `${h.shop}店` : '居民小屋', kind: h.shop ? 'shop' : 'building', x: h.x, z: h.z, r: h.shop ? 7 : 4.5, hint: h.shop ? `E 进入${h.shop}` : 'E 查看建筑', shop: h.shop, map: false });
   }
-  // 果园种植区：树下保留观赏树，南侧增加可播种的手绘果树地块。
-  {
-    const d = DISTRICTS.find((x) => x.id === 'orchard');
-    for (let i = 0; i < 6; i++) gardenPlots.push({ x: d.x - 20 + (i % 3) * 8, z: d.z + 45 + Math.floor(i / 3) * 4, where: '果园种植区' });
-  }
+
+  // 远处的墨线壳收起来：离得远了描边本来就看不见，省一半的顶点
+  const inkMeshes = buildingMeshes.filter((m) => m.userData.ink);
+  let inkTick = 0;
   const colliders = b.colliders;
   return {
     group,
@@ -1193,11 +1696,16 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     get bus() {
       return bus;
     },
+    get train() {
+      return train;
+    },
+    /** 高铁线（世界坐标的折线 [x, y, z]）和各站 */
+    rail: rail.path,
     /** 菜地 [{ id, x, z, y, where }] */
     gardenPlots,
     /** 会亮的东西（glow.js） */
-    lights: { lamps: b.lamps ?? [], lanterns: b.lanterns ?? [], festoons, strings, lighthouse: lighthouseLamp },
-    stats: { buildings: buildingMeshes.length, houses: painted.length, trees: treePlaces.length, pines: pines.length, rocks: rockPlaces.length, flowers: flowerPlaces.length, crops: gardenPlots.length },
+    lights: { lamps: b.lamps ?? [], lanterns: [...(b.lanterns ?? []), ...lanterns], festoons, strings, lighthouse: lighthouseLamp },
+    stats: { buildings: buildingMeshes.length, houses: painted.length, trees: treePlaces.length, pines: pines.length + snowPines.length, rocks: rockPlaces.length, flowers: flowerPlaces.length, crops: gardenPlots.length },
     update(dt, playerPos, camera) {
       if (camera) woods.update(camera);
       pigeons.userData.update(dt, playerPos);
@@ -1205,6 +1713,16 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
       lake.userData.update(dt);
       bus?.update(dt);
       flies?.update(dt);
+      train?.update(dt);
+      spin?.update(dt);
+      activities?.update?.(dt, playerPos, camera);
+      if (camera && inkMeshes.length && (inkTick = (inkTick + 1) % 12) === 0) {
+        const c = camera.position;
+        for (const m of inkMeshes) {
+          const s = m.geometry.boundingSphere;
+          m.visible = Math.hypot(s.center.x - c.x, s.center.z - c.z) - s.radius < 420;
+        }
+      }
     },
   };
 }

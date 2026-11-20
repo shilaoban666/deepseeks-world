@@ -195,8 +195,8 @@ const colour = () => new THREE.Color();
  * The sky's two pictures, the clouds and the far mountains, which need nothing from the land: make them first and
  * the graphics card can be painting them while the land is worked out. `light(hour)` paints the clouds for an hour.
  */
-export function createSkyParts(renderer, { cloudSize = 1024, cloudSteps = 110, liveClouds = true, backdropWidth = 8192 } = {}) {
-  const clouds = createClouds(renderer, HERO, { size: cloudSize, steps: cloudSteps, live: liveClouds });
+export function createSkyParts(renderer, { cloudSize = 1024, cloudSteps = 110, liveClouds = true, cloudStrips = 8, backdropWidth = 8192 } = {}) {
+  const clouds = createClouds(renderer, HERO, { size: cloudSize, steps: cloudSteps, live: liveClouds, strips: cloudStrips });
   const afternoon = new THREE.Vector3();
   sunAt(16, afternoon);
   const backdrop = createBackdrop(renderer, HERO, [afternoon.x, afternoon.z], { width: backdropWidth, ground: backdropWidth > 4096 ? 4096 : 2048 });
@@ -211,6 +211,13 @@ export function createSkyParts(renderer, { cloudSize = 1024, cloudSteps = 110, l
       const k = blend(sunAt(hour, sunDir));
       clouds.setLight({ sunDir, lit: c.lit.setRGB(...k.cloudLit), mid: c.mid.setRGB(...k.cloudMid), shade: c.shade.setRGB(...k.cloudShade), under: c.under.setRGB(...k.cloudUnder), haze: c.fog.setRGB(...k.fog) });
       clouds.drawAll();
+      parts.drawn = hour;
+    },
+    /** The same, the clouds painted a strip at a time with `wait()` between (clouds.drawAllAsync). */
+    async lightAsync(hour, wait) {
+      const k = blend(sunAt(hour, sunDir));
+      clouds.setLight({ sunDir, lit: c.lit.setRGB(...k.cloudLit), mid: c.mid.setRGB(...k.cloudMid), shade: c.shade.setRGB(...k.cloudShade), under: c.under.setRGB(...k.cloudUnder), haze: c.fog.setRGB(...k.fog) });
+      await clouds.drawAllAsync(wait);
       parts.drawn = hour;
     },
   };

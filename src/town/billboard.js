@@ -82,7 +82,7 @@ NO_ATLAS.needsUpdate = true;
  * @param base 例如 './textures/plants/'
  * @returns { flower: [{texture, sprites}], tree: [...], critter: [...] }
  */
-export async function loadPlantAtlases(base = './textures/plants/') {
+export async function loadPlantAtlases(base = './textures/plants/', { maxSize = 0, anisotropy = 4 } = {}) {
   const res = await fetch(`${base}plants.json`);
   if (!res.ok) throw new Error('plants.json 缺失');
   const groups = await res.json();
@@ -92,11 +92,25 @@ export async function loadPlantAtlases(base = './textures/plants/') {
     out[kind] = await Promise.all(
       pages.map(async (page) => {
         const texture = await new Promise((ok, no) => loader.load(base + page.atlas, ok, undefined, no));
+        // 低配档：图集缩小了再送进显卡（2048² 带 mip 是 21 MB 一张，七张；缩到 1024² 是 5 MB 一张）。
+        // 精灵的位置记的是 0~1 的 uv，所以缩了图也还对得上。
+        const img = texture.image;
+        if (maxSize > 0 && img && Math.max(img.width, img.height) > maxSize) {
+          const k = maxSize / Math.max(img.width, img.height);
+          const c = document.createElement('canvas');
+          c.width = Math.max(1, Math.round(img.width * k));
+          c.height = Math.max(1, Math.round(img.height * k));
+          // （willReadFrequently：让这张画布留在 CPU 上缩图，不去和正忙着编 shader 的显卡进程排队）
+          const g = c.getContext('2d', { willReadFrequently: true });
+          g.imageSmoothingQuality = 'high';
+          g.drawImage(img, 0, 0, c.width, c.height);
+          texture.image = c;
+        }
         texture.colorSpace = THREE.SRGBColorSpace;
         texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
         texture.minFilter = THREE.LinearMipmapLinearFilter;
         texture.magFilter = THREE.LinearFilter;
-        texture.anisotropy = 4;
+        texture.anisotropy = anisotropy;
         texture.needsUpdate = true;
         return { texture, sprites: page.sprites, page: page.atlas };
       }),

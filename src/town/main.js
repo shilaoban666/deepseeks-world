@@ -24,16 +24,19 @@ import { createPhoto } from './photo.js';
 import { createLife } from './life.js';
 import { createFarming, CROP } from './farming.js';
 import { createGlow } from './glow.js';
+import { gpuDone, guessQuality, lazyMatrices } from '../lib/gpu.js';
 
 const params = new URLSearchParams(location.search);
-// 画质档和原作一样：high / medium / low。?lite=1 是 low 的别名（给核显用）。
-const quality = params.get('quality') ?? 'high';
-const lite = params.has('lite') || quality === 'low';
-const medium = quality === 'medium';
-const high = !lite && !medium;
 const $ = (id) => document.getElementById(id);
-// 低配档的草：在原作的稀草环上再稀一档——中圈和外圈每丛更宽、数量更少（覆盖范围不变）
-const TOWN_LITE_RINGS = LITE_RINGS.map((r) => (r.name === 'near' ? r : { ...r, cell: r.cell * (r.name === 'mid' ? 1.22 : 1.38), width: r.width * (r.name === 'mid' ? 1.2 : 1.35) }));
+// 启动各阶段的记号和耗时（tools/startup.mjs 读它们）
+const mark = (name) => performance.mark(`tg:${name}`);
+const timings = (window.__timings = {});
+const timed = async (name, job) => {
+  const t = performance.now();
+  const out = await (typeof job === 'function' ? job() : job);
+  timings[name] = Math.round(performance.now() - t);
+  return out;
+};
 
 const setProgress = (value, label) => {
   $('loading-bar').style.width = `${Math.round(value * 100)}%`;
@@ -41,15 +44,116 @@ const setProgress = (value, label) => {
   return new Promise((r) => setTimeout(r, 0));
 };
 
+// ---- 启动失败时：绝不留一张白页。把原因写在加载层上，给一个"低画质重试" -------------------------------------
+let started = false;
+let failed = false;
+const safeStore = {
+  get(k) {
+    try {
+      return localStorage.getItem(k);
+    } catch {
+      return null;
+    }
+  },
+  set(k, v) {
+    try {
+      if (v == null) localStorage.removeItem(k);
+      else localStorage.setItem(k, v);
+    } catch {}
+  },
+};
+function fail(why, detail = '') {
+  if (failed) return;
+  failed = true;
+  console.error('启动失败：', why, detail);
+  let box = $('loading');
+  if (!box) {
+    // 加载层已经撤了（玩到一半显卡丢了）：现搭一个
+    box = document.createElement('div');
+    box.id = 'loading';
+    box.innerHTML = '<div class="box"><b>小鲸鱼的世界</b><span id="loading-text"></span><div id="loading-fail"><p id="loading-why"></p><a href="?quality=low">低画质重试</a><a class="minor" href="?quality=low&dpr=0.5">最低画质重试</a></div></div>';
+    document.body.appendChild(box);
+  }
+  box.classList.remove('done');
+  box.classList.add('failed');
+  $('loading-text').textContent = why;
+  if ($('loading-why')) $('loading-why').textContent = detail;
+  if ($('loading-fail')) $('loading-fail').hidden = false;
+}
+window.addEventListener('error', (e) => {
+  if (!started) fail('启动时出错了', `${e.message ?? e.error ?? ''}\n可以换低画质再试一次。`);
+});
+window.addEventListener('unhandledrejection', (e) => {
+  if (!started) fail('启动时出错了', `${e.reason?.message ?? e.reason ?? ''}\n可以换低画质再试一次。`);
+});
+
 // ---- 显卡 ------------------------------------------------------------------------------------------------------
+mark('renderer');
 const canvas = $('view');
 let renderer;
 try {
+  if (!window.WebGL2RenderingContext) throw new Error('no WebGL 2');
   renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
-} catch {
-  $('loading-text').textContent = '这台设备打不开 WebGL 2';
-  throw new Error('no WebGL 2');
+} catch (e) {
+  fail('这台设备打不开 WebGL 2', '请确认浏览器开启了硬件加速（Chrome：设置 → 系统 → 使用图形加速功能），\n并把显卡驱动更新到最新；或者换 Chrome / Edge 的新版本。');
+  throw new Error(`no WebGL 2: ${e?.message ?? e}`);
 }
+// 显卡上下文丢了（驱动重置、显存不够）：停下来说清楚，不留黑屏
+canvas.addEventListener('webglcontextlost', (e) => {
+  e.preventDefault();
+  renderer.setAnimationLoop(null);
+  fail('显卡撑不住了（WebGL 上下文丢失）', '多半是显存不够或者显卡驱动被系统重置了。\n换低画质可以少用很多显存。');
+});
+
+// ---- 画质档：high / medium / low（?lite=1 是 low 的别名）。地址里没写就自动挑 ---------------------------------
+//   ?quality=low|medium|high  明说的档会记住（下次不写也用它）；?quality=auto 忘掉记住的、重新自动挑
+//   自动：软件光栅/核显/手机 → low，认不出来 → medium，独显 → high（规则在 src/lib/gpu.js）
+//   上一次没能启动完（卡死、显卡丢了）：这一次自动降一档
+const TIERS = ['low', 'medium', 'high'];
+const gpu = guessQuality(renderer.getContext(), { dpr: window.devicePixelRatio || 1, memory: navigator.deviceMemory, pixels: screen.width * screen.height });
+const asked = params.has('lite') ? 'low' : params.get('quality');
+let quality;
+let qualityFrom;
+if (TIERS.includes(asked)) {
+  quality = asked;
+  qualityFrom = '指定';
+  safeStore.set('tg-quality', asked);
+} else {
+  if (asked === 'auto') safeStore.set('tg-quality', null);
+  const saved = safeStore.get('tg-quality');
+  quality = TIERS.includes(saved) ? saved : gpu.quality;
+  qualityFrom = TIERS.includes(saved) ? '上次选的' : '自动';
+  // 上次启动到一半就没了下文：降一档再来
+  const crashed = safeStore.get('tg-starting');
+  if (TIERS.includes(crashed) && TIERS.indexOf(crashed) <= TIERS.indexOf(quality) && quality !== 'low') {
+    quality = TIERS[Math.max(0, TIERS.indexOf(crashed) - 1)];
+    qualityFrom = '上次没启动成功，自动降档';
+    safeStore.set('tg-quality', null);
+  }
+}
+safeStore.set('tg-starting', quality);
+const lite = quality === 'low';
+const medium = quality === 'medium';
+const high = !lite && !medium;
+{
+  const short = gpu.name.replace(/^ANGLE \((?:[^,]*, )?/, '').replace(/ \(0x[0-9a-f]+\)/i, '').replace(/ Direct3D.*$| OpenGL.*$|, .*$|\)$/g, '') || '未知显卡';
+  const label = { low: '低', medium: '中', high: '高' }[quality];
+  console.log(`画质：${quality}（${qualityFrom}；显卡 ${gpu.name || '?'}；判定 ${gpu.why}）。可在地址后加 ?quality=low|medium|high 指定，?quality=auto 恢复自动。`);
+  if ($('loading-note')) $('loading-note').textContent = `画质：${label}（${qualityFrom} · ${short}）`;
+}
+// 低配档的草：在原作的稀草环上再稀一档——中圈和外圈每丛更宽、数量更少（覆盖范围不变）
+const TOWN_LITE_RINGS = LITE_RINGS.map((r) => (r.name === 'near' ? r : { ...r, cell: r.cell * (r.name === 'mid' ? 1.22 : 1.38), width: r.width * (r.name === 'mid' ? 1.2 : 1.35) }));
+// ?legacy=1：关掉这一轮的几项渲染优化（画的顺序、空转的合成遍、云的细条、矩阵缓存），对比画面用
+const legacy = params.get('legacy') === '1';
+// 显卡干完手上的活再给下一片（核显上重活必须切片，见 src/lib/gpu.js）
+const gpuWait = () => gpuDone(renderer);
+
+// （趁显卡还闲着先问一次：这是个要等显卡回话的同步调用，等它忙着编天空的 shader 时再问，页面要跟着僵两三秒）
+renderer.capabilities.getMaxAnisotropy();
+// 笔触图也趁现在画：它是 2D 画布画的，而浏览器的 2D 画布也走显卡进程——等显卡忙起来再画，同样要干等两秒
+const strokesTexture = createStrokes(renderer);
+
+// 渲染倍率：?dpr= 指定；否则高/中档最多 1.5，低档 0.8（核显的像素最贵）
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, Number(params.get('dpr') ?? (lite ? 0.8 : 1.5))));
 renderer.setSize(window.innerWidth, window.innerHeight);
 
@@ -63,18 +167,90 @@ const fitView = () => {
 };
 window.addEventListener('resize', fitView);
 
+// ---- 天空：原作那一套（云一次画进 cubemap，远山画成贴条） -----------------------------------------------------
+// （最先开工：它不靠地形，显卡编它的 shader、画它的时候，CPU 正好去烘地面、盖城市）
+mark('sky-parts');
+const skyParts = createSkyParts(renderer, {
+  cloudSize: high ? 2048 : medium ? 1024 : 512,
+  cloudSteps: high ? 240 : medium ? 200 : 150,
+  // 云每帧重画一小条（跟着钟点换光、慢慢翻涌）。条切细：2048 的云图一条 1/8 面是五十万条光线，
+  // 核显上一帧要四十多毫秒；切成 1/32 面，一轮多花几秒，云动得那么慢，看不出来。
+  // 低档以前干脆不重画（云的光永远停在开局那一刻），现在也画，一条才八千个像素。
+  liveClouds: true,
+  cloudStrips: legacy ? 8 : high ? 32 : medium ? 16 : 32,
+  backdropWidth: high ? 12288 : 4096,
+});
+// （云和远山的 shader 是整个游戏里最重的两个：编译放在后台，画的时候切成条，条与条之间等显卡喘气——
+//   一口气画完在核显上会让显卡好几秒不回话，系统就把驱动重置了）
+const skyReady = (async () => {
+  // （两套 shader 一起交给显卡驱动去编，它有自己的线程）
+  await Promise.all([timed('sky:compile-clouds', skyParts.clouds.compile()), timed('sky:compile-backdrop', skyParts.backdrop.compile())]);
+  await timed('sky:paint-backdrop', skyParts.backdrop.paintAsync(gpuWait));
+  // 远山只画这一次：画它用的那张高度图可以还给显卡了
+  skyParts.backdrop.release();
+})();
+
 // ---- 场地：草和地面（沿用 src/lib，只把地形函数换成这座城市） -------------------------------------------------
 // 和原作一样，地面贴图是 1 m 一个纹素：草下面那张画（笔触、湿痕、裸土）全靠它
 // 整张可走的地图（±1024 m）都在场地里：哪儿都有草，哪儿的地都是同一张
+mark('bake-ground');
 const EXTENT = 2048;
 // （场地的中心只有一个：烘焙和 createField 必须用同一个，否则草、路、房子会错开几十米）
 const CENTRE = [0, 0];
 const GROUND = { extent: EXTENT, extentRes: lite ? 768 : 1024, centre: CENTRE };
-const baked = await bakeGround({ ...GROUND, heightAt: plan.heightAt, paint: plan.paint }, (p) => {
+const bakeProgress = (p) => {
   $('loading-bar').style.width = `${Math.round((0.05 + p * 0.3) * 100)}%`;
+};
+/** 地面烘焙分给几个 worker（src/town/bake.worker.js）；开不了 worker 就还在页面线程上分片算 */
+const bakeInWorkers = ({ extent, extentRes, centre }) =>
+  new Promise((resolve, reject) => {
+    // （留两个核给显卡驱动编 shader：它这时候正在后台编天空那两个大的）
+    const count = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 4) - 2));
+    const heights = new Float32Array(extentRes * extentRes);
+    const map = new Uint8Array(extentRes * extentRes * 4);
+    const BAND = 16;
+    let next = 0;
+    let done = 0;
+    const workers = [];
+    const stop = (err) => {
+      for (const w of workers) w.terminate();
+      if (err) reject(err);
+      else resolve({ heights, map });
+    };
+    const give = (w) => {
+      if (next >= extentRes) return;
+      const from = next;
+      next = Math.min(extentRes, next + BAND);
+      w.postMessage({ extent, extentRes, centre, from, to: next });
+    };
+    for (let i = 0; i < count; i++) {
+      const w = new Worker(new URL('./bake.worker.js', import.meta.url), { type: 'module' });
+      workers.push(w);
+      w.onerror = (e) => stop(new Error(e.message || 'bake worker'));
+      w.onmessage = ({ data }) => {
+        heights.set(data.heights, data.from * extentRes);
+        map.set(data.map, data.from * extentRes * 4);
+        done += data.to - data.from;
+        bakeProgress(done / extentRes);
+        if (done >= extentRes) stop();
+        else give(w);
+      };
+      give(w);
+    }
+  });
+const baked = await timed('bake', async () => {
+  if (params.get('worker') !== '0' && window.Worker) {
+    try {
+      return await bakeInWorkers(GROUND);
+    } catch (e) {
+      console.warn('烘焙 worker 开不了，改在页面线程上算', e);
+    }
+  }
+  return bakeGround({ ...GROUND, heightAt: plan.heightAt, paint: plan.paint }, bakeProgress);
 });
 await setProgress(0.4, '正在铺路…');
 
+mark('field');
 const groundTextures = loadGroundTextures(renderer, './textures/');
 const field = createField({
   ...GROUND,
@@ -85,20 +261,31 @@ const field = createField({
   size: 512,
   // 核显：草环换成稀的那一套（三角从一千多万降到四百多万，覆盖范围不变）
   rings: lite ? TOWN_LITE_RINGS : undefined,
+  // 核显：每格一朵花（原来两朵）——花丛的三角是草的好几倍，九十五万降到四十七万
+  flowerSubs: lite ? 1 : 2,
   density: high ? 1 : medium ? 0.7 : 0.5,
   height: 0.5,
   seed: 7,
 });
 scene.add(field.group);
+// 地面的片元是全场最贵的（十几次采样加两层笔触）。让它排在房子、树、草之后画：
+// 被挡住的像素深度测试直接丢掉，不用算。都是不透明的，画出来的图一样。
+if (!legacy) field.ground.mesh.renderOrder = 6;
 // 夜有多深（0 白天，1 深夜）：灯和窗读它
 field.uniforms.uNight = { value: 0 };
 // 屋里的剖面：人站的地方，和人→镜头的方向（interior 的墙读它）
 field.uniforms.uCut = { value: new THREE.Vector4() };
 
+mark('strokes-slope');
 // ---- 草地下面的"画"：笔触、坡向、眼点（这三样原作有、上一版漏了） -------------------------------------------
 {
   // 笔触：一撮撮浅一点/深一点的绿，红通道是明暗，蓝通道是石头
-  field.uniforms.tStrokes.value = createStrokes(renderer);
+  field.uniforms.tStrokes.value = strokesTexture;
+  // 核显：各向异性过滤封顶（地面那几张图每个像素要采好几次）
+  if (lite) {
+    field.uniforms.tStrokes.value.anisotropy = Math.min(4, field.uniforms.tStrokes.value.anisotropy);
+    for (const u of ['tSoil', 'tSoilN', 'tDirt', 'tDirtN']) field.ground.uniforms[u].value.anisotropy = 2;
+  }
   // 坡向：让阳光落在坡的哪一面，读的是"几米范围"的走向，不是每一个小包
   const RES = high ? 384 : 192;
   const data = new Uint8Array(RES * RES * 2);
@@ -121,21 +308,8 @@ field.uniforms.uCut = { value: new THREE.Vector4() };
   field.uniforms.uHeroEye.value.set(plan.START[0], field.heightAt(plan.START[0], plan.START[1]) + 1.68, plan.START[1]);
 }
 
-// ---- 天空：原作那一套（云一次画进 cubemap，远山画成贴条） -----------------------------------------------------
-const skyParts = createSkyParts(renderer, {
-  cloudSize: high ? 2048 : medium ? 1024 : 512,
-  cloudSteps: high ? 240 : medium ? 200 : 150,
-  liveClouds: high || medium,
-  backdropWidth: high ? 12288 : 4096,
-});
-const skyReady = (async () => {
-  await skyParts.clouds.compile();
-  await skyParts.backdrop.compile();
-  skyParts.backdrop.paint();
-  skyParts.light(15);
-})();
-
 // ---- 城市 ------------------------------------------------------------------------------------------------------
+mark('albedo');
 await setProgress(0.46, '正在铺贴图…');
 // 手绘风 albedo 贴图（平光、镜像无缝），按材质类型登记给 paint.js。
 // ?tex=0 可以关掉，退回纯 shader 的版本。
@@ -188,17 +362,19 @@ if (params.get('tex') !== '0') {
   );
   configureAlbedo(loaded, { mix: Number(params.get('texmix') ?? 0.85), scales: { indoorWall: 1.4, indoorTile: 1.1, indoorFloor: 0.9 } });
 }
+mark('plants');
 await setProgress(0.48, '正在铺野花…');
 // 手绘植物图集（139 种花 / 110 种树 / 8 个物件）。?plants=0 退回程序化花丛。
 let plants = null;
 if (params.get('plants') !== '0') {
   try {
-    plants = await loadPlantAtlases('./textures/plants/');
+    plants = await loadPlantAtlases('./textures/plants/', lite ? { maxSize: 1024, anisotropy: 2 } : {});
     console.log('植物图集：', Object.entries(plants).map(([k, v]) => `${k} ${v.reduce((n, p) => n + p.sprites.length, 0)} 个/${v.length} 页`).join('  '));
   } catch (e) {
     console.warn('植物图集载入失败，退回程序化花丛', e);
   }
 }
+mark('city');
 await setProgress(0.5, '正在盖房子…');
 const city = createCity(field.uniforms, field, {
   plants,
@@ -210,6 +386,7 @@ const city = createCity(field.uniforms, field, {
   density: high ? 1 : medium ? 0.85 : 0.6,
 });
 scene.add(city.group);
+mark('life-farground');
 // 鸟、鸭子、船（素材库 life 图集）
 const life = plants?.life
   ? createLife(field.uniforms, plants, {
@@ -227,17 +404,21 @@ const life = plants?.life
 if (life) scene.add(life.mesh);
 scene.add(createFarGround(field.uniforms, { centre: CENTRE, half: EXTENT / 2 }));
 
+mark('interior');
 await setProgress(0.62, '正在种树…');
 const interior = createInterior(field.uniforms);
 indoorScene.add(interior.group);
 
 // ---- 收尾：笔触 + 墨线。笔刷强度默认 3（和原作 high 一样），?paint=0 关掉 --------------------------------
+mark('frame');
 const frame = createFrame(renderer, field, { samples: high ? 4 : medium ? 2 : 0, bloom: 0.1 });
 const paintWas = Number(params.get('paint') ?? (high ? 3 : medium ? 2 : 1));
 frame.paint = paintWas;
+if (legacy) frame.skipIdle = false;
 let paintNow = paintWas;
 
 // ---- 主角 ------------------------------------------------------------------------------------------------------
+mark('whale');
 await setProgress(0.78, '小鲸鱼正在起床…');
 const arts = await loadWhalechan(field.uniforms, './figures/');
 const whale = createWhalechan(field.uniforms, arts);
@@ -259,6 +440,7 @@ const mover = createMover({ colliderList: () => (indoor ? interior.colliders : c
 
 // ---- 界面 ------------------------------------------------------------------------------------------------------
 // ---- 粒子和天气 -------------------------------------------------------------------------------------------------
+mark('particles-weather');
 const particles = createParticles(field.uniforms, lite ? 1400 : 2600);
 scene.add(particles.mesh);
 const weather = createWeather({ field, frame, particles, lite, ignite: (x, z, r) => field.ignite(x, z, r) });
@@ -267,12 +449,14 @@ if (params.get('weather')) weather.set(params.get('weather'), { immediate: true 
 let nightNow = 0;
 
 const hud = createHud();
+mark('minimap');
 await setProgress(0.86, '正在画地图…');
 const bakedMap = bakeMinimap();
 const minimap = createMinimap($('minimap'), bakedMap);
 minimap.setInteractables(city.interactables);
 
 // 图集里的鱼和作物（界面图标、钓鱼结果用）
+mark('game');
 const fishSprites = Object.fromEntries((plants?.fish?.[0]?.sprites ?? []).map((sp) => [sp.name, sp]));
 const farmSprites = Object.fromEntries((plants?.farm?.[0]?.sprites ?? []).map((sp) => [sp.name, sp]));
 const game = createGame({
@@ -307,8 +491,12 @@ const game = createGame({
   },
   city,
   busStops: plan.BUS_STOPS,
+  metroStops: plan.METRO_STOPS,
+  railStations: plan.RAIL_STATIONS,
   onTravel(st) {
-    whale.setPos(st.x + 1, st.z - 3);
+    // 高铁站：city.js 给每个站补了一个地面上的出站口 exit；公交、地铁站就落在站牌边上
+    if (st.exit) whale.setPos(st.exit[0], st.exit[1]);
+    else whale.setPos(st.x + 1, st.z - 3);
   },
   onRide(vehicle) {
     // 交通工具状态保存在 game.state 中；这里让相机轻微拉远，保证骑乘时画面舒展。
@@ -375,6 +563,7 @@ const game = createGame({
 });
 
 // 种地：家门口和田园小镇的菜地
+mark('farming-glow');
 const farming = createFarming(field.uniforms, plants, city.gardenPlots);
 scene.add(farming.group);
 game.setFarm(farming);
@@ -417,7 +606,7 @@ const glow = (() => {
       flies.push([x, plan.heightAt(x, z) + 0.6 + rnd() * 1.4, z]);
     }
   }
-  for (let i = 0; i < 12; i++) flies.push([2 + rnd() * 8, plan.heightAt(4, 0) + 0.7 + rnd(), -6 + rnd() * 10]);
+  for (let i = 0; i < 12; i++) flies.push([plan.HOME[0] + 2 + rnd() * 8, plan.heightAt(plan.HOME[0] + 4, plan.HOME[1]) + 0.7 + rnd(), plan.HOME[1] - 6 + rnd() * 10]);
   return createGlow(field.uniforms, { ...city.lights, fireflies: flies, ground: plan.heightAt });
 })();
 scene.add(glow.group);
@@ -498,8 +687,16 @@ const underwaterLook = () => {
   frame.grade.z *= 1.04;
 };
 let actions = null;
+mark('sky');
 await setProgress(0.92, '正在画云…');
-await skyReady;
+// 天穹现在就能建（它只要那几张贴图的"壳"）；云和远山还在后台一条一条地画，画完之前不撤加载层。
+// 云按开局那一刻的光画一次（以前先按 15 点画一遍、马上又按真正的钟点重画一遍）。
+const startHour = dayLight(frozenClock ?? (game.state.minutes / 60) % 24).hour;
+skyParts.drawn = startHour; // （别让 setHour 在这里同步地整张重画）
+const skyPainted = (async () => {
+  await timed('sky:wait', skyReady);
+  await timed('sky:paint-clouds', skyParts.lightAsync(startHour, gpuWait));
+})().catch((e) => console.warn('天空没画成', e));
 sky = createSky(renderer, field, { parts: skyParts });
 {
   // 每次天光重算之后，让天气记下新的基准光
@@ -509,6 +706,8 @@ sky = createSky(renderer, field, { parts: skyParts });
     weather.capture(sky);
   };
 }
+// 天最后画（它在最远处）：先画的话，被房子、树、地挡住的那些像素也要白算一遍天
+if (!legacy) sky.mesh.renderOrder = 7;
 scene.add(sky.mesh);
 city.lake.userData.setSky(sky);
 syncSky();
@@ -543,6 +742,7 @@ const indoorLight = () => {
 
 // ---- 地图：M 轮着看——小地图 / 全图 / 手绘的小镇图 / 手绘的世界图 ---------------------------------------
 // ---- 大地图（M）：手绘全图、探索、地点、目标、坐车 -----------------------------------------------------------
+mark('bigmap-actions-photo');
 const bigmap = createBigMap({
   city,
   hud,
@@ -640,7 +840,7 @@ const photo = createPhoto({
   mover,
   scene: () => (indoor ? indoorScene : scene),
   info: () => ({
-    place: $('stat-place').textContent || '清镇',
+    place: $('stat-place').textContent || '玉海城',
     clock: $('stat-clock').textContent,
     weather: `${weather.info.name} ${weather.info.temp}°C`,
     underwater: $('underwater').classList.contains('on'),
@@ -817,7 +1017,7 @@ function tick(dt) {
   if (mapAccum > 0.1) {
     mapAccum = 0;
     panels.update(indoor, camera);
-    minimap.draw(0.1, { x: whale.state.x, z: whale.state.z, yaw: whale.state.yaw, waypoint: bigmap.waypoint });
+    minimap.draw(0.1, { x: whale.state.x, z: whale.state.z, yaw: whale.state.yaw, waypoint: bigmap.waypoint, place: indoor ? '家里' : undefined });
     const wp = bigmap.waypoint;
     $('minimap-mode').textContent = wp ? `→ ${wp.name} ${Math.round(Math.hypot(wp.x - whale.state.x, wp.z - whale.state.z))} 米` : 'M 大地图';
   }
@@ -830,7 +1030,7 @@ const baseRatio = renderer.getPixelRatio();
 let ratioK = 1;
 let frames = 0;
 let spent = 0;
-renderer.setAnimationLoop((now) => {
+const loop = (now) => {
   const raw = now - last;
   const dt = Math.min(0.05, Math.max(0, raw / 1000));
   last = now;
@@ -842,22 +1042,54 @@ renderer.setAnimationLoop((now) => {
     const avg = spent / frames;
     frames = 0;
     spent = 0;
-    const want = avg > 40 ? ratioK - 0.08 : avg < 27 ? ratioK + 0.05 : ratioK;
-    const next = Math.min(1, Math.max(0.55, want));
-    if (Math.abs(next - ratioK) > 0.01) {
+    // 慢了：按"像素数正比于倍率的平方"一步降到位（最多一次降两成），不用一小格一小格地熬；快了再慢慢加回来
+    const want = avg > 38 ? ratioK * Math.max(0.8, Math.sqrt(34 / avg)) : avg < 24 ? ratioK + 0.05 : ratioK;
+    const next = Math.min(1, Math.max(lite ? 0.5 : 0.55, want));
+    if (Math.abs(next - ratioK) > 0.02 && !photo.on) {
       ratioK = next;
       renderer.setPixelRatio(baseRatio * ratioK);
       fitView();
     }
   }
-});
+};
 
 // ---- 收尾 ------------------------------------------------------------------------------------------------------
+mark('compile-outdoor');
+await setProgress(0.97, '正在调颜料…');
+// 静物的矩阵不再每帧重算（见 src/lib/gpu.js）
+if (!legacy) {
+  lazyMatrices(scene);
+  lazyMatrices(indoorScene);
+}
+// 先把 shader 和贴图、顶点都送进显卡（切成小份，份与份之间等显卡），再开始画第一帧：
+// 以前是先开了主循环，第一帧里一口气编译全部 shader、上传全部贴图，核显上页面要僵住好几秒
+await frame
+  .compile(scene, camera, (done, of, warming) => {
+    $('loading-bar').style.width = `${Math.round((warming ? 0.985 + 0.015 * (done / of) : 0.97 + 0.015 * (done / of)) * 100)}%`;
+  })
+  .catch((e) => console.warn('compile outdoor', e));
+mark('sky-wait');
+await skyPainted;
+mark('warm');
+await frame
+  .warm(scene, camera, gpuWait, (done, of) => {
+    $('loading-bar').style.width = `${Math.round((0.985 + 0.015 * (done / of)) * 100)}%`;
+  })
+  .catch((e) => console.warn('warm', e));
+mark('first-frame');
 await setProgress(1, '到了');
-await frame.compile(scene, camera).catch((e) => console.warn('compile outdoor', e));
-await frame.compile(indoorScene, camera).catch((e) => console.warn('compile indoor', e));
+last = performance.now();
+tick(0);
+await gpuWait();
+last = performance.now();
+renderer.setAnimationLoop(loop);
+// 屋里的那一套不急：进了游戏再在后台编译（进屋之前早就好了）
+setTimeout(() => frame.compile(indoorScene, camera).catch((e) => console.warn('compile indoor', e)), 1500);
+mark('done');
+started = true;
+safeStore.set('tg-starting', null);
 $('loading').classList.add('done');
-setTimeout(() => $('loading')?.remove(), 700);
+setTimeout(() => !failed && $('loading')?.remove(), 700);
 minimap.draw(0.1, { x: whale.state.x, z: whale.state.z, yaw: whale.state.yaw });
 
 // 给测试和录屏留的后门
@@ -902,5 +1134,7 @@ window.__tg = {
   enter: () => game.interact(city.interactables.find((i) => i.kind === 'door')),
   exit: () => game.interact({ kind: 'exit', name: '玄关' }),
   nearest: () => nearest,
+  quality,
+  gpu,
   ready: true,
 };

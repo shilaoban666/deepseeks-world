@@ -1,6 +1,6 @@
 // 能做的事：钓鱼、种菜、做饭、买菜、逛超市、上网、打电玩、锻炼、看书、祈祷、接委托、许愿、采花。
 // 一个朴素的状态机 + 一点时间推进；面板都由 hud 弹出来。
-import { DISTRICTS } from './plan.js';
+import { DISTRICTS, RAIL_STATIONS } from './plan.js';
 import { rollFish, BY_ID, RARITY, WATER_NAME, spriteStyle } from './fishdex.js';
 import { CROPS, CROP, STAGES, stageOf, produceSprite } from './farming.js';
 
@@ -13,6 +13,7 @@ const ITEMS = {
   tea: { name: '奶茶', icon: '🧋', price: 12, sell: 5 },
   pearl: { name: '珍珠', icon: '🫧', price: 60, sell: 30 },
   fruit: { name: '水果', icon: '🍑', price: 10, sell: 5 },
+  shell: { name: '贝壳', icon: '🐚', price: 16, sell: 8 },
 };
 
 const RECIPES = [
@@ -28,7 +29,7 @@ for (const c of CROPS) {
   ITEMS[c.id] = { name: c.name, icon: '🥕', price: c.sell * 2, sell: c.sell, crop: c.id };
 }
 
-export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, onMap, onRide, busStops = [], fishSprites = null, farmSprites = null, fishAtlas = './textures/plants/fish.png' }) {
+export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, onMap, onRide, busStops = [], metroStops = [], railStations = RAIL_STATIONS, fishSprites = null, farmSprites = null, fishAtlas = './textures/plants/fish.png' }) {
   // 作物的图标：手绘的收获物，种子用作物本身的小图
   if (farmSprites) {
     for (const c of CROPS) {
@@ -45,7 +46,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
     stamina: 100,
     day: 1,
     minutes: 8 * 60 + 20,
-    bag: { rice: 2, fish: 0, veg: 1, 'seed-napa-cabbage': 3, 'seed-radish': 2, 'seed-tomato': 1, flower: 0, cooked: 0, tea: 0, pearl: 0, fruit: 0 },
+    bag: { rice: 2, fish: 0, veg: 1, 'seed-napa-cabbage': 3, 'seed-radish': 2, 'seed-tomato': 1, flower: 0, cooked: 0, tea: 0, pearl: 0, fruit: 0, shell: 0 },
     /** 图鉴：钓到过的鱼 { id: 条数 } */
     dex: {},
     /** 今天摘过的地方 { id: 第几天 } */
@@ -53,6 +54,8 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
     quests: [],
     stats: { fish: 0, cooked: 0, planted: 0, harvested: 0, shopped: 0, played: 0, read: 0 },
     luck: 0,
+    /** 各种小乐子的当天记录（滑雪几趟、租没租冲浪板、打没打工……）和最好成绩 */
+    fun: {},
     indoor: false,
     riding: null,
   };
@@ -60,6 +63,13 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
   let arcade = null;
   let panelTick = null;
   let clock = 0;
+  /** 动作系统（滑雪、划船、冲浪、躺椅）：actions.js 建好以后自己交进来 */
+  let acts = null;
+  /** 今天做过几次（key 一天一清） */
+  const today = (key) => (state.fun[key]?.day === state.day ? state.fun[key].n : 0);
+  const bump = (key) => {
+    state.fun[key] = { day: state.day, n: today(key) + 1 };
+  };
 
   const bagList = () => Object.entries(state.bag).map(([k, v]) => ({ key: k, ...ITEMS[k], count: v }));
   const syncBag = () => hud.setBag(bagList());
@@ -79,7 +89,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
         bestD = dd;
       }
     }
-    return best ? best.name : '清镇野外';
+    return best ? best.name : '玉海郊外';
   };
   const syncStats = () => hud.setStats({ coins: state.coins, hunger: state.hunger, stamina: state.stamina, clock: clockText(), place: placeName() });
 
@@ -109,7 +119,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
   // ---- 钓鱼 --------------------------------------------------------------------------------------------------
   const startFishing = () => {
     if (fishing) return;
-    fishing = { phase: 'cast', t: 0, wait: 1.4 + Math.random() * 2.6, water: player.waterKind ?? 'lake' };
+    fishing = { phase: 'cast', t: 0, wait: 1.4 + Math.random() * 2.6, water: player.waterKind ?? 'lake', luck: acts?.fishBonus?.() ?? 0 };
     hud.open('钓鱼', '<p id="fish-line">甩出鱼线……水面很静。</p>', [
       { label: '收线', onClick: () => { fishing = null; hud.close(); } },
     ], { dock: true });
@@ -384,7 +394,189 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
       if (arcade) return void stopArcade();
       return;
     }
+    // 滑着雪、冲着浪的时候，E 就是停下来
+    if (acts && (acts.mode === 'ski' || acts.mode === 'surf')) return void acts.act('stop');
     switch (it.kind) {
+      // ---- 各区的特色玩法（道具在 activities.js，动作在 actions.js）---------------------------------------
+      case 'ski': {
+        if (!acts) break;
+        if (state.riding) return void hud.toast('先从车上下来');
+        if (it.top) return void acts.startSki();
+        if (it.lift) return void acts.skiLift(false);
+        const best = state.fun.skiBest;
+        hud.open(
+          '雪场小屋',
+          `<p>屋檐下靠着一排雪板，炉子上烤着手套。雪道从山腰一直铺到镇口，一路八道旗门：红旗在左，蓝旗在右，从中间穿过去。</p><p class="dim">魔毯免费，雪板随便借。A / D 转弯，S 刹车，W 撑一下雪杖。${best ? `<br>最好成绩：${best.time.toFixed(1)} 秒，过了 ${best.gates} 道门。` : ''}</p>`,
+          [
+            { label: '坐魔毯上山，滑下来', primary: true, onClick: () => { hud.close(); acts.skiLift(true); } },
+            { label: '只坐魔毯上去看看', onClick: () => { hud.close(); acts.skiLift(false); } },
+            { label: '烤烤火再说', onClick: () => hud.close() },
+          ],
+        );
+        break;
+      }
+      case 'snowman':
+        state.minutes += 6;
+        hud.toast(['给雪人拍实了一把雪，它看起来更圆了', '把雪人的鼻子扶正了。它好像在笑', '把自己的围巾借雪人围了一会儿，又拿回来了（冷）'][Math.floor(Math.random() * 3)]);
+        break;
+      case 'boat': {
+        if (!acts) break;
+        if (acts.aboard) return void acts.act('stop');
+        if (state.riding) return void hud.toast('先从车上下来');
+        const fee = it.fee ?? 8;
+        const sea = !String(it.name).includes('湖');
+        hud.open(
+          it.name,
+          `<p>${sea ? '浮桥边系着一条小木船，船底有一汪亮晶晶的海水。' : '栈桥头系着几条小木船，随着湖水轻轻碰着木桩。'}租一条 ${fee} 金币，划多久都行。</p><p class="dim">W / S 划桨，A / D 转船头；划到开阔的水面按 E 就能下竿${sea ? '（海里的鱼）' : '，湖心水深，稀罕的鱼多'}。划回来靠着栈桥按 E 上岸。</p><p class="dim">钱：${state.coins} 金币</p>`,
+          [
+            {
+              label: `租一条小木船（${fee}）`,
+              primary: true,
+              disabled: state.coins < fee,
+              onClick: () => {
+                hud.close();
+                if (!acts.startBoat(it)) return;
+                state.coins -= fee;
+                syncStats();
+              },
+            },
+            { label: '下次吧', onClick: () => hud.close() },
+          ],
+        );
+        break;
+      }
+      case 'surf': {
+        const has = state.fun.board === state.day;
+        const fee = it.fee ?? 6;
+        const shells = state.bag.shell ?? 0;
+        const best = state.fun.surfBest;
+        hud.open(
+          '冲浪小屋',
+          `<p>晒得黝黑的店主在给板子打蜡。「浪不大，正好学。站稳了别直直冲上沙滩，斜着走，浪才追得上你。」</p><p class="dim">租一块板 ${fee} 金币，今天随便用：走进海里游起来，按 <kbd>X</kbd> 站上板子。A / D 压板转弯，Space 跳一个。贝壳他也收，8 金币一个。${best ? `<br>最好的一趟：${best.time.toFixed(0)} 秒，${best.tricks} 个花样。` : ''}</p><p class="dim">钱：${state.coins} 金币</p>`,
+          [
+            {
+              label: has ? '板子已经在手上了' : `租一块冲浪板（${fee}）`,
+              primary: !has,
+              disabled: has || state.coins < fee,
+              onClick: () => {
+                state.coins -= fee;
+                state.fun.board = state.day;
+                syncStats();
+                hud.close();
+                hud.toast('夹着板子往海里走——水没过腰、游起来以后按 X 站上去');
+              },
+            },
+            {
+              label: `卖贝壳（${shells} 个）`,
+              disabled: !shells,
+              onClick: () => {
+                state.bag.shell = 0;
+                state.coins += shells * ITEMS.shell.sell;
+                syncBag();
+                syncStats();
+                hud.close();
+                hud.toast(`${shells} 个贝壳换了 ${shells * ITEMS.shell.sell} 金币。店主把最花的那个挂在了门口`);
+              },
+            },
+            { label: '走了', onClick: () => hud.close() },
+          ],
+        );
+        break;
+      }
+      case 'lounger':
+        if (state.riding) return void hud.toast('先从车上下来');
+        acts?.lieOn(it);
+        break;
+      case 'shell': {
+        if (state.picked[it.id] === state.day) return void hud.toast('这一片捡过了，等明天潮水再送来');
+        state.picked[it.id] = state.day;
+        const n = 1 + Math.floor(Math.random() * 2);
+        add('shell', n);
+        if (Math.random() < 0.06 + state.luck * 0.02) {
+          add('pearl', 1);
+          hud.toast(`捡到 ${n} 个贝壳——其中一个里面躺着一颗珍珠！`);
+        } else hud.toast(`蹲在潮线上翻了翻，捡到 ${n} 个贝壳（冲浪小屋收）`);
+        break;
+      }
+      case 'farmstand': {
+        const mine = CROPS.reduce((n, c) => n + (state.bag[c.id] ?? 0), 0);
+        const fruit = state.bag.fruit ?? 0;
+        hud.open(
+          '田园收购摊',
+          `<p>草帽大叔守着一杆秤：「自己种的、自己摘的，我都收。果子 ${ITEMS.fruit.sell} 金币一个，菜按行情。」</p><p class="dim">钱：${state.coins} 金币 · 篮子里有 ${mine} 个菜、${fruit} 个水果</p>`,
+          [
+            {
+              label: `卖掉自己种的菜（${mine} 个）`,
+              primary: mine > 0,
+              disabled: !mine,
+              onClick: () => {
+                const r = sellCrops();
+                hud.close();
+                hud.toast(`卖了 ${r.n} 个菜，得了 ${r.coins} 金币`);
+              },
+            },
+            {
+              label: `卖水果（${fruit} 个）`,
+              disabled: !fruit,
+              onClick: () => {
+                state.bag.fruit = 0;
+                state.coins += fruit * ITEMS.fruit.sell;
+                syncBag();
+                syncStats();
+                hud.close();
+                hud.toast(`${fruit} 个水果卖了 ${fruit * ITEMS.fruit.sell} 金币。大叔塞回来一个最红的（没有，他自己吃了）`);
+              },
+            },
+            { label: '买点种子', onClick: () => shop('种子铺', CROPS.map((c) => `seed-${c.id}`), '大叔从摊子底下拖出一只木箱，里面全是小纸包。「种在后面那十二块田里，浇了水长得快。」', true) },
+            { label: '走了', onClick: () => hud.close() },
+          ],
+        );
+        break;
+      }
+      case 'work': {
+        const port = it.job === 'port';
+        const h = Math.floor(state.minutes / 60) % 24;
+        if (h < 7 || h >= 19) return void hud.toast(port ? '货场收工了，明天白天再来' : '写字楼的灯都灭了，明天白天再来');
+        if (today(`job-${it.job}`) >= 2) return void hud.toast(port ? '工头摆摆手：「今天够了，小姑娘歇着去。」' : '前台说今天的临时工招满了');
+        if (state.stamina < (port ? 30 : 20)) return void hud.toast('太累了，先歇一歇、吃点东西');
+        const pay = port ? 18 : 42;
+        hud.open(
+          it.name,
+          port
+            ? `<p>吊车把箱子一只只放下来，工头正缺人手。「搬十箱到那边板车上，${pay} 金币，现结。」</p><p class="dim">大约 40 分钟，费力气（体力 −22）。</p>`
+            : `<p>招聘栏上贴着一张手写的纸：「急招临时工，帮忙整理推理链，半天 ${pay} 金币，管一杯咖啡。」</p><p class="dim">大约 3 小时，费脑子（体力 −16，会饿）。</p>`,
+          [
+            {
+              label: port ? '挽起袖子搬货' : '上楼打半天工',
+              primary: true,
+              onClick: () => {
+                bump(`job-${it.job}`);
+                state.minutes += port ? 40 : 180;
+                state.stamina = Math.max(0, state.stamina - (port ? 22 : 16));
+                state.hunger = Math.max(0, state.hunger - (port ? 6 : 12));
+                state.coins += pay;
+                syncStats();
+                hud.close();
+                hud.toast(port ? `十箱货搬完了，胳膊酸酸的。工头数了 ${pay} 金币给你` : `整理了一下午推理链，还喝到了咖啡。领到 ${pay} 金币`);
+              },
+            },
+            { label: '还是算了', onClick: () => hud.close() },
+          ],
+        );
+        break;
+      }
+      case 'chess': {
+        state.minutes += 25;
+        state.stamina = Math.min(100, state.stamina + 6);
+        const win = Math.random() < 0.4 + state.luck * 0.08;
+        if (win && today('chess') < 3) {
+          bump('chess');
+          state.coins += 6;
+        }
+        syncStats();
+        hud.toast(win ? '樱花落在棋盘上。你走了一步怪棋，老爷爷想了很久，认输了（彩头 6 金币）' : '老爷爷落子很慢，赢得很快。「再来？」他笑眯眯地问');
+        break;
+      }
       case 'door':
         onDoor?.(true);
         break;
@@ -416,7 +608,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
           '【求助】推理链太长被老板说摸鱼，怎么办',
           '【闲聊】今天的白米饭特别香',
           '【提问】为什么我算 9.11 比 9.9 大（已经改了）',
-          '【攻略】清镇湖钓鱼点位分享，靠北岸第三块石头',
+          '【攻略】月亮湖钓鱼点位分享，靠北岸第三块石头',
           '【告白】小鲸鱼是最好的',
         ];
         hud.open(
@@ -454,7 +646,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
         const books = [
           '《山谷的四季》：春天，草从白色的雪里钻出来，像有人用笔尖点了一下。',
           '《手绘背景的十二种云》：卷云要画得急，积云要画得慢。',
-          '《清镇市志》：此地旧名清溪，后因山泉清冽改称清镇。',
+          '《玉海城志》：城以玉海宫得名，清溪河从月亮湖流出来，绕城西一路入海。',
           '《如何不被叫胖》：第一章，「我不是胖，我是鲸」。',
         ];
         state.stats.read++;
@@ -465,9 +657,19 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
         ]);
         break;
       }
-      case 'study':
-        hud.toast(`在${it.name}上了半节课，感觉又聪明了一点（并没有）`);
+      case 'study': {
+        // 上半节课：过去 45 分钟；每天头一回认真听讲，有机会拿到一点奖学金
+        state.minutes += 45;
+        state.stats.read++;
+        const first = today('study') === 0;
+        bump('study');
+        if (first && Math.random() < 0.5) {
+          state.coins += 12;
+          hud.toast(`在${it.name}上了半节课，随堂小测居然全对——奖学金 12 金币`);
+        } else hud.toast(`在${it.name}上了半节课，感觉又聪明了一点（并没有）`);
+        syncStats();
         break;
+      }
       case 'pray':
         state.luck = Math.min(3, state.luck + 1);
         hud.open(
@@ -483,7 +685,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
         hud.toast('硬币沉进水里，翻了个身。愿望说给水听');
         break;
       case 'mail': {
-        const letters = ['一封是广告：「清镇市第一届钓鱼大赛报名中」', '一张明信片，背面画着一朵云', '一封信写着「鱼片，记得按时吃饭」', '里面只有一张白纸，可能重要，可能不重要'];
+        const letters = ['一封是广告：「玉海城第一届钓鱼大赛报名中」', '一张明信片，背面画着一朵云', '一封信写着「鱼片，记得按时吃饭」', '里面只有一张白纸，可能重要，可能不重要'];
         hud.open('信箱', `<p>${letters[Math.floor(Math.random() * letters.length)]}</p>`, [{ label: '收好', onClick: () => hud.close() }]);
         break;
       }
@@ -548,34 +750,101 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
         break;
       }
       case 'village':
+        if (it.id === 'cinema') {
+          // 玉海城：看一场电影
+          const fee = 12;
+          hud.open(
+            '玉海电影院',
+            `<p>${it.text ?? ''}</p><p class="dim">一张票 ${fee} 金币，一场一个半小时。黑漆漆的放映厅里最适合歇脚（体力 +30）。钱：${state.coins} 金币</p>`,
+            [
+              {
+                label: `买票看电影（${fee}）`,
+                primary: true,
+                disabled: state.coins < fee,
+                onClick: () => {
+                  state.coins -= fee;
+                  state.minutes += 90;
+                  state.stamina = Math.min(100, state.stamina + 30);
+                  state.hunger = Math.max(0, state.hunger - 5);
+                  state.luck = Math.min(3, state.luck + (today('movie') ? 0 : 1));
+                  bump('movie');
+                  syncStats();
+                  hud.close();
+                  hud.toast(['小鲸鱼游过河湾的时候，全场都很安静。出来天色都变了（体力 +30）', '看到一半睡着了，醒来正好是片尾曲。睡得很香（体力 +30）', '后排有人小声吃爆米花。结局是好的，你也跟着高兴（体力 +30）'][Math.floor(Math.random() * 3)]);
+                },
+              },
+              { label: '只看看海报', onClick: () => hud.close() },
+            ],
+          );
+          break;
+        }
         hud.open(it.name, `<p>${it.text ?? ''}</p>`, [{ label: '嗯', onClick: () => hud.close() }]);
         break;
-      case 'station':
-        hud.open('高铁站', '<p>大厅里很亮，广播在报站。</p><table><tr><td>G37 → 玉海城</td><td class="need">线路还在铺</td></tr><tr><td>G52 → 海边新城</td><td class="need">线路还在铺</td></tr></table><p class="dim">《幻想世界地图》上的玉海城、大学城、港口——等铁路修好就能去了。按 M 可以看地图。</p>', [
-          { label: '看看地图', onClick: () => { hud.close(); onMap?.(); } },
-          { label: '下次再来', onClick: () => hud.close() },
-        ]);
+      case 'station': {
+        // 高铁：高架已经通了，五个站随便坐。it.stop 是这一站的名字（没有就按离得最近的站算）
+        const here = railStations.find((st) => st.name === it.stop) ?? railStations.reduce((a, b) => (a && Math.hypot(a.x - it.x, a.z - it.z) <= Math.hypot(b.x - it.x, b.z - it.z) ? a : b), null);
+        const fare = 5;
+        const stops = railStations.filter((st) => st !== here);
+        hud.open(
+          here?.name ?? '高铁站',
+          `<p>大厅里很亮，广播在报站。车票 ${fare} 金币，一站大约 8 分钟。</p><p class="dim">高架从雪山绕过田园、海边新城、高铁总站，一路到大学城和湖边小镇。按 M 可以看地图。</p>`,
+          [
+            ...stops.map((st) => ({
+              label: `🚄 去 ${st.name}（${fare}）`,
+              disabled: state.coins < fare,
+              onClick: () => {
+                state.coins -= fare;
+                state.minutes += 8;
+                hud.close();
+                onTravel?.(st);
+                syncStats();
+                hud.toast(`坐高铁到了 ${st.name}`);
+              },
+            })),
+            { label: '看看地图', onClick: () => { hud.close(); onMap?.(); } },
+            { label: '下次再来', onClick: () => hud.close() },
+          ],
+          { grid: stops.length > 6 },
+        );
         break;
+      }
       case 'bus': {
-        const stops = busStops.filter((st) => st.name !== it.stop);
-        hud.open('1 路公交', `<p>站牌：${it.stop}。车票 2 金币。</p>`, [
-          ...stops.map((st) => ({
-            label: `去 ${st.name}（2）`,
-            disabled: state.coins < 2,
-            onClick: () => {
-              state.coins -= 2;
-              state.minutes += 12;
-              hud.close();
-              onTravel?.(st);
-              syncStats();
-              hud.toast(`坐 1 路公交到了 ${st.name}`);
-            },
-          })),
-          { label: '不坐了', onClick: () => hud.close() },
-        ]);
+        // it.line：'37 路公交'（默认）或者 '地铁 1 号线'；公交在各个公交站之间跑，地铁在地铁站之间跑
+        const line = it.line ?? '37 路公交';
+        const metro = line.includes('地铁');
+        const fare = 2;
+        const took = metro ? 6 : 12;
+        const stops = (metro ? metroStops : busStops).filter((st) => st.name !== it.stop);
+        hud.open(
+          line,
+          `<p>${metro ? '站名' : '站牌'}：${it.stop ?? it.name}。车票 ${fare} 金币。</p>`,
+          [
+            ...stops.map((st) => ({
+              label: `去 ${st.name}（${fare}）`,
+              disabled: state.coins < fare,
+              onClick: () => {
+                state.coins -= fare;
+                state.minutes += took;
+                hud.close();
+                onTravel?.(st);
+                syncStats();
+                hud.toast(`坐${line}到了 ${st.name}`);
+              },
+            })),
+            { label: '不坐了', wide: true, onClick: () => hud.close() },
+          ],
+          { grid: stops.length > 6 },
+        );
         break;
       }
       case 'vehicle': {
+        // 小木船、皮划艇、独木舟：推下水去划（actions.js 的 boat），别的才是地上骑的
+        if (acts && /rowboat|kayak|canoe/.test(it.vehicle ?? '')) {
+          if (acts.aboard) acts.act('stop');
+          else if (!state.riding) acts.startBoat(it);
+          break;
+        }
+        if (acts && acts.mode !== 'ground' && !state.riding) return void hud.toast('现在腾不出手');
         if (state.riding?.id === it.id) {
           state.riding = null;
           onRide?.(null, it);
@@ -594,7 +863,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
         onSit?.(it);
         break;
       case 'gate':
-        hud.open('清镇市', '<p>牌坊上的字被太阳晒得发白。门那头是更远的山。</p><p class="dim">城里：广场、学校、教堂、夫子庙、市场、网吧、电玩厅、体育馆……</p>', [
+        hud.open(it.name ?? '玉海城', '<p>牌坊上的字被太阳晒得发白。门里是一条笔直的大街，尽头是玉海宫的金顶。</p><p class="dim">城里：宫前广场、玉海宫、清真寺、书店、老街、电影院、电玩店、超市、集市……</p>', [
           { label: '进城', onClick: () => hud.close() },
         ]);
         break;
@@ -695,7 +964,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
         fishing.phase = 'bite';
         // 上钩的是哪条：越稀有，留给你拉竿的时间越短
         const h = Math.floor(state.minutes / 60) % 24;
-        fishing.fish = rollFish(fishing.water, { luck: state.luck, night: h < 6 || h >= 19, rain: player.raining });
+        fishing.fish = rollFish(fishing.water, { luck: state.luck + (fishing.luck ?? 0), night: h < 6 || h >= 19, rain: player.raining });
         fishing.life = [0, 1.7, 1.35, 1.05, 0.8][fishing.fish.rarity];
       } else if (fishing.phase === 'bite') {
         fishing.life -= dt;
@@ -752,6 +1021,10 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
     },
     waterAround,
     sellCrops,
+    /** 动作系统建好以后交进来（滑雪、划船、冲浪要用） */
+    setActions(a) {
+      acts = a;
+    },
     /** 背包里的东西：[{ key, name, icon, count, food }] */
     bagList,
     /** 用一样东西（吃掉 / 看看） */
@@ -769,6 +1042,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
       }
       if (key === 'pearl') return '圆圆的，亮晶晶的。舍不得卖';
       if (key === 'flower') return '一把野花，闻起来是太阳的味道';
+      if (key === 'shell') return '贴在耳朵上能听见海。沙滩的冲浪小屋收，8 金币一个';
       if (FOOD[key]) {
         take(key, 1);
         state.hunger = Math.min(100, state.hunger + FOOD[key]);

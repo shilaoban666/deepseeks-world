@@ -452,7 +452,7 @@ export function createClouds(renderer, hero, { size = 1024, steps = 110, live = 
     /** Every face, now: at the start, and whenever the light changes. */
     drawAll() {
       // (they hold their shape: redrawn a strip at a time, clouds that billowed moved in jumps)
-      uniforms.uTime.value = 0;
+      uniforms.uTime.value = time * 0.015;
       for (const face of FACES) draw(face, -1);
       unit = 0;
     },
@@ -461,7 +461,8 @@ export function createClouds(renderer, hero, { size = 1024, steps = 110, live = 
       time += dt;
       if (!live) return;
       if (unit === 0) cycleTime = time;
-      uniforms.uTime.value = 0;
+      // Keep the slow hand-painted drift while only redrawing one cubemap strip per frame.
+      uniforms.uTime.value = time * 0.015;
       draw(FACES[Math.floor(unit / STRIPS)], unit % STRIPS);
       unit = (unit + 1) % (FACES.length * STRIPS);
     },

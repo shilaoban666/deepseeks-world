@@ -77,7 +77,15 @@ export function createActions({ whale, mover, cam, game, hud, woods, particles, 
     const schools = {};
     for (const water of ['lake', 'river', 'sea']) {
       const ids = pick(water);
-      const school = Array.from({ length: 16 }, (_, i) => ({ a: Math.random() * 6.28, r: 2 + Math.random() * 6, h: Math.random(), w: (0.25 + Math.random() * 0.4) * (i % 2 ? 1 : -1), size: 0.3 + Math.random() * 0.45 }));
+      const school = Array.from({ length: 16 }, (_, i) => ({
+        a: Math.random() * 6.28,
+        r: 2 + Math.random() * 6,
+        h: Math.random(),
+        w: (0.25 + Math.random() * 0.4) * (i % 2 ? 1 : -1),
+        size: 0.3 + Math.random() * 0.45,
+        phase: Math.random() * 6.28,
+        depth: 0.45 + Math.random() * 0.8,
+      }));
       const batch = createPlantBatch(shared, plants.fish, school.map((f, i) => ({ x: 0, z: 0, y: -999, h: f.size, sprite: ids[i % ids.length] })), { alpha: 0.16, sway: 0 });
       batch.visible = false;
       scene.add(batch);
@@ -488,11 +496,15 @@ export function createActions({ whale, mover, cam, game, hud, woods, particles, 
           if (water !== kind || lastWater == null) continue;
           const t = performance.now() * 0.001;
           sc.school.forEach((f, i) => {
-            const a = f.a + t * f.w;
-            const x = s.x + Math.cos(a) * f.r;
-            const z = s.z + Math.sin(a) * f.r;
+            // Each fish has its own heading, radius and depth bob, which keeps the
+            // school alive without allocating meshes or per-frame objects.
+            const a = f.a + t * f.w + Math.sin(t * 0.18 + f.phase) * 0.16;
+            const radius = f.r + Math.sin(t * 0.23 + f.phase) * 0.45;
+            const x = s.x + Math.cos(a) * radius;
+            const z = s.z + Math.sin(a) * radius;
             const bed = plan.heightAt(x, z);
-            const y = Math.min(lastWater - 0.6, Math.max(bed + 0.3, s.y + 0.4 + (f.h - 0.5) * 2.2));
+            const swimDepth = s.y + 0.4 + (f.h - 0.5) * 2.2 + (f.depth - 0.8) * 0.8 + Math.sin(t * 1.7 + f.phase) * 0.16;
+            const y = Math.min(lastWater - 0.6, Math.max(bed + 0.3, swimDepth));
             sc.at.setXYZ(i, x, y, z);
           });
           sc.at.needsUpdate = true;

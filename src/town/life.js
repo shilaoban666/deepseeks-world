@@ -78,14 +78,14 @@ export function createLife(shared, plants, { random = Math.random } = {}) {
     const n = 5 + Math.floor(random() * 5);
     const base = { cx, cz, rad: rad * R(0.6, 1.1), alt: R(16, 34), speed: R(0.12, 0.22) * (random() < 0.5 ? -1 : 1), a0: R(0, 6.28) };
     for (let i = 0; i < n; i++) {
-      thing(pick(kinds), R(0.55, 0.75), { kind: 'fly', f: base, da: R(-0.12, 0.12), dr: R(-6, 6), dy: R(-3, 3), flap: R(9, 14) });
+      thing(pick(kinds), R(0.55, 0.75), { kind: 'fly', f: base, da: R(-0.12, 0.12), dr: R(-6, 6), dy: R(-3, 3), flap: R(9, 14), turn: R(0.004, 0.012), phase: R(0, 6.28) });
     }
   }
   // ---- 海鸥：海面上空，绕着海滨小镇和沙滩 -----------------------------------------------------------------------
   for (let i = 0; i < 12; i++) {
     const z = R(-620, -240);
     const f = { cx: coastX(z) + R(-20, 120), cz: z, rad: R(30, 70), alt: R(10, 24) - SEA.level - 6, speed: R(0.08, 0.16) * (random() < 0.5 ? -1 : 1), a0: R(0, 6.28) };
-    thing(pick(['birds-herring-gull', 'birds-black-headed-gull']), R(0.9, 1.1), { kind: 'fly', f, da: 0, dr: 0, dy: 0, flap: R(4, 6), sea: true });
+    thing(pick(['birds-herring-gull', 'birds-black-headed-gull']), R(0.9, 1.1), { kind: 'fly', f, da: 0, dr: 0, dy: 0, flap: R(4, 6), sea: true, turn: R(0.003, 0.008), phase: R(0, 6.28) });
   }
   // ---- 湖上：鸭子、鸳鸯、大雁、天鹅，慢慢漂 ---------------------------------------------------------------------
   for (let i = 0; i < 16; i++) {
@@ -93,7 +93,7 @@ export function createLife(shared, plants, { random = Math.random } = {}) {
     const h = name === 'birds-mute-swan' ? 1.2 : name === 'birds-greylag-goose' ? 0.9 : 0.62;
     const a = R(0, 6.28);
     const k = R(0.2, 0.75);
-    thing(name, h, { kind: 'swim', cx: LAKE.x + Math.cos(a) * LAKE.rx * k, cz: LAKE.z + Math.sin(a) * LAKE.rz * k, rad: R(4, 14), speed: R(0.03, 0.08) * (random() < 0.5 ? -1 : 1), a0: R(0, 6.28) });
+    thing(name, h, { kind: 'swim', cx: LAKE.x + Math.cos(a) * LAKE.rx * k, cz: LAKE.z + Math.sin(a) * LAKE.rz * k, rad: R(4, 14), speed: R(0.03, 0.08) * (random() < 0.5 ? -1 : 1), a0: R(0, 6.28), turn: R(0.006, 0.016), phase: R(0, 6.28) });
   }
   // ---- 河滩上的苍鹭、白鹭：站着不动，偶尔挪一步 -------------------------------------------------------------------
   for (let i = 0; i < 9; i++) {
@@ -116,7 +116,7 @@ export function createLife(shared, plants, { random = Math.random } = {}) {
     const x = fields.x + Math.cos(a) * r;
     const z = fields.z + Math.sin(a) * r;
     if (fieldsAt(x, z) < 0.5) continue;
-    thing(pick(['birds-carrion-crow', 'birds-magpie', 'birds-house-sparrow']), R(0.45, 0.6), { kind: 'hop', cx: x, cz: z, rad: R(1, 3), speed: R(0.2, 0.5), a0: R(0, 6.28) });
+    thing(pick(['birds-carrion-crow', 'birds-magpie', 'birds-house-sparrow']), R(0.45, 0.6), { kind: 'hop', cx: x, cz: z, rad: R(1, 3), speed: R(0.2, 0.5), a0: R(0, 6.28), phase: R(0, 6.28) });
   }
   // ---- 船：海上远远地漂、海滨小镇岸边系着几条，湖上一条小帆船和码头边的小木船 -------------------------------------
   const boats = [
@@ -196,17 +196,18 @@ export function createLife(shared, plants, { random = Math.random } = {}) {
         let vz = 0;
         if (t.kind === 'fly') {
           const f = t.f;
-          const a = f.a0 + clock * f.speed + t.da;
+          const a = f.a0 + clock * f.speed + t.da + Math.sin(clock * t.turn + t.phase) * 0.22;
           const r = f.rad + t.dr + Math.sin(clock * 0.3 + t.da * 20) * 6;
           x = f.cx + Math.cos(a) * r;
           z = f.cz + Math.sin(a) * r;
           const ground = t.sea ? SEA.level : heightAt(x, z);
           y = ground + f.alt + t.dy + Math.sin(clock * 0.7 + t.da * 30) * 2;
-          vx = -Math.sin(a) * f.speed;
-          vz = Math.cos(a) * f.speed;
+          vx = -Math.sin(a) * f.speed - Math.cos(clock * t.turn + t.phase) * 0.02;
+          vz = Math.cos(a) * f.speed - Math.sin(clock * t.turn + t.phase) * 0.02;
           if (roost) y = -500;
         } else if (t.kind === 'swim' || t.kind === 'hop' || t.kind === 'boat') {
-          const a = t.a0 + clock * t.speed;
+          const wander = t.turn ? Math.sin(clock * t.turn + t.phase) * (t.kind === 'swim' ? 0.24 : 0.12) : 0;
+          const a = t.a0 + clock * t.speed + wander;
           x = t.cx + Math.cos(a) * t.rad;
           z = t.cz + Math.sin(a) * t.rad;
           vx = -Math.sin(a) * t.speed;
@@ -214,7 +215,8 @@ export function createLife(shared, plants, { random = Math.random } = {}) {
           if (t.kind === 'swim') y = LAKE.level - t.h * 0.3 + Math.sin(clock * 1.7 + t.a0) * 0.03;
           else if (t.kind === 'boat') y = t.level - t.h * t.sink + Math.sin(clock * 0.9 + t.a0) * 0.08;
           else {
-            y = heightAt(x, z) + Math.max(0, Math.sin(clock * 9 + t.a0 * 5)) * 0.12;
+            const hopping = Math.sin(clock * 3.2 + t.phase) > 0.55;
+            y = heightAt(x, z) + (hopping ? Math.sin(clock * 18 + t.phase) * 0.1 + 0.12 : 0);
             if (roost) y = -500;
           }
         } else {

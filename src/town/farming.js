@@ -152,7 +152,11 @@ export function createFarming(shared, plants, plots) {
         if (raining) p.water = 1;
         if (p.crop && p.growth < 1) {
           const c = CROP[p.crop];
-          p.growth = Math.min(1, p.growth + (hours / c.hours) * (p.water > 0.05 ? 1 : 0.35));
+          // Moist soil supports the full growth rate. Dry soil keeps growing slowly so
+          // crops never appear frozen when the player misses one watering cycle.
+          const moisture = p.water > 0.05 ? 1 : 0.35;
+          const weatherFactor = raining ? 1.05 : 1;
+          p.growth = Math.min(1, p.growth + (hours / c.hours) * moisture * weatherFactor);
         }
         // 浇一次水管 8 个钟头
         p.water = Math.max(0, p.water - hours / 8);

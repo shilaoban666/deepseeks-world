@@ -94,7 +94,7 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
   const paintedHouse = (x, z, opts = {}) => {
     const { shape = 'house', scale = 1.1, turn = null, wall = null, roof = null } = opts;
     const t = turn ?? faceRoad(x, z);
-    painted.push({ x, z, turn: t, scale, shape, wall: wall ?? pick(random, WALLS), roof: roof ?? pick(random, TOWN_ROOFS) });
+    painted.push({ x, z, turn: t, scale, shape, shop: opts.shop ?? null, wall: wall ?? pick(random, WALLS), roof: roof ?? pick(random, TOWN_ROOFS) });
     // 碰撞盒要轴对齐：取房子占地转过去之后的包围
     const fp = { cottage: [7, 10], house: [7.5, 11], wing: [10.5, 11], tall: [7, 8.5], long: [8, 19], church: [9, 22], round: [7.4, 7.4], slim: [3.8, 3.8] }[shape] ?? [8, 10];
     const hw = (fp[0] * scale) / 2;
@@ -1173,6 +1173,16 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     add({ id: `wild-${i}`, name: '野花丛', kind: 'gather', x, z, r: 9, hint: 'E 采一把野花' });
   }
 
+  // 每栋房子都有一个轻量级 E 交互点；店铺优先打开商店，其余建筑提供参观提示。
+  for (let i = 0; i < painted.length; i++) {
+    const h = painted[i];
+    add({ id: `building-${i}`, name: h.shop ? `${h.shop}店` : '居民小屋', kind: h.shop ? 'shop' : 'building', x: h.x, z: h.z, r: h.shop ? 7 : 4.5, hint: h.shop ? `E 进入${h.shop}` : 'E 查看建筑', shop: h.shop, map: false });
+  }
+  // 果园种植区：树下保留观赏树，南侧增加可播种的手绘果树地块。
+  {
+    const d = DISTRICTS.find((x) => x.id === 'orchard');
+    for (let i = 0; i < 6; i++) gardenPlots.push({ x: d.x - 20 + (i % 3) * 8, z: d.z + 45 + Math.floor(i / 3) * 4, where: '果园种植区' });
+  }
   const colliders = b.colliders;
   return {
     group,

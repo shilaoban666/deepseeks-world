@@ -22,11 +22,15 @@ export const CROPS = [
   { id: 'peanut', name: '花生', hours: 22, seed: 12, sell: 30, food: 10, veg: false, h: 0.55, yield: [4, 6], note: '果子长在土里' },
   { id: 'sunflower', name: '向日葵', hours: 26, seed: 14, sell: 36, food: 6, veg: false, h: 1.8, yield: [1, 2], note: '跟着太阳转，结一盘瓜子' },
   { id: 'tea', name: '茶树', hours: 36, seed: 20, sell: 50, food: 4, veg: false, h: 0.95, yield: [3, 4], note: '采最嫩的两片叶子' },
+  { id: 'apple-tree', name: '苹果树苗', hours: 48, seed: 24, sell: 58, food: 12, veg: false, h: 2.8, yield: [3, 6], note: '四季都能照料的小苹果树', orchard: true, sprite: 'orchard-apple' },
+  { id: 'peach-tree', name: '桃树苗', hours: 54, seed: 28, sell: 68, food: 14, veg: false, h: 3.0, yield: [3, 5], note: '春天开粉色的小花', orchard: true, sprite: 'orchard-peach' },
+  { id: 'pear-tree', name: '梨树苗', hours: 60, seed: 30, sell: 74, food: 13, veg: false, h: 3.1, yield: [3, 5], note: '果实清甜，适合小镇风', orchard: true, sprite: 'orchard-pear' },
 ];
 export const CROP = Object.fromEntries(CROPS.map((c) => [c.id, c]));
 /** 收获物在 farm 图集里的名字 */
 const PRODUCE = { radish: 'radish', 'napa-cabbage': 'napa-cabbage', pea: 'pea-pods', garlic: 'garlic-bulb', potato: 'potato-tuber', tomato: 'tomato', chilli: 'chilli', 'sweet-potato': 'sweet-potato-root', maize: 'maize-cob', peanut: 'peanuts', sunflower: 'sunflower-head', tea: 'tea-shoots' };
 export const produceSprite = (id) => `produce-${PRODUCE[id] ?? id}`;
+export const plantSprite = (c) => c.sprite ?? `plant-${c.id}`;
 export const STAGES = ['种子', '发芽', '长叶', '开花结果', '成熟'];
 /** 生长进度 → 第几阶段 */
 export const stageOf = (g) => (g >= 1 ? 4 : g >= 0.75 ? 3 : g >= 0.4 ? 2 : g >= 0.12 ? 1 : 0);
@@ -88,7 +92,8 @@ export function createFarming(shared, plants, plots) {
     if (!c) {
       attr.offset.setXYZ(i, p.x, -500, p.z);
     } else {
-      const sp = farmPage.sprites[spriteIndex.get(`plant-${c.id}`) ?? 0];
+      const spriteId = spriteIndex.get(plantSprite(c)) ?? spriteIndex.get('plant-napa-cabbage') ?? 0;
+      const sp = farmPage.sprites[spriteId];
       const h = c.h * STAGE_H[st] * 1.5;
       attr.offset.setXYZ(i, p.x, p.y + 0.12, p.z);
       attr.scale.setXY(i, (h * sp.w) / Math.max(1, sp.h), h);

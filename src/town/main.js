@@ -596,6 +596,7 @@ const findNearest = () => {
   set('rice', icon(farmSprites['produce-rice-ears'], './textures/plants/farm.png'));
   set('veg', icon(farmSprites['produce-napa-cabbage'], './textures/plants/farm.png'));
   set('fruit', icon(farmSprites['orchard-peach'], './textures/plants/farm.png'));
+  for (const c of CROP ? [] : []) void c;
 }
 
 // ---- 动作 ------------------------------------------------------------------------------------------------------

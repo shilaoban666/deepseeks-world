@@ -179,6 +179,7 @@ export function createInterior(shared) {
       put(BOX(0.44, 0.04, 0.44), 'chair', cx + dx, 0.45, cz + dz);
       put(BOX(0.44, 0.42, 0.04), 'chair', cx + dx, 0.67, cz + dz + (dz > 0 ? 0.2 : -0.2));
       for (const [ox, oz] of [[-0.18, -0.18], [0.18, -0.18], [-0.18, 0.18], [0.18, 0.18]]) put(BOX(0.04, 0.45, 0.04), 'chair', cx + dx + ox, 0.225, cz + dz + oz);
+      interactables.push({ id: `chair-dining-${dx}-${dz}`, name: '餐椅', kind: 'chair', x: cx + dx, z: cz + dz, r: 0.85, hint: 'E 坐下', seat: { x: cx + dx, z: cz + dz + (dz > 0 ? -0.28 : 0.28), yaw: dz > 0 ? 0 : Math.PI } });
     }
     // 桌上：一碗白米饭 + 筷子
     put(CYL(0.055, 0.06, 12), 'porcelain', cx - 0.3, 0.81, cz);
@@ -271,6 +272,7 @@ export function createInterior(shared) {
     put(BOX(0.44, 0.04, 0.44), 'chair', cx - 0.68, 0.45, cz);
     put(BOX(0.04, 0.42, 0.44), 'chair', cx - 0.88, 0.67, cz);
     block(cx - 0.68, cz, 0.5, 0.5);
+    interactables.push({ id: 'i-study-chair', name: '书桌椅', kind: 'chair', x: cx - 0.68, z: cz, r: 0.85, hint: 'E 坐下', seat: { x: cx - 0.68, z: cz, yaw: Math.PI / 2 } });
     // 书架 2.0 高
     put(BOX(0.38, 2.0, 1.6), 'shelf', 7.75, 1.0, cz);
     block(7.75, cz, 0.38, 1.6);

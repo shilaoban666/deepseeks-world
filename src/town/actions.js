@@ -28,6 +28,18 @@ export function createActions({ whale, mover, cam, game, hud, woods, particles, 
   let lieTime = 0;
   let wasFishing = false;
   let lastWater = null;
+  let kite = null;
+  let kiteLine = null;
+  let kitePhase = 0;
+  {
+    const shape = new THREE.Shape();
+    shape.moveTo(0, 0.7); shape.lineTo(0.55, 0); shape.lineTo(0, -0.7); shape.lineTo(-0.55, 0); shape.closePath();
+    kite = new THREE.Mesh(new THREE.ShapeGeometry(shape), new THREE.MeshBasicMaterial({ color: 0xe87961, side: THREE.DoubleSide, transparent: true, opacity: 0.92 }));
+    kite.visible = false; scene.add(kite);
+    const lg = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+    kiteLine = new THREE.Line(lg, new THREE.LineBasicMaterial({ color: 0xf5e8ca, transparent: true, opacity: 0.8 }));
+    kiteLine.visible = false; scene.add(kiteLine);
+  }
 
   // 钓竿：一根细杆 + 一根线 + 一个红白浮漂
   const rod = new THREE.Group();
@@ -152,6 +164,7 @@ export function createActions({ whale, mover, cam, game, hud, woods, particles, 
         { id: 'fish', key: 'E', label: '钓鱼', on: !!water && !raining },
         { id: 'lie', key: 'R', label: mode === 'lie' ? '起来' : '晒太阳', on: (mode === 'ground' && !air) || mode === 'lie' },
         { id: 'fire', key: 'G', label: '点火', on: mode === 'ground' && !raining },
+        { id: 'kite', key: 'K', label: mode === 'kite' ? '收风筝' : '放风筝', on: mode === 'ground' || mode === 'kite' },
       ];
     },
     /** 能不能在这儿钓鱼（E 键在没有别的交互点时会走这里） */
@@ -261,6 +274,13 @@ export function createActions({ whale, mover, cam, game, hud, woods, particles, 
           game.startFishing?.();
           return true;
         }
+        case 'kite': {
+          if (mode === 'kite') { mode = 'ground'; kite.visible = kiteLine.visible = false; hud.toast('把风筝线绕好，收进了篮子'); return true; }
+          if (mode !== 'ground' || air) return false;
+          mode = 'kite'; kitePhase = 0; kite.visible = kiteLine.visible = true;
+          hud.toast('风筝飞起来了！（WASD 走动，K 收线）');
+          return true;
+        }
         default:
           return false;
       }
@@ -272,6 +292,7 @@ export function createActions({ whale, mover, cam, game, hud, woods, particles, 
       if (code === 'KeyC' || code === 'ControlLeft') return actions.act('dive');
       if (code === 'KeyR') return actions.act('lie');
       if (code === 'KeyG') return actions.act('fire');
+      if (code === 'KeyK') return actions.act('kite');
       return false;
     },
     /**
@@ -303,7 +324,7 @@ export function createActions({ whale, mover, cam, game, hud, woods, particles, 
       let eye = 1.35;
       const running = (keyDown('ShiftLeft') || keyDown('ShiftRight')) && st.stamina > 15;
 
-      if (mode === 'ground') {
+      if (mode === 'ground' || mode === 'kite') {
         // 乘坐交通工具时提高巡航速度，同时不再因体力下降而突然变慢。
         const rideBoost = game.state.riding ? (game.state.riding.vehicle?.includes('boat') || game.state.riding.vehicle?.includes('canoe') || game.state.riding.vehicle?.includes('kayak') ? 1.3 : 1.65) : 1;
         const moved = mover.step(dt, s, cam, (st.stamina > 15 ? 1 : 0.72) * rideBoost, true);
@@ -342,6 +363,16 @@ export function createActions({ whale, mover, cam, game, hud, woods, particles, 
           pose = 'run';
         }
         if (air) pose = 'air';
+        if (mode === 'kite') {
+          kitePhase += dt;
+          const fx = Math.sin(s.yaw), fz = Math.cos(s.yaw);
+          const reach = 5.2 + Math.min(3, weather?.info?.wind ?? 1);
+          kite.position.set(s.x + fx * reach, s.y + 4.2 + Math.sin(kitePhase * 2.1) * 0.45, s.z + fz * reach);
+          kite.rotation.set(0.25 * Math.sin(kitePhase), s.yaw, Math.sin(kitePhase * 1.7) * 0.18);
+          const lp = kiteLine.geometry.attributes.position;
+          lp.setXYZ(0, s.x, s.y + 1.0, s.z); lp.setXYZ(1, kite.position.x, kite.position.y, kite.position.z); lp.needsUpdate = true;
+          pose = moving ? 'run' : null;
+        }
       } else if (mode === 'climb') {
         let dy = 0;
         if (keyDown('KeyW') || keyDown('ArrowUp')) dy += 1;
@@ -472,6 +503,7 @@ export function createActions({ whale, mover, cam, game, hud, woods, particles, 
     /** 出门/进门的时候把状态归零 */
     reset() {
       mode = 'ground';
+      kite.visible = kiteLine.visible = false;
       air = false;
       tree = null;
       towel.visible = false;

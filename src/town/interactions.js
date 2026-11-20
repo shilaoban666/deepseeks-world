@@ -185,8 +185,8 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
       hud.open(
         it.name,
         `<p>翻好的地，空着。种点什么？</p>` +
-          (seeds.length
-            ? `<div class="bag-grid">${seeds.map((c) => `<button class="slot" data-seed="${c.id}"><span class="ic">${cropIcon(c)}</span><b>${c.name}</b><i>×${state.bag[`seed-${c.id}`]} · ${c.hours} 小时熟</i></button>`).join('')}</div><p class="dim">浇过水的长得快（不浇只有三成速度），下雨天不用浇。熟了地里会亮晶晶的。</p>`
+          ((seeds.filter((c) => !c.orchard || String(p.where).includes('果园')).length)
+            ? `<div class="bag-grid">${seeds.filter((c) => !c.orchard || String(p.where).includes('果园')).map((c) => `<button class="slot" data-seed="${c.id}"><span class="ic">${cropIcon(c)}</span><b>${c.name}</b><i>×${state.bag[`seed-${c.id}`]} · ${c.hours} 小时熟</i></button>`).join('')}</div><p class="dim">果园地块适合果树苗；普通菜地适合蔬菜和花卉。浇水后生长更快。</p>`
             : `<p class="dim">手上没有种子。田园小镇的种子铺、花鸟市场都有卖。</p>`),
         [{ label: '走了', onClick: () => hud.close() }],
       );
@@ -398,8 +398,8 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
         hud.toast('农夫：「今年的稻子长得不错。要种子的话，旁边铺子里有。」');
         break;
       case 'seed':
-        if (it.id === 'farm-seeds') shop('种子铺', CROPS.map((c) => `seed-${c.id}`), '一排排小纸包，每包上面画着长大以后的样子。老板说：「浇了水的长得快。」');
-        else shop('花鸟市场', ['seed-napa-cabbage', 'seed-radish', 'seed-tomato', 'seed-sunflower', 'flower', 'veg'], '花苗、菜种，还有一笼会咕咕叫的鸽子。');
+        if (it.id === 'farm-seeds') shop('种子铺', CROPS.map((c) => `seed-${c.id}`), '一排排小纸包，每包上面画着长大以后的样子。老板说：「浇了水的长得快。」果园种植区还能栽果树苗。');
+        else shop('花鸟市场', ['seed-napa-cabbage', 'seed-radish', 'seed-tomato', 'seed-sunflower', 'seed-apple-tree', 'seed-peach-tree', 'seed-pear-tree', 'flower', 'veg'], '花苗、菜种，还有一笼会咕咕叫的鸽子。');
         break;
       case 'market':
         shop('菜市场', ['veg', 'fish', 'rice'], '早上的青菜还带着露水。收菜的阿姨说：自己种的菜也收。', true);
@@ -586,6 +586,12 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
         }
         break;
       }
+      case 'building':
+        hud.open(it.name, '<p>推开木门，屋里有晒过太阳的木头香。</p><p class="dim">每一栋房子都留下了居民的生活痕迹。</p>', [{ label: '离开', onClick: () => hud.close() }]);
+        break;
+      case 'chair':
+        onSit?.(it);
+        break;
       case 'gate':
         hud.open('清镇市', '<p>牌坊上的字被太阳晒得发白。门那头是更远的山。</p><p class="dim">城里：广场、学校、教堂、夫子庙、市场、网吧、电玩厅、体育馆……</p>', [
           { label: '进城', onClick: () => hud.close() },

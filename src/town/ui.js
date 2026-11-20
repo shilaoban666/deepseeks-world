@@ -224,6 +224,7 @@ export function createMinimap(canvas, baked) {
         g.drawImage(baked, 0, 0, W, H);
         // 交互点
         for (const it of interactables) {
+          if (it.map === false) continue;
           const [px, py] = w2mFull(it.x, it.z);
           api.marker(px, py, it);
         }
@@ -245,6 +246,7 @@ export function createMinimap(canvas, baked) {
       const w2m = (x, z) => [W / 2 + (x - s.x) * scale, H / 2 + (z - s.z) * scale];
       // 交互点（只画近的）
       for (const it of interactables) {
+        if (it.map === false) continue;
         const d = Math.hypot(it.x - s.x, it.z - s.z);
         if (d > span * 0.55) continue;
         const [px, py] = w2m(it.x, it.z);

@@ -15,10 +15,9 @@ const ball = (r, ws = 10, hs = 8) => new THREE.SphereGeometry(r, ws, hs);
 const cone = (r, h, seg = 10) => new THREE.ConeGeometry(r, h, seg);
 
 /** 登记一个转过角度的占地的外接轴对齐碰撞盒。 */
-export function collideRot(b, x, z, rotY, hw, hd, top = 20) {
-  const c = Math.abs(Math.cos(rotY));
-  const s = Math.abs(Math.sin(rotY));
-  b.collide(x, z, hw * c + hd * s, hw * s + hd * c, top);
+export function collideRot(b, x, z, rotY, hw, hd, top = 20, base = null) {
+  // （盒子现在可以带朝向：不再取外接的正盒，斜着的房子旁边没有看不见的墙角了）
+  b.collide(x, z, hw, hd, top, rotY, base);
 }
 
 /** 局部坐标系：at 把局部点转到世界，put 加几何体，hit 登记局部位置的碰撞盒。 */
@@ -31,7 +30,7 @@ function frame(b, o) {
   const put = (geo, key, lx, ly, lz, turn = 0) => b.add(geo, key, at(lx, ly, lz), rotY + turn);
   const hit = (lx, lz, hw, hd, top) => {
     const p = at(lx, 0, lz);
-    collideRot(b, p[0], p[2], rotY, hw, hd, top);
+    collideRot(b, p[0], p[2], rotY, hw, hd, top, base);
   };
   return { x, z, rotY, base, at, put, hit };
 }
@@ -154,8 +153,11 @@ export function palace(b, o) {
     put(ball(0.45), 'paint#4', cx, 8.5, cz);
     hit(cx, cz, 4.6, 4.6, 9);
   }
-  hit(0, 0, 24.3, 17.3, 26);
-  hit(0, 18.6, 6.1, 1.6, 2);
+  // 两层石台是能上去的：正面十级台阶（每级 0.3 m）走上第二层，大殿本身才是墙
+  hit(0, 0, 24, 17, 1.5);
+  hit(0, 0, 21, 14, 3.0);
+  hit(0, 0, 16.3, 8.3, 26);
+  for (let i = 0; i < 10; i++) hit(0, (13.8 + 20.6 - i * 0.66) / 2, 5, (20.6 - i * 0.66 - 13.8) / 2, (i + 1) * 0.3);
   return { rotY, h: 24 };
 }
 
@@ -741,7 +743,9 @@ export function smallStation(b, o) {
     const hh = ph * t * 0.96;
     for (const dz of [-0.8, 0.8]) put(box(0.16, hh + 1.0, 0.16), 'wood#2', lx, (hh + 1.0) / 2 - 0.05, sz + dz);
   }
-  hit(0, sz, run / 2 + 0.2, 1.0, ph);
+  // 楼梯一级一级都踩得住，上到站台；站台是一整块能站的板
+  for (let i = 0; i < n; i++) hit(run / 2 - 0.5 * (i + 0.5), sz, 0.29, 0.85, rise * (i + 1));
+  hit(0, pz, 17, 2.5, ph);
   // 售票小屋（地面，楼梯脚旁）
   const hx = o.houseX ?? run / 2 + 4.2;
   const hz = o.houseZ ?? 14;
@@ -917,9 +921,9 @@ export function viaduct(b, path, opts = {}) {
       geo.rotateX(-pitch);
       b.add(geo, key, [mx + lx * cos, my + ly, mz - lx * sin], rotY);
     };
-    place(box(width, T, len), 'mason#2', 0, -T / 2);
-    place(box(width + 0.3, 0.22, len), 'mason#0', 0, -T + 0.02);
-    for (const sx of [-1, 1]) place(box(0.4, 0.95, len), 'mason#2', sx * (width / 2 - 0.2), 0.42);
+    place(box(width, T, len), 'mason#4', 0, -T / 2);
+    place(box(width + 0.3, 0.22, len), 'mason#3', 0, -T + 0.02);
+    for (const sx of [-1, 1]) place(box(0.4, 0.95, len), 'mason#4', sx * (width / 2 - 0.2), 0.42);
     place(box(width - 1.6, 0.12, len), 'mason#1', 0, 0.06);
     for (const tx of [-width * 0.24, width * 0.24]) for (const g of [-0.72, 0.72]) place(box(0.12, 0.16, len), 'iron#0', tx + g, 0.2);
   };
@@ -963,8 +967,8 @@ export function viaduct(b, path, opts = {}) {
       const geo = new THREE.CylinderGeometry(Math.SQRT1_2, Math.SQRT1_2 * 1.22, hgt, 4, 1);
       geo.rotateY(PI / 4);
       geo.scale(width * 0.78, 1, 2.6);
-      b.add(geo, 'mason#0', [p[0], under - hgt / 2 + 0.05, p[2]], rotY);
-      b.add(box(width * 0.86, 0.4, 3.0), 'mason#2', [p[0], under - 0.3, p[2]], rotY);
+      b.add(geo, 'mason#3', [p[0], under - hgt / 2 + 0.05, p[2]], rotY);
+      b.add(box(width * 0.86, 0.4, 3.0), 'mason#4', [p[0], under - 0.3, p[2]], rotY);
       collideRot(b, p[0], p[2], rotY, width * 0.48, 1.6, under - g);
       piers.push([p[0], p[1], p[2]]);
     }
@@ -978,7 +982,7 @@ export function viaduct(b, path, opts = {}) {
         const arch = new THREE.TorusGeometry(R, 0.7, 6, 14, PI);
         arch.rotateY(PI / 2);
         arch.scale((width * 0.72) / 1.4, 1, 1);
-        b.add(arch, 'mason#0', [(p[0] + prev[0]) / 2, mu - R - 0.55, (p[2] + prev[2]) / 2], Math.atan2(dx, dz));
+        b.add(arch, 'mason#3', [(p[0] + prev[0]) / 2, mu - R - 0.55, (p[2] + prev[2]) / 2], Math.atan2(dx, dz));
       }
     }
     prev = p;
@@ -1337,12 +1341,13 @@ function carParts(nose) {
  * @returns {{ group: THREE.Group, update(dt: number): void, position: number[] }}
  */
 export function createTrain(shared, path, opts = {}) {
-  const { cars = 5, speed = 34, stops = [], dwell = 8, loop = false, accel = 1.2 } = opts;
+  // side：偏到哪一股道上（米，顺着行驶方向的右手边为正）；dir：一开始往哪头开（1 / -1）；from：一开始停在哪头（0 起点 / 1 终点）；stripe：腰线的颜色
+  const { cars = 5, speed = 34, stops = [], dwell = 8, loop = false, accel = 1.2, side = 0, from = 0, stripe = null } = opts;
   const group = new THREE.Group();
   const sp = sampler(path);
   const GAP = 25;
   const WHITE = [0.95, 0.96, 0.97];
-  const BLUE = [0.2, 0.4, 0.72];
+  const BLUE = stripe ?? [0.2, 0.4, 0.72];
   const DARK = [0.14, 0.17, 0.24];
   // 几何体：车头 / 中间 / 车尾 三种，材质共用一套
   const mats = {
@@ -1379,9 +1384,9 @@ export function createTrain(shared, path, opts = {}) {
   const sMin = Math.min(sp.total, tail + 12);
   const sMax = Math.max(sMin, sp.total - 12);
   const halts = stops.map((s) => Math.min(sMax, Math.max(sMin, s + tail / 2))).sort((a, c) => a - c);
-  let s = Math.min(sMax, Math.max(sMin, opts.start != null ? opts.start + tail / 2 : sMin));
+  let s = from ? sMax : Math.min(sMax, Math.max(sMin, opts.start != null ? opts.start + tail / 2 : sMin));
   let v = 0;
-  let dir = 1;
+  let dir = opts.dir ?? (from ? -1 : 1);
   let wait = 0;
   const lead = [0, 0, 0];
   const place = () => {
@@ -1393,7 +1398,9 @@ export function createTrain(shared, path, opts = {}) {
       const dy = p1[1] - p0[1];
       const dz = p1[2] - p0[2];
       const car = list[i];
-      car.position.set((p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2 + 0.25, (p0[2] + p1[2]) / 2);
+      // （两股道：往线路方向的右手边偏 side 米）
+      const hl = Math.hypot(dx, dz) || 1;
+      car.position.set((p0[0] + p1[0]) / 2 - (dz / hl) * side, (p0[1] + p1[1]) / 2 + 0.25, (p0[2] + p1[2]) / 2 + (dx / hl) * side);
       if (dx * dx + dz * dz > 1e-6) {
         car.rotation.y = Math.atan2(dx, dz);
         car.rotation.x = -Math.atan2(dy, Math.hypot(dx, dz));

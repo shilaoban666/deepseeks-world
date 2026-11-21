@@ -6,6 +6,8 @@ import { bakeGround, createField, createFrame, loadGroundTextures, LITE_RINGS } 
 import { createSky, createSkyParts } from '../valley/sky.js';
 import { createStrokes } from '../valley/strokes.js';
 import { createCity } from './city.js';
+import { loadTownModels } from './models.js';
+import { loadKitManifest, createKitHouses } from './kit.js';
 import { createInterior } from './interior.js';
 import { loadWhalechan, createWhalechan, createCamera, createMover } from './player.js';
 import { createHud, bakeMinimap, createMinimap } from './ui.js';
@@ -179,6 +181,10 @@ const skyParts = createSkyParts(renderer, {
   liveClouds: true,
   cloudStrips: legacy ? 8 : high ? 32 : medium ? 16 : 32,
   backdropWidth: high ? 12288 : 4096,
+  // 雪山：只在一个方向——北偏西，雪山小镇背后——占天边八分之一（45°），别的方向一点不动，还是原作的远山。
+  // 它是画在天边的（和原作那两座大峰同一个配方、同一种画法），隔着十八公里的空气：
+  // 近处的草坡、中间的绿丘、云带、再后面才是它——远近的层次靠这个，不靠把一座白山堆在眼前。
+  snowPeak: { at: [-18.4, -1.6], broad: 20, tall: 3.5, lower: 1.25, width: 45 },
 });
 // （云和远山的 shader 是整个游戏里最重的两个：编译放在后台，画的时候切成条，条与条之间等显卡喘气——
 //   一口气画完在核显上会让显卡好几秒不回话，系统就把驱动重置了）
@@ -273,6 +279,10 @@ scene.add(field.group);
 if (!legacy) field.ground.mesh.renderOrder = 6;
 // 夜有多深（0 白天，1 深夜）：灯和窗读它
 field.uniforms.uNight = { value: 0 };
+// 这是一座走在里面的城：房子带上街景画里才有的东西——木构架、爬藤、窗台花箱（src/valley/village.js）
+field.uniforms.uTown = { value: 1 };
+// 草的绿调深一档（?grass=0 是原作的浅度，对比用）：晴天的大太阳底下，草地用深一点的那几种绿来调，颜色才沉得住
+field.uniforms.uMeadowDeep.value = Number(params.get('grass') ?? 0.2);
 // 屋里的剖面：人站的地方，和人→镜头的方向（interior 的墙读它）
 field.uniforms.uCut = { value: new THREE.Vector4() };
 
@@ -376,8 +386,31 @@ if (params.get('plants') !== '0') {
 }
 mark('city');
 await setProgress(0.5, '正在盖房子…');
+// 精模试点（public/models3：Blender 里重绘过的房子）。默认不开——它们和周围的房子大小、画法都不统一；
+// ?models=12 才把家门口和 AI 小镇的十二栋换上（看效果用）。
+let modelList = [];
+if (Number(params.get('models') ?? 0) > 0) {
+  try {
+    const res = await fetch('./models3/_manifest.json');
+    if (res.ok) modelList = (await res.json()).items.filter((r) => r.glb).slice(0, Number(params.get('models'))).map((r) => r.glb);
+  } catch (e) {
+    console.warn('精模清单读不到，照旧画', e);
+  }
+}
+// 房屋套件（public/models4：Blender 里建的吉卜力风房子，实例化）。高、中画质用它，房子也多五倍；
+// 低画质和 ?kit=0 还是原来画出来的房子。
+let kit = null;
+if (!lite && params.get('kit') !== '0') {
+  try {
+    kit = await loadKitManifest('./models4/');
+  } catch (e) {
+    console.warn('房屋套件读不到，照旧画', e);
+  }
+}
 const city = createCity(field.uniforms, field, {
   plants,
+  kit,
+  models: kit ? [] : modelList,
   // 路面默认用程序化的手绘石板（新贴图版过曝、像照片）；?roadtex=1 才换贴图
   roadTex: params.get('tex') !== '0' && params.get('roadtex') === '1',
   cards: high ? 1 : medium ? 0.7 : 0.4,
@@ -386,6 +419,36 @@ const city = createCity(field.uniforms, field, {
   density: high ? 1 : medium ? 0.85 : 0.6,
 });
 scene.add(city.group);
+if (city.modelSlots.length) {
+  try {
+    const fine = await timed('models', loadTownModels(field.uniforms, city.modelSlots, plan.heightAt));
+    scene.add(fine);
+    console.log('精模：', JSON.stringify(fine.userData.stats));
+  } catch (e) {
+    console.warn('精模没载成：那几栋房子这次是空的（?models=0 可以先关掉）', e);
+  }
+}
+let rig = null; // 会动的模型（车、船）
+let ridden = null; // 正骑着的那一件 { model, it }
+if (kit && city.kitHouses.length) {
+  try {
+    const houses = await timed('kit', createKitHouses(field.uniforms, kit, city.kitHouses, plan.heightAt));
+    scene.add(houses);
+    rig = houses.userData.rig;
+    console.log('房屋套件：', JSON.stringify(houses.userData.stats));
+  } catch (e) {
+    console.warn('房屋套件没载成：房子这次是空的（?kit=0 可以先关掉）', e);
+  }
+}
+if (city.propSlots.length) {
+  try {
+    const props = await timed('props', loadTownModels(field.uniforms, city.propSlots, plan.heightAt, { ink: false, srgbFix: true }));
+    scene.add(props);
+    console.log('街具：', JSON.stringify(props.userData.stats));
+  } catch (e) {
+    console.warn('街具没载成', e);
+  }
+}
 mark('life-farground');
 // 鸟、鸭子、船（素材库 life 图集）
 const life = plants?.life
@@ -436,7 +499,7 @@ const outdoorPos = { x: plan.START[0], z: plan.START[1] };
 const outdoorDoor = { x: 0, z: -4.2 }; // 家门外站的地方（房子在 z=-16，门朝南）
 cam.update(0.016, whale.state, plan.heightAt);
 // 碰撞盒按室内/室外各一套；人也细一点（真人肩宽 ≈ 0.6 m）
-const mover = createMover({ colliderList: () => (indoor ? interior.colliders : city.colliders) });
+const mover = createMover({ colliderList: () => (indoor ? interior.colliders : city.colliders), groundAt: (x, z) => (indoor ? interior.groundAt(x, z) : plan.heightAt(x, z)) });
 
 // ---- 界面 ------------------------------------------------------------------------------------------------------
 // ---- 粒子和天气 -------------------------------------------------------------------------------------------------
@@ -498,9 +561,29 @@ const game = createGame({
     if (st.exit) whale.setPos(st.exit[0], st.exit[1]);
     else whale.setPos(st.x + 1, st.z - 3);
   },
-  onRide(vehicle) {
+  onRide(vehicle, it) {
     // 交通工具状态保存在 game.state 中；这里让相机轻微拉远，保证骑乘时画面舒展。
     cam.want = vehicle ? Math.max(cam.want, 9.5) : Math.min(cam.want, 7.5);
+    // 骑的是地上那一件模型：上车时它的碰撞盒让开，跟着人走；下车时停在脚边，人站到旁边
+    const model = it?.model;
+    if (!rig || !model?.slot) return;
+    const st = whale.state;
+    if (vehicle) {
+      ridden = { model, it };
+      if (model.col) model.col.off = true;
+      st.lift = /bicycle|bike|scooter/.test(it.vehicle) ? 0.42 : 0.5;
+    } else {
+      ridden = null;
+      st.lift = 0;
+      const gy = Math.max(plan.walkAt(st.x, st.z), mover.floorAt(st.x, st.z, st.y));
+      rig.move(model, st.x, gy, st.z, st.yaw);
+      it.x = st.x;
+      it.z = st.z;
+      if (model.col) Object.assign(model.col, { x: st.x, z: st.z, c: Math.cos(st.yaw), s: Math.sin(st.yaw), ty: undefined, base: gy, off: false });
+      mover.dirty();
+      st.x += Math.cos(st.yaw) * 0.95;
+      st.z -= Math.sin(st.yaw) * 0.95;
+    }
   },
   onMap() {
     showMap(1);
@@ -800,7 +883,7 @@ const findNearest = () => {
 }
 
 // ---- 动作 ------------------------------------------------------------------------------------------------------
-actions = createActions({ whale, mover, cam, game, hud, woods: city.woods, particles, field, plan, weather, plants, shared: field.uniforms, scene });
+actions = createActions({ rig, whale, mover, cam, game, hud, woods: city.woods, particles, field, plan, weather, plants, shared: field.uniforms, scene });
 const panels = createPanels({
   fishSprites,
   actions,
@@ -984,6 +1067,8 @@ function tick(dt) {
       if (mover.keys.has('KeyA') || mover.keys.has('ArrowLeft')) mx -= 1;
       if (mx || mz) whale.state.yaw = Math.atan2(f.x * mz + rxp * mx, f.y * mz + rzp * mx);
     }
+    // 骑着的车跟着人走
+    if (ridden && rig) rig.move(ridden.model, whale.state.x, whale.state.y, whale.state.z, whale.state.yaw);
     whale.update(dt, camera, moving || window.__tg?.forceMoving, window.__tg?.forcePose ?? pose);
     cam.update(dt, whale.state, ground, eye);
   }

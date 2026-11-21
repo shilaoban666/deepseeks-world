@@ -55,6 +55,8 @@ export const PALETTE = {
     [0.8, 0.77, 0.7], // 0 砌石（桥墩、拱）
     [0.72, 0.7, 0.65], // 1 深一点的砌石
     [0.9, 0.87, 0.8], // 2 抹平的浅石（桥面、台基、压顶）
+    [0.78, 0.46, 0.34], // 3 高架的红砖（桥墩、拱）：老铁路桥的颜色，在绿地和蓝天里是暖的一笔
+    [0.9, 0.8, 0.6], // 4 高架的砂岩（桥面板、护墙、墩帽）：一块块砌的黄石
   ],
   paint: [
     [0.45, 0.68, 0.8], // 0 吊车浅蓝
@@ -192,6 +194,13 @@ export class Builder {
    * @param rotY 绕 Y 转多少弧度
    */
   add(geo, key, pos, rotY = 0, tint = 0) {
+    // （mute：这件东西换成套件里的模型了——碰撞盒、灯位照记，几何体不要）
+    if (this.mute) return;
+    if (this.onAdd) {
+      // 记下这块几何体的占地（city.js 用它让房子和树避开）
+      if (!geo.boundingBox) geo.computeBoundingBox();
+      this.onAdd(pos, rotY, geo.boundingBox);
+    }
     const [family, index = 0] = key.split('#');
     const pal = PALETTE[family] ?? PALETTE.stone;
     const lit = pal[Math.abs(Number(index) || 0) % pal.length];
@@ -209,6 +218,11 @@ export class Builder {
 
   /** 加一块招牌（分开画，因为每块的文字不同）。 */
   addSign(text, pos, rotY, { w = 3.2, h = 0.8, bg = '#22304a', fg = '#f6f0e2', vertical = false } = {}) {
+    if (this.mute) {
+      // 招牌上的字记下来：模型上有挂招牌的地方，换个位置再挂
+      (this.mutedSigns ??= []).push({ text, bg, fg, vertical });
+      return;
+    }
     const m = new THREE.Matrix4();
     const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotY);
     m.compose(new THREE.Vector3(pos[0], pos[1], pos[2]), q, new THREE.Vector3(w, h, 1));
@@ -216,8 +230,24 @@ export class Builder {
   }
 
   /** 登记一个碰撞盒（建筑占地）。 */
-  collide(x, z, hw, hd, top = 20) {
-    this.colliders.push({ x, z, hw, hd, top });
+  /**
+   * top：盒子顶比脚下的地高多少（人跳得上去的就能站在上面）。rot：绕 Y 转了多少（盒子跟着模型的朝向，不再取外接的正盒）。
+   * base：盒子底的绝对高度（不给 = 中心处的地面）；栈桥、台阶这种架在水上、坡上的要给。
+   */
+  collide(x, z, hw, hd, top = 20, rot = 0, base = null) {
+    const c = { x, z, hw, hd, top, c: Math.cos(rot), s: Math.sin(rot), base };
+    this.colliders.push(c);
+    return c;
+  }
+  /** 一跑台阶：从 (x, z) 这头的 y0 走到 run 米外的 y1（方向 rot：朝 +z 转 rot），宽 w。每级不超过 0.4 m，人直接走得上去。 */
+  stairs(x, z, rot, w, run, y0, y1) {
+    const n = Math.max(1, Math.ceil(Math.abs(y1 - y0) / 0.36));
+    const lo = Math.min(y0, y1) - 3;
+    for (let i = 0; i < n; i++) {
+      const t = (i + 0.5) / n;
+      const top = y0 + ((y1 - y0) * (i + 1)) / n;
+      this.collide(x + Math.sin(rot) * run * t, z + Math.cos(rot) * run * t, w / 2, run / n / 2 + 0.02, top - lo, rot, lo);
+    }
   }
 
   /** 合并、出 mesh，加进 group。 */
@@ -237,7 +267,7 @@ export class Builder {
       // 新加的几种墙色没有自己的贴图：白墙、米色、粉米色借抹灰墙那张，砖红借砌块那张
       // 后加的颜色借哪张贴图：白墙、米墙用干净的石灰墙（原来 wall6 那张是冷灰水泥，一上楼就脏了），
       // 大件石作用桥墩砌石或抹灰——石板路、石阶那两张花纹只适合踩在脚下，贴到整面墙上就花。
-      const TEX = { wall6: 'wall1', wall7: 'wall1', wall8: 'wall1', wall9: 'wall3', mason0: 'bridge2', mason1: 'bridge2', mason2: 'wall1', roof8: 'snow', roof10: 'roof1', roof6: 'roof0' };
+      const TEX = { wall6: 'wall1', wall7: 'wall1', wall8: 'wall1', wall9: 'wall3', mason0: 'bridge2', mason1: 'bridge2', mason2: 'wall1', mason3: 'wall3', mason4: 'bridge3', roof8: 'snow', roof10: 'roof1', roof6: 'roof0' };
       const tk = `${family}${index ?? '0'}`;
       const albedo = getAlbedo(TEX[tk] ?? tk) ?? undefined;
       const mk = key.split('@')[0];

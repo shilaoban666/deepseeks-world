@@ -2,7 +2,7 @@
 // city.js 在合并建筑之前调用 placeActivities，把道具和交互点放进世界。
 // 这里只管"世界里摆什么、哪儿能按 E"；怎么滑、怎么划、怎么冲浪在 actions.js，按 E 之后的面板在 interactions.js。
 import * as THREE from 'three';
-import { gableRoof, fence } from './buildings.js';
+import { gableRoof, fence as fence0 } from './buildings.js';
 import { heightAt, roadEdge, fieldsAt, beachAt, SKI, SEA } from './plan.js';
 
 const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
@@ -30,6 +30,7 @@ export const SKI_COURSE = (() => {
 
 export function placeActivities(ctx) {
   const { b, LM, add, claim, free, dry, district, gardenPlots, parasols, decor } = ctx;
+  const fence = ctx.fence ?? fence0;
   const safe = (name, fn) => {
     try {
       fn();

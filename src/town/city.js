@@ -6,9 +6,10 @@
 // 南边高铁站、海鲜排档、沙滩，西南海边新城和码头；一条高架高铁把它们串起来。
 // 画法一点没变：房子还是原作 village.js 那一套手绘的，地标用 buildings.js / landmarks.js 的平涂 + 墨线。
 import * as THREE from 'three';
-import { Builder, hall, temple, gate, fountain, gym, stall, banner, lamp, bench, stoneLantern, fence, hipRoof, gableRoof } from './buildings.js';
-import * as LM from './landmarks.js';
+import { Builder, PALETTE, hall as hall0, temple as temple0, gate as gate0, fountain as fountain0, gym as gym0, stall as stall0, banner, lamp as lamp0, bench as bench0, stoneLantern as stoneLantern0, fence as fence0, hipRoof, gableRoof } from './buildings.js';
+import * as LM0 from './landmarks.js';
 import { placeActivities } from './activities.js';
+import { dress } from './dressing.js';
 import { addBuildings, createBuildingMaterial, WALLS, ROOFS, SLATE } from '../valley/village.js';
 import { createGrove } from '../valley/trees.js';
 import { createLake, createTrees, createRocks, createFlowerClumps, createPigeons, createCritters, roadGeometry, plazaGeometry, roadMaterial, roadMaterialTextured } from './props.js';
@@ -16,7 +17,7 @@ import { createPlantBatch } from './billboard.js';
 import { paintMaterial, getAlbedo } from './paint.js';
 import {
   DISTRICTS, district, ROADS, SEGS, STREET_HALF, PLAZA, HOME, YUHAI, RING_R, CITY_R, LAKE, SEA, BRIDGES, PIERS, BUS_ROUTE, BUS_STOPS, METRO_STOPS, RAIL_STATIONS, RIVER_HALF, GARDENS,
-  riverAt, riverLevel, riverPoint, railCurve, coastD, beachAt, snowAt, skiAt, builtAt, plotAt, heightAt, waterAt, forestAt, fieldsAt, mountainAt, lakeDistance, roadEdge, plazaDistance, cityDistance, fbm, smooth, HALF,
+  pavedAt, riverAt, riverLevel, riverPoint, railCurve, coastD, beachAt, snowAt, skiAt, builtAt, plotAt, heightAt, waterAt, bridgeAt, forestAt, fieldsAt, mountainAt, lakeDistance, roadEdge, plazaDistance, cityDistance, fbm, smooth, HALF,
 } from './plan.js';
 
 /** 一个固定的随机数发生器：地图每次都长一样。 */
@@ -60,22 +61,128 @@ function faceRoad(x, z, fallback = 0) {
 const TOWN_ROOFS = [...ROOFS, ...ROOFS, SLATE, [0.42, 0.46, 0.5]];
 const STYLE = {
   // 镇上：粉墙、赭红瓦，偶尔一栋青灰瓦
-  euro: { shapes: ['house', 'house', 'tall', 'cottage', 'wing', 'house', 'tall', 'cottage'], walls: WALLS, roofs: TOWN_ROOFS },
+  euro: { kit: 'euro', shapes: ['house', 'house', 'tall', 'cottage', 'wing', 'house', 'tall', 'cottage'], walls: WALLS, roofs: TOWN_ROOFS },
   // 玉海城：木色和米色的墙，青灰的瓦
   // 玉海城：还是原作那套粉墙暖瓦（这是整个画面的底色），只是多掺几栋青瓦的
-  china: { shapes: ['house', 'house', 'tall', 'cottage', 'wing', 'long', 'house'], walls: WALLS, roofs: [...ROOFS, ...ROOFS, ...ROOFS, SLATE, [0.3, 0.36, 0.46], [0.42, 0.46, 0.5]] },
+  china: { kit: 'jp', shapes: ['house', 'house', 'tall', 'cottage', 'wing', 'house', 'cottage', 'house', 'tall', 'long', 'wing'], walls: WALLS, roofs: [...ROOFS, ...ROOFS, ...ROOFS, SLATE, [0.3, 0.36, 0.46], [0.42, 0.46, 0.5]] },
   // 海滨小镇：石头墙、橘红瓦
-  coast: { shapes: ['house', 'cottage', 'tall', 'wing', 'house'], walls: [[0.97, 0.96, 0.92], [0.95, 0.92, 0.84], [0.97, 0.95, 0.9], [0.93, 0.9, 0.82]], roofs: [[0.82, 0.42, 0.22], [0.78, 0.36, 0.2], [0.86, 0.5, 0.28]] },
+  coast: { kit: 'euro', shapes: ['house', 'cottage', 'tall', 'wing', 'house'], walls: [[0.97, 0.96, 0.92], [0.95, 0.92, 0.84], [0.97, 0.95, 0.9], [0.93, 0.9, 0.82]], roofs: [[0.82, 0.42, 0.22], [0.78, 0.36, 0.2], [0.86, 0.5, 0.28]] },
   // 雪山小镇：原木屋，屋顶盖着雪
-  snow: { shapes: ['cottage', 'house', 'long', 'wing', 'cottage'], walls: [[0.78, 0.58, 0.4], [0.7, 0.5, 0.34], [0.94, 0.9, 0.82], [0.84, 0.66, 0.46]], roofs: [[0.93, 0.95, 0.98], [0.9, 0.93, 0.97]] },
+  snow: { kit: 'euro', shapes: ['cottage', 'house', 'long', 'wing', 'cottage'], walls: [[0.78, 0.58, 0.4], [0.7, 0.5, 0.34], [0.94, 0.9, 0.82], [0.84, 0.66, 0.46]], roofs: [[0.93, 0.95, 0.98], [0.9, 0.93, 0.97]] },
   // 田园小镇：农舍，红瓦，偶尔一栋木头的
-  farm: { shapes: ['house', 'cottage', 'long', 'wing', 'cottage'], walls: [...WALLS, [0.7, 0.54, 0.38]], roofs: [[0.74, 0.3, 0.2], [0.68, 0.26, 0.18], [0.8, 0.36, 0.22]] },
+  farm: { kit: 'farm', shapes: ['house', 'cottage', 'long', 'wing', 'cottage'], walls: [...WALLS, [0.7, 0.54, 0.38]], roofs: [[0.74, 0.3, 0.2], [0.68, 0.26, 0.18], [0.8, 0.36, 0.22]] },
 };
 const FOOT = { cottage: [7, 10], house: [7.5, 11], wing: [10.5, 11], tall: [7, 8.5], long: [8, 19], church: [9, 22], round: [7.4, 7.4], slim: [3.8, 3.8] };
 
-export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar = 560, density = 1, plants = null, roadTex = false } = {}) {
+export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar = 560, density = 1, plants = null, roadTex = false, models = [], kit = null } = {}) {
   const group = new THREE.Group();
   const b = new Builder(shared);
+  // ---- 街具和地标换成套件里的模型 ----
+  // 原来那些程序化的函数照常调用（碰撞盒、灯位、返回值都还要），只是不让它们放几何体（b.mute），
+  // 同一个位置、同一个朝向摆一个模型；尺寸按参数和模型设计尺寸的比例缩放，招牌挂到模型上留好的位置。
+  const kitExtras = [];
+  const has = (id) => !!kit?.byId.has(id);
+  const WHITE = [0.95, 0.93, 0.86];
+  const GREY = [0.3, 0.33, 0.4];
+  const hex = (h) => [1, 3, 5].map((i) => Math.pow(parseInt(h.slice(i, i + 2), 16) / 255, 2.2));
+  const fit = (id, w, h, d, lim = [0.8, 1.3]) => {
+    const f = kit.byId.get(id).fit ?? [null, null, null];
+    const k = (v, base, clampY) => (v == null || base == null ? 1 : clampY ? Math.min(lim[1], Math.max(lim[0], v / base)) : v / base);
+    return [k(w, f[0]), k(h, f[1], true), k(d, f[2])];
+  };
+  const ONE = [1, 1, 1];
+  let fenceRuns = 0;
+  const inst = (id, x, z, turn = 0, o = {}) => {
+    // （库里转过来的小件带着自己的颜色：墙、瓦、布都不再调）
+    const self = kit.byId.get(id).tint === 'self';
+    const { scale = 1, y, wall = self ? ONE : WHITE, roof = self ? ONE : GREY, accent = self ? ONE : [0.5, 0.17, 0.14] } = o;
+    const e = { kit: id, x, z, y, turn, scale, wall, roof, accent, seed: random() };
+    if (!o.norect) e.rect = addRect(x, z, turn, kit.byId.get(id).bounds, scale, SMALL.has(id) ? 'small' : 'big', e);
+    kitExtras.push(e);
+    return e;
+  };
+  /** 包一层：spec(...args) 说这次调用换成什么模型（返回 null = 不换，照旧画）。 */
+  const swap = (fn, spec) => (bb, ...args) => {
+    const what = kit ? spec(...args) : null;
+    if (!what) return fn(bb, ...args);
+    b.mute = (b.mute ?? 0) + 1;
+    b.mutedSigns = [];
+    let out;
+    try {
+      out = fn(bb, ...args);
+    } finally {
+      b.mute--;
+    }
+    const sign = b.mutedSigns[0];
+    b.mutedSigns = [];
+    for (const it of Array.isArray(what) ? what : [what]) {
+      const anchor = kit.byId.get(it.kit).sign;
+      if (!sign || !anchor || sign.vertical) continue;
+      const sc = Array.isArray(it.scale) ? it.scale : [it.scale, it.scale, it.scale];
+      const gy = it.y ?? heightAt(it.x, it.z);
+      const f = anchor[1] * sc[2] + 0.05;
+      b.addSign(sign.text, [it.x + Math.sin(it.turn) * f, gy + anchor[0] * sc[1], it.z + Math.cos(it.turn) * f], it.turn, { w: anchor[2] * Math.min(sc[0], 1.3), h: anchor[3] * Math.min(sc[1], 1.2), bg: sign.bg, fg: sign.fg });
+    }
+    return out;
+  };
+  const clothOf = (key) => PALETTE.cloth[Number(String(key).split('#')[1] ?? 0) % PALETTE.cloth.length];
+  const hall = swap(hall0, (o) => {
+    const id = o.flat ? 'hall_flat' : (o.floors ?? 2) >= 3 ? 'hall_b' : (o.floors ?? 2) === 1 ? 'hall_small' : 'hall_a';
+    return has(id) && inst(id, o.x, o.z, o.rotY ?? 0, { y: o.y, scale: fit(id, o.w, o.h, o.d), wall: PALETTE.wall[o.wall ?? 0], roof: PALETTE.roof[o.roof ?? 0], accent: pick(random, ACCENTS) });
+  });
+  const temple = swap(temple0, (o) => has('temple') && inst('temple', o.x, o.z, o.rotY ?? 0, { y: o.y, roof: PALETTE.roof[10] }));
+  const gate = swap(gate0, (o) => has('gate') && inst('gate', o.x, o.z, o.rotY ?? 0, { y: o.y, roof: PALETTE.roof[3] }));
+  const fountain = swap(fountain0, (o) => has('fountain') && inst('fountain', o.x, o.z, 0, { y: o.y }));
+  const gym = swap(gym0, (o) => has('gym') && inst('gym', o.x, o.z, o.rotY ?? 0, { y: o.y, wall: PALETTE.wall[1], roof: [0.2, 0.46, 0.44] }));
+  const stall = swap(stall0, (o) => has('stall') && inst('stall', o.x, o.z, o.rotY ?? 0, { y: o.y, accent: clothOf(o.c2 ?? 'cloth#0') }));
+  const lamp = swap(lamp0, (x, z, rot = 0) => has('lamp') && inst('lamp', x, z, rot));
+  const bench = swap(bench0, (x, z, rot = 0) => has('bench') && inst('bench', x, z, rot));
+  const stoneLantern = swap(stoneLantern0, (x, z) => has('stonelantern') && inst('stonelantern', x, z, 0));
+  const fence = swap(fence0, (x1, z1, x2, z2, height = 1.1) => {
+    if (!has('fence')) return null;
+    const len = Math.hypot(x2 - x1, z2 - z1);
+    const n = Math.max(1, Math.round(len / 1.6));
+    const turn = Math.atan2(-(z2 - z1), x2 - x1);
+    const list = [];
+    const chain = ++fenceRuns;
+    for (let i = 0; i < n; i++) {
+      const t = (i + 0.5) / n;
+      // 顺着坡走：每一段落在自己两头较低的那一头，高出来的坡用栏杆自己的高度补上（不然一头悬空、一头埋进土里）
+      const ha = heightAt(x1 + ((x2 - x1) * i) / n, z1 + ((z2 - z1) * i) / n);
+      const hb = heightAt(x1 + ((x2 - x1) * (i + 1)) / n, z1 + ((z2 - z1) * (i + 1)) / n);
+      list.push(inst('fence', x1 + (x2 - x1) * t, z1 + (z2 - z1) * t, turn, { y: Math.min(ha, hb) - 0.04, scale: [len / n / 1.6, (height + Math.abs(ha - hb)) / 1.1, 1] }));
+      // （同一道篱笆里相邻的两段本来就是接着的，不算互相穿）
+      if (list[i].rect) list[i].rect.chain = chain;
+    }
+    return list;
+  });
+  const uni = (id, base, v) => (v ?? base) / base;
+  const LM = kit
+    ? {
+        ...LM0,
+        palace: swap(LM0.palace, (o) => has('palace') && inst('palace', o.x, o.z, o.rotY ?? 0, { y: o.y, roof: PALETTE.roof[6] })),
+        gateTower: swap(LM0.gateTower, (o) => has('gatetower') && inst('gatetower', o.x, o.z, o.rotY ?? 0, { y: o.y, roof: PALETTE.roof[10] })),
+        mosque: swap(LM0.mosque, (o) => has('mosque') && inst('mosque', o.x, o.z, o.rotY ?? 0, { y: o.y, wall: PALETTE.wall[6], roof: PALETTE.roof[7] })),
+        neonShop: swap(LM0.neonShop, (o) => has('neonshop') && inst('neonshop', o.x, o.z, o.rotY ?? 0, { y: o.y, scale: fit('neonshop', o.w, o.h, o.d), wall: [0.93, 0.88, 0.78], accent: hex(o.signBg ?? '#7a1f1f') })),
+        tower: swap(LM0.tower, (o) => has('tower') && inst('tower', o.x, o.z, o.rotY ?? 0, { y: o.y, scale: fit('tower', o.w, o.h, o.d, [0.3, 1.6]), wall: [[0.9, 0.88, 0.82], [0.86, 0.8, 0.7], [0.8, 0.84, 0.88]][(o.style ?? 0) % 3], roof: [0.2, 0.5, 0.45], accent: pick(random, ACCENTS) })),
+        apartment: swap(LM0.apartment, (o) => has('apartment') && inst('apartment', o.x, o.z, o.rotY ?? 0, { y: o.y, scale: [(o.w ?? 26) / 26, Math.min(o.floors ?? 5, 6) / 5, (o.d ?? 13) / 13], wall: PALETTE.wall[o.wall ?? 7], roof: PALETTE.roof[1], accent: pick(random, ACCENTS) })),
+        clockTower: swap(LM0.clockTower, (o) => has('clocktower') && inst('clocktower', o.x, o.z, o.rotY ?? 0, { y: o.y, scale: uni('clocktower', 36, o.h), wall: [0.72, 0.4, 0.3], roof: [0.24, 0.4, 0.42] })),
+        warehouse: swap(LM0.warehouse, (o) => has('warehouse') && inst('warehouse', o.x, o.z, o.rotY ?? 0, { y: o.y, scale: fit('warehouse', o.w, o.h, o.d), roof: [0.34, 0.4, 0.48], accent: pick(random, ACCENTS) })),
+        crane: swap(LM0.crane, (o) => has('crane') && inst('crane', o.x, o.z, o.rotY ?? 0, { y: o.y, scale: uni('crane', 24, o.h) })),
+        containers: swap(LM0.containers, (o) => has('containers') && inst('containers', o.x, o.z, o.rotY ?? 0, { y: o.y })),
+        windmill: swap(LM0.windmill, (o) => {
+          const id = o.wood ? 'windmill_b' : 'windmill_a';
+          return has(id) && inst(id, o.x, o.z, o.rotY ?? 0, { y: o.y, scale: uni(id, 13, o.h), roof: PALETTE.roof[0], accent: pick(random, ACCENTS) });
+        }),
+        waterMill: swap(LM0.waterMill, (o) => has('watermill') && inst('watermill', o.x, o.z, o.rotY ?? 0, { y: o.y, roof: [0.78, 0.64, 0.3], accent: [0.2, 0.4, 0.22] })),
+        greenhouse: swap(LM0.greenhouse, (o) => has('greenhouse') && inst('greenhouse', o.x, o.z, o.rotY ?? 0, { y: o.y, scale: fit('greenhouse', o.w, o.h, o.d) })),
+        beacon: swap(LM0.beacon, (o) => has('beacon') && inst('beacon', o.x, o.z, o.rotY ?? 0, { y: o.y, scale: uni('beacon', 9, o.h), norect: true })),
+        haystack: swap(LM0.haystack, (x, z, s = 1) => has('haystack') && inst('haystack', x, z, random() * 6, { scale: s })),
+        logPile: swap(LM0.logPile, (x, z, s = 1) => has('logpile') && inst('logpile', x, z, 0, { scale: s })),
+        crate: swap(LM0.crate, (x, z, s = 1) => has('crate') && inst('crate', x, z, 0, { scale: s })),
+        snowman: swap(LM0.snowman, (x, z, s = 1) => has('snowman') && inst('snowman', x, z, 0, { scale: s })),
+      }
+    : LM0;
   const random = rng(20261120);
   const interactables = [];
   const add = (o) => {
@@ -99,7 +206,7 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
   const painted = [];
   /** 已经占了的地方（圆）：房子、地标、摊位。新东西先问一声。 */
   const taken = [];
-  const free = (x, z, r) => {
+  const free0 = (x, z, r) => {
     for (const t of taken) {
       const dx = t[0] - x;
       const dz = t[1] - z;
@@ -109,66 +216,230 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     return true;
   };
   const claim = (x, z, r) => taken.push([x, z, r]);
+  // ---- 精确占地：朝向矩形 ------------------------------------------------------------------------------------
+  // 房子原来只占一个偏小的圆，树只离它 1.5 m——树冠、篱笆、街具就这么穿进了屋里。现在每栋房子、每件套件模型、
+  // 每块程序化的几何体都登记自己真实的占地矩形（kind：house / big / small / proc），后来的东西按它让开。
+  const RC = 24;
+  const rectGrid = new Map();
+  const rectCells = (x, z, r, fn) => {
+    for (let i = Math.floor((x - r) / RC); i <= Math.floor((x + r) / RC); i++) for (let j = Math.floor((z - r) / RC); j <= Math.floor((z + r) / RC); j++) if (fn(i + ',' + j) === true) return true;
+    return false;
+  };
+  /** b4 = 模型局部的 [x0, x1, z0, z1]；turn 绕 Y（和 kit.js 摆模型同一个转法）。 */
+  const makeRect = (x, z, turn, b4, scale, kind, ref = null) => {
+    const sx = Array.isArray(scale) ? scale[0] : scale;
+    const sz = Array.isArray(scale) ? scale[2] : scale;
+    const lx = ((b4[0] + b4[1]) / 2) * sx;
+    // （清单里的 bounds 是 Blender 的 y：到了游戏里 z = -y，正面在 +z）
+    const lz = -((b4[2] + b4[3]) / 2) * sz;
+    const c = Math.cos(turn);
+    const s = Math.sin(turn);
+    const hw = ((b4[1] - b4[0]) / 2) * sx;
+    const hd = ((b4[3] - b4[2]) / 2) * sz;
+    return { x: x + lx * c + lz * s, z: z - lx * s + lz * c, hw, hd, c, s, rad: Math.hypot(hw, hd), kind, ref, dead: false };
+  };
+  const addRect = (...a) => {
+    const r = makeRect(...a);
+    rectCells(r.x, r.z, r.rad, (k) => {
+      if (!rectGrid.has(k)) rectGrid.set(k, []);
+      rectGrid.get(k).push(r);
+    });
+    return r;
+  };
+  /** 点 (x, z) 到矩形的距离（在里面是 0）。 */
+  const rectDist = (r, x, z) => {
+    const dx = x - r.x;
+    const dz = z - r.z;
+    const ex = Math.abs(dx * r.c - dz * r.s) - r.hw;
+    const ez = Math.abs(dx * r.s + dz * r.c) - r.hd;
+    return Math.hypot(Math.max(ex, 0), Math.max(ez, 0));
+  };
+  /** 离 (x, z) 不到 d 的矩形（kinds 省略 = 都算）；没有就返回 null。 */
+  const rectNear = (x, z, d, kinds = null) => {
+    let hit = null;
+    rectCells(x, z, d, (k) => {
+      const list = rectGrid.get(k);
+      if (!list) return false;
+      for (const r of list) {
+        if (r.dead || (kinds && !kinds.includes(r.kind))) continue;
+        if (rectDist(r, x, z) < d) {
+          hit = r;
+          return true;
+        }
+      }
+      return false;
+    });
+    return hit;
+  };
+  /** 两个矩形是不是叠着（分离轴；m = 还要留的缝）。 */
+  const rectsOverlap = (a, q, m = 0) => {
+    const dx = q.x - a.x;
+    const dz = q.z - a.z;
+    if (Math.hypot(dx, dz) > a.rad + q.rad + m) return false;
+    const axes = [[a.c, -a.s], [a.s, a.c], [q.c, -q.s], [q.s, q.c]];
+    for (const [ex, ez] of axes) {
+      const d = Math.abs(dx * ex + dz * ez);
+      const ra = a.hw * Math.abs(a.c * ex - a.s * ez) + a.hd * Math.abs(a.s * ex + a.c * ez);
+      const rb = q.hw * Math.abs(q.c * ex - q.s * ez) + q.hd * Math.abs(q.s * ex + q.c * ez);
+      if (d > ra + rb + m) return false;
+    }
+    return true;
+  };
+  /** 和这个矩形叠着的别的矩形。 */
+  const rectHit = (a, m = 0, kinds = null) => {
+    let hit = null;
+    rectCells(a.x, a.z, a.rad + m, (k) => {
+      const list = rectGrid.get(k);
+      if (!list) return false;
+      for (const r of list) {
+        if (r === a || r.dead || (kinds && !kinds.includes(r.kind))) continue;
+        if (rectsOverlap(a, r, m)) {
+          hit = r;
+          return true;
+        }
+      }
+      return false;
+    });
+    return hit;
+  };
+  const SMALL = new Set(['lamp', 'bench', 'fence', 'stonelantern', 'crate', 'logpile', 'snowman', 'haystack']);
+  // 程序化的几何体（桥、站、码头、游乐设施……）：每块记一个占地
+  let recording = true;
+  b.onAdd = (pos, rotY, bb) => {
+    if (!recording) return;
+    if (bb.max.y - bb.min.y < 0.5 || bb.max.x - bb.min.x > 80 || bb.max.z - bb.min.z > 80) return;
+    if (pos[1] + bb.min.y - heightAt(pos[0], pos[2]) > 3.5) return;
+    addRect(pos[0], pos[2], rotY, [bb.min.x, bb.max.x, bb.min.z, bb.max.z], 1, 'proc');
+  };
+  /** 一栋套件房子摆在这儿行不行：不叠别的房子和东西、四角不压路、脚下够平。 */
+  const houseFits = (x, z, turn, item, scale, gap = 0.3) => {
+    const r = makeRect(x, z, turn, item.bounds, scale, 'house');
+    if (rectHit(r, gap, ['house']) || rectHit(r, 0.2, ['big', 'small', 'proc'])) return false;
+    let lo = 1e9;
+    let hi = -1e9;
+    for (const [u, v] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+      const px = r.x + u * r.hw * r.c + v * r.hd * r.s;
+      const pz = r.z - u * r.hw * r.s + v * r.hd * r.c;
+      if (roadEdge(px, pz) < 0.25) return false;
+      const y = heightAt(px, pz);
+      lo = Math.min(lo, y);
+      hi = Math.max(hi, y);
+    }
+    return hi - lo < 0.85;
+  };
+  /** 圆和房子都问（原来的 free 只问圆，现在留作 freeC）。 */
+  const freeC = free0;
+  const free = (x, z, r) => freeC(x, z, r) && !rectNear(x, z, r, ['house']);
+  /** 树、立牌、街具用：圆、房子、套件模型、程序化几何都让开。 */
+  const clear = (x, z, r) => freeC(x, z, Math.min(r, 3)) && !rectNear(x, z, r);
   /** 能不能盖房子：不在水里、不贴着河海、不在铁路底下。 */
   const dry = (x, z, r = 0) => riverAt(x, z).d > RIVER_HALF + 14 + r && lakeDistance(x, z) > 1.22 && coastD(x, z) > 34 + r && !railNear(x, z, 9 + r) && Math.abs(x) < HALF - 20 && Math.abs(z) < HALF - 20;
 
   // 地图上写着的那些铺子
   const SHOPS = ['面馆', '蔬菜铺', '茶铺', '书店', '裁缝', '杂货', '豆腐', '酱菜', '糕点', '药铺', '花店', '米铺'];
+  // 点缀色（门、百叶、雨棚、招牌）：每栋自己挑一个
+  const ACCENTS = [[0.14, 0.34, 0.3], [0.16, 0.3, 0.52], [0.5, 0.17, 0.14], [0.76, 0.56, 0.2], [0.2, 0.4, 0.22], [0.42, 0.24, 0.14], [0.72, 0.3, 0.16], [0.24, 0.42, 0.56]];
+  const JP_ACCENTS = [[0.1, 0.2, 0.42], [0.5, 0.14, 0.12], [0.12, 0.3, 0.24], [0.82, 0.78, 0.66]];
+  /** 这种类别、这种口音的房子，从套件里挑一种（没有套件就返回 null，还用原来画出来的房子）。 */
+  const kitFor = (shape, style) => (kit ? kit.choose(random, shape, style?.kit ?? 'euro') : null);
+  /** 占地（米）：宽 × 深 */
+  const footOf = (shape, item, scale) => (item ? [item.w * scale, item.d * scale] : [(FOOT[shape] ?? [8, 10])[0] * scale, (FOOT[shape] ?? [8, 10])[1] * scale]);
   const paintedHouse = (x, z, opts = {}) => {
-    const { shape = 'house', scale = 1.1, turn = null, wall = null, roof = null, bare = false } = opts;
+    const { shape = 'house', turn = null, wall = null, roof = null, bare = false, auto = false } = opts;
+    const item = opts.item ?? kitFor(shape, opts.style);
+    // （套件里的房子本来就是真实大小：只让它们略有大小之别）
+    const scale = item ? (opts.kitScale ?? 0.94 + random() * 0.14) : (opts.scale ?? 1.1);
     const t = turn ?? faceRoad(x, z);
-    painted.push({ x, z, turn: t, scale, shape, shop: opts.shop ?? null, wall: wall ?? pick(random, WALLS), roof: roof ?? pick(random, TOWN_ROOFS) });
+    const jp = item?.style === 'jp';
+    painted.push({ x, z, turn: t, scale, shape, shop: opts.shop ?? null, wall: wall ?? pick(random, WALLS), roof: roof ?? pick(random, TOWN_ROOFS),
+      kit: item?.id ?? null, styleKit: opts.style?.kit ?? 'euro', accent: pick(random, jp ? JP_ACCENTS : ACCENTS), seed: random(), auto: auto && !!item });
+    const me = painted[painted.length - 1];
+    if (jp) {
+      // 和式的房子：白墙或米墙，青灰的瓦
+      const h = painted[painted.length - 1];
+      h.wall = pick(random, [[0.94, 0.92, 0.86], [0.9, 0.86, 0.76], [0.95, 0.94, 0.9]]);
+      h.roof = pick(random, [[0.2, 0.25, 0.32], [0.17, 0.22, 0.3], [0.24, 0.27, 0.3], [0.2, 0.28, 0.3]]);
+    }
     // 碰撞盒要轴对齐：取房子占地转过去之后的包围
-    const fp = FOOT[shape] ?? [8, 10];
+    const fp = footOf(shape, item, 1);
     const hw = (fp[0] * scale) / 2;
     const hd = (fp[1] * scale) / 2;
     const c = Math.abs(Math.cos(t));
     const s2 = Math.abs(Math.sin(t));
-    b.collide(x, z, hw * c + hd * s2 + 0.2, hw * s2 + hd * c + 0.2, 16);
-    claim(x, z, Math.max(hw, hd) * 0.92);
+    if (item) me.rect = addRect(x, z, t, item.bounds, scale, 'house', me);
+    else claim(x, z, Math.max(hw, hd) * 0.92);
+    // （自动撒的套件房子：碰撞盒和店招等到收尾时再放——那时才知道它有没有和后来摆的东西撞上、要不要拆）
+    const finish = () => finishHouse(me, { x, z, t, hw, hd, c, s2, fp, scale, item, shape, bare, opts });
+    if (me.auto) me.finish = finish;
+    else finish();
+  };
+  const finishHouse = (me, { x, z, t, hw, hd, c, s2, fp, scale, item, shape, bare, opts }) => {
+    // 套件的房子：盒子跟着房子的朝向（占地去掉屋檐挑出来的那一圈），顶是屋脊
+    if (me.rect) me.col = b.collide(me.rect.x, me.rect.z, Math.max(1, me.rect.hw - 0.4), Math.max(1, me.rect.hd - 0.4), item.h * scale, t);
+    else b.collide(x, z, hw * c + hd * s2 + 0.2, hw * s2 + hd * c + 0.2, 16);
     // 门口的生活气：石门阶、两盆花；有的挂店招、有的摆长凳或木桶
     if (bare || shape === 'church' || shape === 'round' || shape === 'slim') return;
     const gy = heightAt(x, z);
     const fx = Math.sin(t);
     const fz = Math.cos(t);
     const front = (lx, ly, lz) => [x + fx * (hd + lz) + fz * lx, gy + ly, z + fz * (hd + lz) - fx * lx];
-    b.add(new THREE.BoxGeometry(1.7, 0.5, 0.8), 'stone#2', front(0, 0.0, 0.4), t);
-    for (const sx of [-1, 1]) {
-      if (random() < 0.3) continue;
-      b.add(new THREE.CylinderGeometry(0.2, 0.15, 0.36, 8), 'roof#1', front(sx * 1.25, 0.18, 0.5));
-      b.add(new THREE.IcosahedronGeometry(0.26, 0), `leaf#${random() < 0.5 ? 0 : 1}`, front(sx * 1.25, 0.5, 0.5));
-      b.add(new THREE.IcosahedronGeometry(0.12, 0), `flower#${Math.floor(random() * 5)}`, front(sx * 1.25 + 0.1, 0.7, 0.55));
+    if (!item) {
+      b.add(new THREE.BoxGeometry(1.7, 0.5, 0.8), 'stone#2', front(0, 0.0, 0.4), t);
+      for (const sx of [-1, 1]) {
+        if (random() < 0.3) continue;
+        b.add(new THREE.CylinderGeometry(0.2, 0.15, 0.36, 8), 'roof#1', front(sx * 1.25, 0.18, 0.5));
+        b.add(new THREE.IcosahedronGeometry(0.26, 0), 'leaf#' + (random() < 0.5 ? 0 : 1), front(sx * 1.25, 0.5, 0.5));
+        b.add(new THREE.IcosahedronGeometry(0.12, 0), 'flower#' + Math.floor(random() * 5), front(sx * 1.25 + 0.1, 0.7, 0.55));
+      }
     }
     const roll = random();
-    if (opts.shop || (roll < (opts.shops ?? 0.2) && builtAt(x, z) > 0.5)) {
+    // （房子多了五倍：随手挂的店招相应少挂，不然满街都是；套件的房子门口自己带着台阶、盆栽、木桶）
+    if (opts.shop || (roll < (opts.shops ?? 0.2) * (item ? 0.45 : 1) && builtAt(x, z) > 0.5)) {
       // 店招：一根铁杆挑出来，下面挂块木牌
       const name = opts.shop ?? pick(random, SHOPS);
-      painted[painted.length - 1].shop = name;
-      b.add(new THREE.BoxGeometry(0.06, 0.06, 1.3), 'iron#0', front(1.9, 3.3, 0.6), t);
-      b.add(new THREE.BoxGeometry(0.08, 1.5, 0.74), 'wood#2', front(1.9, 2.5, 0.9), t);
+      me.shop = name;
+      const sx = item ? fp[0] * scale * 0.5 - 0.5 : 1.9;
+      b.add(new THREE.BoxGeometry(0.06, 0.06, 1.3), 'iron#0', front(sx, 3.3, 0.6), t);
+      b.add(new THREE.BoxGeometry(0.08, 1.5, 0.74), 'wood#2', front(sx, 2.5, 0.9), t);
       const text = [...name].slice(0, 3).join('');
-      for (const side of [-1, 1]) b.addSign(text, front(1.9 + side * 0.05, 2.5, 0.9), t + (side * Math.PI) / 2, { w: 0.62, h: 1.36, bg: pick(random, ['#3a2a1c', '#22304a', '#7a1f1f', '#2f5a3a']), fg: '#f7e9c6', vertical: true });
-      // 门上一条小布帘
-      b.add(new THREE.BoxGeometry(1.5, 0.5, 0.05), `cloth#${Math.floor(random() * 5)}`, front(0, 2.45, 0.08), t);
-    } else if (roll < 0.4) {
+      for (const side of [-1, 1]) b.addSign(text, front(sx + side * 0.05, 2.5, 0.9), t + (side * Math.PI) / 2, { w: 0.62, h: 1.36, bg: pick(random, ['#3a2a1c', '#22304a', '#7a1f1f', '#2f5a3a']), fg: '#f7e9c6', vertical: true });
+      if (!item) b.add(new THREE.BoxGeometry(1.5, 0.5, 0.05), 'cloth#' + Math.floor(random() * 5), front(0, 2.45, 0.08), t);
+    } else if (!item && roll < 0.4) {
       b.add(new THREE.BoxGeometry(1.5, 0.1, 0.42), 'wood#1', front(-2.4, 0.45, 0.5), t);
       for (const sx of [-0.6, 0.6]) b.add(new THREE.BoxGeometry(0.1, 0.45, 0.4), 'wood#2', front(-2.4 + sx, 0.22, 0.5), t);
-    } else if (roll < 0.52) {
+    } else if (!item && roll < 0.52) {
       b.add(new THREE.CylinderGeometry(0.34, 0.3, 0.8, 10), 'wood#0', front(2.3, 0.4, 0.5));
       b.add(new THREE.CylinderGeometry(0.36, 0.36, 0.06, 10), 'iron#0', front(2.3, 0.6, 0.5));
     }
   };
   /** 在一个圆里散着盖一片房子。 */
-  const scatter = (cx, cz, r, n, style, { minR = 0, gap = 8, scale = [0.95, 0.28], road = 7, shops = 0.12, turn = 'road' } = {}) => {
+  /** 在一个圆里散着盖一片房子。 */
+  // 套件上了之后房子多五倍：每处多撒、撒得开一点、挨得近一点（套件的房子是真实大小，比原来画的那种小一圈）
+  const MORE = kit ? 10 : 1;
+  /** 地够不够平（房子底下的落差，米）。 */
+  const flat = (x, z, r) => Math.abs(heightAt(x + r, z) - heightAt(x - r, z)) < 1.6 && Math.abs(heightAt(x, z + r) - heightAt(x, z - r)) < 1.6;
+  const scatter = (cx, cz, r, n, style, { minR = 0, gap = 8, scale = [0.95, 0.28], road = 7, shops = 0.12, turn = 'road', more = MORE } = {}) => {
     let made = 0;
-    for (let tries = 0; tries < n * 8 && made < n; tries++) {
+    if (kit) {
+      n = Math.round(n * more);
+      r *= more > 1 ? 1.45 : 1;
+    }
+    for (let tries = 0; tries < n * 10 && made < n; tries++) {
       const a = random() * TAU;
       const rr = minR + (r - minR) * Math.sqrt(random());
       const x = cx + Math.cos(a) * rr;
       const z = cz + Math.sin(a) * rr;
-      if (roadEdge(x, z) < road || !free(x, z, gap) || !dry(x, z) || plazaDistance(x, z) < 40) continue;
-      const t = turn === 'road' ? faceRoad(x, z) + (random() < 0.5 ? Math.PI / 2 : 0) : random() * Math.PI;
-      paintedHouse(x, z, { shape: pick(random, style.shapes), scale: scale[0] + random() * scale[1], turn: t, wall: pick(random, style.walls), roof: pick(random, style.roofs), shops });
+      const shape = pick(random, style.shapes);
+      const item = kitFor(shape, style);
+      const need = item ? Math.max(item.w, item.d) * 0.5 : gap;
+      if (roadEdge(x, z) < (item ? item.d * 0.5 + 1.2 : road) || !(item ? freeC : free)(x, z, need) || !dry(x, z) || plazaDistance(x, z) < 40) continue;
+      // （不盖在铺地上：广场、集市的场子、宫前）
+      if (item && pavedAt(x, z) > 0.25) continue;
+      if (item && (!flat(x, z, 4) || fieldsAt(x, z) > 0.3 || (snowAt(x, z) > 0.02 && style !== STYLE.snow))) continue;
+      const t = turn === 'road' ? faceRoad(x, z) + (!item && random() < 0.5 ? Math.PI / 2 : 0) : random() * Math.PI;
+      const ks = 0.94 + random() * 0.14;
+      if (item && !houseFits(x, z, t, item, ks, 2.2)) continue;
+      paintedHouse(x, z, { shape, item, style, auto: true, kitScale: ks, scale: scale[0] + random() * scale[1], turn: t, wall: pick(random, style.walls), roof: pick(random, style.roofs), shops });
       made++;
     }
     return made;
@@ -196,7 +467,7 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
   {
     const [hx, hz] = HOME;
     const z = hz - 16;
-    paintedHouse(hx, z, { shape: 'wing', scale: 1.25, turn: 0, wall: [0.97, 0.95, 0.9], roof: [0.24, 0.44, 0.66], bare: true });
+    paintedHouse(hx, z, { shape: 'wing', scale: 1.25, kitScale: 1.2, turn: 0, wall: [0.97, 0.95, 0.9], roof: [0.24, 0.44, 0.66], bare: true });
     {
       // 门楣上的木牌、门两边的花坛、一条踏脚石小路通到院门
       const gy = heightAt(hx, z);
@@ -248,6 +519,8 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     // 玉海宫：金瓦朱墙，站在高台上，正对着宫前广场和中轴大街
     const P = D('palace');
     LM.palace(b, { x: P.x, z: P.z - 4, rotY: 0, name: '玉海宫' });
+    // （宫前留一片空场，一路空到广场：别在正门口盖房子）
+    for (let dz = 22; dz < 70; dz += 12) claim(P.x, P.z + dz, 16);
     claim(P.x, P.z - 4, 36);
     claim(P.x, P.z + 20, 14);
     for (const sx of [-1, 1]) claim(P.x + sx * 19, P.z + 19, 8);
@@ -526,7 +799,7 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
   // ===== 湖边小镇：红瓦小镇，尖顶教堂，两条木栈桥伸进月亮湖 =======================================================
   {
     const d = D('lakeside');
-    paintedHouse(d.x + 22, d.z + 44, { shape: 'church', scale: 1.2, turn: faceRoad(d.x + 22, d.z + 44), wall: WALLS[0], roof: [0.72, 0.3, 0.2] });
+    paintedHouse(d.x + 22, d.z + 44, { shape: 'church', scale: 1.2, kitScale: 1.05, turn: faceRoad(d.x + 22, d.z + 44), wall: WALLS[0], roof: [0.72, 0.3, 0.2] });
     add({ id: 'church', name: '教堂', kind: 'pray', x: d.x + 22, z: d.z + 44, r: 15, hint: 'E 祈祷' });
     add({ id: 'lakeside', name: '湖边小镇', kind: 'village', x: d.x + 4, z: d.z + 12, r: 10, hint: 'E 和镇上的人聊聊', text: '红瓦的小房子挤在湖边。咖啡店把桌子摆到了水边，阳伞下有人在画湖。' });
     for (const [x, z] of [[176, -520], [182, -496], [172, -470]]) parasols.push([x, z]);
@@ -630,21 +903,23 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
           let t = carry + (side > 0 ? 3 : 0);
           while (t < len - 3) {
             const shape = pick(random, style.shapes);
-            const scale = 0.95 + random() * 0.22;
-            const eaves = random() < 0.55 || shape === 'long'; // 屋檐朝街（长边贴街），否则山墙朝街
-            const fp = FOOT[shape];
-            const along = (eaves ? fp[1] : fp[0]) * scale;
-            const deep = (eaves ? fp[0] : fp[1]) * scale;
-            const setback = STREET_HALF + 1.6 + random() * 1.6;
+            const item = kitFor(shape, style);
+            const scale = item ? 0.94 + random() * 0.14 : 0.95 + random() * 0.22;
+            // 屋檐朝街（长边贴街），否则山墙朝街。套件的房子正面是做好的：一律正面朝街
+            const eaves = item ? false : random() < 0.55 || shape === 'long';
+            const fp = footOf(shape, item, scale);
+            const along = eaves ? fp[1] : fp[0];
+            const deep = eaves ? fp[0] : fp[1];
+            const setback = STREET_HALF + (item ? -0.5 + random() * 0.7 : 1.6 + random() * 1.6);
             const px = ax + ux * (t + along / 2) + nx * side * (setback + deep / 2);
             const pz = az + uz * (t + along / 2) + nz * side * (setback + deep / 2);
             const r = Math.max(along, deep) * 0.5;
-            const ok = plazaDistance(px, pz) > 36 + r && roadEdge(px, pz) > deep / 2 + 0.6 && free(px, pz, r * 0.95) && dry(px, pz) && cityDistance(px, pz) < CITY_R + 10 + (style === STYLE.china ? 0 : 1e4);
-            if (ok && random() < 0.86) {
-              // 局部 +z 指向街
-              const face = Math.atan2(-nx * side, -nz * side);
-              paintedHouse(px, pz, { shape, scale, turn: face + (eaves ? Math.PI / 2 : 0), wall: pick(random, style.walls), roof: pick(random, style.roofs), shops: style === STYLE.china ? 0.34 : 0.2 });
-              t += along + 1.2 + random() * 2.8;
+            // 局部 +z 指向街
+            const face = Math.atan2(-nx * side, -nz * side);
+            const ok = plazaDistance(px, pz) > 36 + r && roadEdge(px, pz) > deep / 2 + 0.6 && (item ? freeC(px, pz, r * 0.8) && houseFits(px, pz, face, item, scale, 0.9) : free(px, pz, r * 0.95)) && dry(px, pz) && cityDistance(px, pz) < CITY_R + 10 + (style === STYLE.china ? 0 : 1e4);
+            if (ok && random() < (item ? 0.95 : 0.86)) {
+              paintedHouse(px, pz, { shape, item, style, auto: true, kitScale: scale, scale, turn: face + (eaves ? Math.PI / 2 : 0), wall: pick(random, style.walls), roof: pick(random, style.roofs), shops: style === STYLE.china ? 0.34 : 0.2 });
+              t += along + (item ? 0.25 + random() * 0.9 : 1.2 + random() * 2.8);
             } else {
               // 空出来的地方种一棵行道树
               if (free(px, pz, 3) && roadEdge(px, pz) > 2 && plazaDistance(px, pz) > 33) treeSpots.push([ax + ux * (t + 3) + nx * side * (STREET_HALF + 2.8), az + uz * (t + 3) + nz * side * (STREET_HALF + 2.8)]);
@@ -686,11 +961,26 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
       const z = pz + Math.sin(a) * 41;
       // 北边留空：从广场要能一眼看到玉海宫
       if (roadEdge(x, z) < 5.2 || !free(x, z, 4.4) || (z < pz - 22 && Math.abs(x - px) < 34)) continue;
-      paintedHouse(x, z, { shape: i % 3 ? 'tall' : 'house', scale: 1.02 + random() * 0.14, turn: Math.atan2(px - x, pz - z) + (i % 3 ? 0 : Math.PI / 2), wall: pick(random, STYLE.china.walls), roof: pick(random, STYLE.china.roofs), shops: 0.4 });
+      paintedHouse(x, z, { style: STYLE.china, shape: i % 3 ? 'tall' : 'house', scale: 1.02 + random() * 0.14, turn: Math.atan2(px - x, pz - z) + (kit || i % 3 ? 0 : Math.PI / 2), wall: pick(random, STYLE.china.walls), roof: pick(random, STYLE.china.roofs), shops: 0.4 });
     }
   }
   // 玉海城的巷子里：把空地填上，老城才挤挤挨挨的
-  scatter(YUHAI[0], YUHAI[1], CITY_R - 8, 150, STYLE.china, { gap: 7.2, road: 6.5, shops: 0.16, scale: [0.9, 0.3] });
+  scatter(YUHAI[0], YUHAI[1], CITY_R - 8, 150, STYLE.china, { gap: 7.2, road: 6.5, shops: 0.16, scale: [0.9, 0.3], more: kit ? 8 : 1 });
+  if (kit) {
+    // 城和镇之间不再是空的：公路边每隔一段有个小聚落——三五户人家、一座谷仓；镇子外圈再散开一圈人家
+    for (const g of SEGS) {
+      if (g.kind !== 'road') continue;
+      const len = Math.hypot(g.bx - g.ax, g.bz - g.az);
+      for (let t = 70 + random() * 60; t < len - 50; t += 110 + random() * 90) {
+        const side = random() < 0.5 ? -1 : 1;
+        const cx = g.ax + ((g.bx - g.ax) * t) / len - ((g.bz - g.az) / len) * side * 26;
+        const cz = g.az + ((g.bz - g.az) * t) / len + ((g.bx - g.ax) / len) * side * 26;
+        if (builtAt(cx, cz) > 0.3 || forestAt(cx, cz) > 0.5) continue;
+        scatter(cx, cz, 30, 4 + Math.floor(random() * 4), cityDistance(cx, cz) < CITY_R + 160 ? STYLE.euro : STYLE.farm, { shops: 0.04, more: 1 });
+      }
+    }
+    for (const [x, z, r, n, style] of [[-460, -112, 250, 60, STYLE.euro], [D('lakeside').x, D('lakeside').z, 200, 40, STYLE.euro], [D('seaside').x, D('seaside').z, 190, 40, STYLE.coast], [D('pastoral').x, D('pastoral').z, 210, 40, STYLE.farm], [-740, 350, 170, 60, STYLE.coast], [640, -480, 190, 60, STYLE.euro], [445, -120, 190, 50, STYLE.euro], [20, 410, 150, 40, STYLE.coast], [HOME[0], HOME[1], 150, 24, STYLE.euro], [YUHAI[0], YUHAI[1], CITY_R + 120, 160, STYLE.euro]]) scatter(x, z, r, n, style, { minR: 30, shops: 0.05, more: 1 });
+  }
 
   // ===== 石桥：路跨过清溪河的地方 ================================================================================
   for (const br of BRIDGES) {
@@ -767,6 +1057,7 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
 
   // ===== 高铁：站房、小站、高架、会跑的车 ========================================================================
   let train = null;
+  let train2 = null;
   const rail = (() => {
     const ground = railXZ.map(([x, z]) => Math.max(heightAt(x, z), waterAt(x, z) ?? -99));
     const blur = (arr, r) => {
@@ -844,8 +1135,12 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
       b.add(new THREE.BoxGeometry(16, 1, 6), 'stone#1', [p[0] - Math.sin(rot) * 1.5, p[1] + 8.8, p[2] - Math.cos(rot) * 1.5], rot);
     }
     const stops = RAIL_STATIONS.map((s) => rail.cum[rail.nearest(s.x, s.z)]).sort((p, q) => p - q);
-    train = LM.createTrain(shared, rail.path.slice(6, rail.path.length - 6), { cars: 5, speed: 34, stops: stops.map((s) => s - rail.cum[6]).filter((s) => s > 30), dwell: 8, loop: false, accel: 2.2 });
-    if (train?.group) group.add(train.group);
+    // 两列车，一股道一列，对着开：一列从这头出发、一列从那头出发，各自到头停一会儿再折回来，路上总会交会
+    const line = rail.path.slice(6, rail.path.length - 6);
+    const halts = stops.map((s) => s - rail.cum[6]).filter((s) => s > 30);
+    train = LM.createTrain(shared, line, { cars: 5, speed: 34, stops: halts, dwell: 8, loop: false, accel: 2.2, side: 1.8 });
+    train2 = LM.createTrain(shared, line, { cars: 5, speed: 34, stops: halts, dwell: 8, loop: false, accel: 2.2, side: -1.8, from: 1, stripe: [0.78, 0.3, 0.22] });
+    for (const t of [train, train2]) if (t?.group) group.add(t.group);
   }
 
   // ===== 打磨：亭子、牌坊、海滩小屋、货轮、CBD 的裙楼和街心花园 ==================================================
@@ -976,15 +1271,121 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
   // ===== 各区的特色玩法（滑雪、开船、冲浪、采摘……）：道具和交互点都在 activities.js 里 =====
   /** 玩法要的手绘立牌（life 图集）：[{ name, x, z, h, y? }]，后面和街景小物一起画 */
   const activityDecor = [];
-  const activities = placeActivities({ THREE, b, LM, add, claim, free, dry, district, random, gardenPlots, parasols, sakura, lanterns, decor: activityDecor, shared, group });
+  const activities = placeActivities({ THREE, b, LM, fence, add, claim, free, dry, district, random, gardenPlots, parasols, sakura, lanterns, decor: activityDecor, shared, group });
 
   // ===== 收尾：合并建筑 + 把画出来的那片房子实例化 ================================================================
+  // ---- 拆掉和别的东西撞上的房子（只拆自动撒的；写死位置的那些留着），留下的才放碰撞盒、挂店招 ----
+  const cullStats = { houses: 0, culled: 0, by: {}, extras: 0 };
+  if (kit) {
+    for (const h of painted) {
+      if (!h.auto) continue;
+      const hit = rectHit(h.rect, 0.15, ['big', 'small', 'proc']) ?? rectHit(h.rect, 0.05, ['house']);
+      if (hit) {
+        h.dead = h.rect.dead = true;
+        cullStats.culled++;
+        const why = hit.kind === 'house' ? 'house' : hit.kind === 'proc' ? 'proc' : hit.ref.kit;
+        cullStats.by[why] = (cullStats.by[why] ?? 0) + 1;
+      }
+    }
+    for (let i = painted.length - 1; i >= 0; i--) if (painted[i].dead) painted.splice(i, 1);
+    recording = false; // （店招杆是房子自己的，不算占地）
+    for (const h of painted) h.finish?.();
+    // 还卡在（写死位置的）房子里的小件：拿掉
+    for (let i = kitExtras.length - 1; i >= 0; i--) {
+      const e = kitExtras[i];
+      if (e.rect?.kind !== 'small' || !rectNear(e.x, e.z, 0.1, ['house'])) continue;
+      e.rect.dead = true;
+      kitExtras.splice(i, 1);
+      cullStats.extras++;
+    }
+    cullStats.houses = painted.length;
+  }
+  /** 彻底的一遍：地图上每一个占地（房子、模型、程序化构件）两两比，叠进去超过 3 cm 的都算。 */
+  const nameOf = (r) => (r.kind === 'proc' ? 'proc' : r.kind === 'house' ? 'house' : r.ref?.kit ?? r.kind);
+  const pairAudit = () => {
+    const all = new Set();
+    for (const list of rectGrid.values()) for (const r of list) if (!r.dead) all.add(r);
+    const seen = new Set();
+    const ids = new Map();
+    const idOf = (r) => ids.get(r) ?? (ids.set(r, ids.size), ids.size - 1);
+    const by = {};
+    const ex = [];
+    let pairs = 0;
+    for (const a of all) {
+      rectCells(a.x, a.z, a.rad, (k) => {
+        for (const q of rectGrid.get(k) ?? []) {
+          if (q === a || q.dead || !rectsOverlap(a, q, -0.03)) continue;
+          if (a.kind === 'proc' && q.kind === 'proc') continue;
+          if (a.chain != null && a.chain === q.chain) continue;
+          const key = idOf(a) < idOf(q) ? idOf(a) + '_' + idOf(q) : idOf(q) + '_' + idOf(a);
+          if (seen.has(key)) continue;
+          seen.add(key);
+          pairs++;
+          const n = [nameOf(a), nameOf(q)].sort().join(' × ');
+          by[n] = (by[n] ?? 0) + 1;
+          if (ex.length < 30 && !/fence × fence/.test(n)) ex.push(`${n} @ ${Math.round(a.x)},${Math.round(a.z)}`);
+        }
+        return false;
+      });
+    }
+    // 坡上：四角里有悬空的（脚离地）或者埋进土里的
+    let floating = 0;
+    let sunk = 0;
+    const fl = {};
+    for (const a of all) {
+      const e = a.ref;
+      if (!e || a.kind === 'proc' || !e.kit) continue;
+      const it = kit.byId.get(e.kit);
+      if (it?.afloat) continue;
+      const y = e.y ?? heightAt(e.x, e.z);
+      let lo = 1e9;
+      let hi = -1e9;
+      const inset = a.kind === 'house' || it.h > 4 ? Math.min(0.45, a.hw * 0.2) : 0;
+      for (const [u, v] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+        const h = heightAt(a.x + u * (a.hw - inset) * a.c + v * (a.hd - inset) * a.s, a.z - u * (a.hw - inset) * a.s + v * (a.hd - inset) * a.c);
+        lo = Math.min(lo, h);
+        hi = Math.max(hi, h);
+      }
+      const house = a.kind === 'house';
+      if (a.kind === 'small' || (e.y != null && (waterAt(a.x, a.z) != null || bridgeAt(a.x, a.z)))) continue;
+      const tall = house || it.h > 4;
+      const sy = Array.isArray(e.scale) ? e.scale[1] : e.scale ?? 1;
+      // 悬空：模型自己的底（地基往下埋的那一截也算）够不着最低的那只脚，又没补地基；下陷：最高的那只脚埋得比门槛还深
+      const bad = !e.founded && y + (it.zmin ?? 0) * sy > lo + 0.3 ? 'float' : hi - y > (tall ? 0.75 : 0.5) ? 'sunk' : null;
+      if (!bad || e.kit === 'fence') continue;
+      bad === 'float' ? floating++ : sunk++;
+      fl[e.kit] = (fl[e.kit] ?? 0) + 1;
+      if (ex.length < 60) ex.push(`${bad} ${e.kit} @ ${Math.round(e.x)},${Math.round(e.z)} y=${y.toFixed(1)} lo=${lo.toFixed(1)} hi=${hi.toFixed(1)}`);
+    }
+    // 没登记占地的（鸟、船）：落在地上的鸟别站进别的东西里
+    let loose = 0;
+    for (const e of kitExtras) {
+      if (e.rect || e.y != null || !/^bird_/.test(e.kit)) continue;
+      if (rectNear(e.x, e.z, 0.05)) (loose++, ex.length < 60 && ex.push(`loose ${e.kit} @ ${Math.round(e.x)},${Math.round(e.z)}`));
+    }
+    return { rects: all.size, pairs, floating, sunk, loose, slopeBy: Object.fromEntries(Object.entries(fl).sort((p, q) => q[1] - p[1]).slice(0, 25)), pairBy: Object.fromEntries(Object.entries(by).sort((p, q) => q[1] - p[1]).slice(0, 40)), pairExamples: ex };
+  };
   const buildingMeshes = b.build(group);
-  if (painted.length) {
+  // 试点：家门口最近的四栋、AI 小镇中心最近的几栋，换成 Blender 里重绘过的精模（public/models3，src/town/models.js）。
+  // 被换掉的那栋不再画；碰撞盒、门口的石阶花盆、E 交互都还是原来那栋的。
+  const modelSlots = [];
+  if (models.length) {
+    const swappable = painted.map((h, i) => ({ h, i })).filter(({ h, i }) => i > 0 && ['house', 'cottage', 'tall', 'wing'].includes(h.shape));
+    const nearest = ([cx, cz]) => swappable.filter(({ h }) => !h.model).sort((p, q) => Math.hypot(p.h.x - cx, p.h.z - cz) - Math.hypot(q.h.x - cx, q.h.z - cz))[0]?.h;
+    models.forEach((glb, k) => {
+      const h = nearest(k < 4 ? HOME : [-460, -112]);
+      if (!h) return;
+      h.model = glb;
+      const fp = FOOT[h.shape] ?? [8, 10];
+      modelSlots.push({ glb, x: h.x, z: h.z, turn: h.turn, width: fp[0] * h.scale, depth: fp[1] * h.scale });
+    });
+  }
+  if (painted.length && !kit) {
     // 按 400 m 的格子分批实例化：看不见的那几格显卡直接跳过（原来一整城的房子每帧都要过一遍顶点）
     const material = createBuildingMaterial({ uniforms: shared });
     const cells = new Map();
     for (const h of painted) {
+      if (h.model) continue;
       const key = `${Math.floor((h.x + HALF) / 400)},${Math.floor((h.z + HALF) / 400)}`;
       if (!cells.has(key)) cells.set(key, []);
       cells.get(key).push(h);
@@ -1003,6 +1404,11 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     }
   }
   buildingMeshes.painted = painted.length;
+  // 街具和农具：老模型库（public/models）里造型过得去的那些小件，摆在房前屋侧——长凳、木桶、板车、晾衣架、水果摊；
+  // 农家旁边是草垛、稻草人、蜂箱、农具架；和式的房子旁边是石灯笼、水缸、竹篱。
+  const propSlots = []; // （老办法：一件一个 GLB、各用各的材质。现在都走套件那一个着色器了，这里空着）
+  // 模型库里转过来的三百多种模型：房侧的杂物、街具、公交站、集市、车站、农家、船、地标、鸟和鱼（dressing.js）
+  const dressStats = kit ? dress({ kit, random, painted, inst, makeRect, rectHit, rectNear, freeC, collide: (...a) => b.collide(...a), railNear, faceRoad, extras: kitExtras }) : null;
 
   // ===== 路面和广场 ============================================================================================
   {
@@ -1027,10 +1433,11 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
   // ===== 雪：雪山小镇那一片，地上盖一层贴着地形的雪 ===============================================================
   {
     const STEP = 4;
-    const x0 = -984;
-    const z0 = -980;
-    const nx = Math.round(484 / STEP);
-    const nz = Math.round(656 / STEP);
+    // （镇子坐的平地、滑雪道，加上背后那道山肩，一直到地图的北缘）
+    const x0 = -1024;
+    const z0 = -1024;
+    const nx = Math.round(720 / STEP);
+    const nz = Math.round(700 / STEP);
     const pos = [];
     const uv = [];
     const keep = [];
@@ -1047,7 +1454,7 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
         const drift = (fbm(x / 13 + 1.7, z / 13 - 4.2, 2, 131) - 0.5) * 2.6 * k * (1 - trodden);
         pos.push(x, h - 0.9 + 1.25 * k - 0.36 * trodden + Math.max(-0.12, drift), z);
         uv.push(x / 9, z / 9);
-        keep.push(s > 0.02 && h < 150 && waterAt(x, z) == null);
+        keep.push(s > 0.02 && waterAt(x, z) == null);
       }
     }
     const idx = [];
@@ -1066,7 +1473,7 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
       geo.setIndex(idx);
       geo.computeVertexNormals();
       geo.computeBoundingSphere();
-      const snow = new THREE.Mesh(geo, paintMaterial(shared, { lit: [0.96, 0.97, 1.0], shade: [0.76, 0.84, 0.97], kind: 'flat' }));
+      const snow = new THREE.Mesh(geo, paintMaterial(shared, { lit: [0.96, 0.97, 1.0], shade: [0.76, 0.84, 0.97], kind: 'snow', albedo: false }));
       snow.matrixAutoUpdate = false;
       group.add(snow);
     }
@@ -1080,6 +1487,9 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     const tree = (x, z, kind, scale) => {
       if (lakeDistance(x, z) < 1.16 || Math.abs(x) > HALF - 30 || Math.abs(z) > HALF - 30) return false;
       if (riverAt(x, z).d < RIVER_HALF + 5 || coastD(x, z) < 52 || !free(x, z, 1.5) || railNear(x, z, 6)) return false;
+      // 树冠不进屋：离房子、模型、设施至少大半个树冠
+      const crown = (kind === 0 ? 11.5 : kind <= 3 ? [5.6, 4.6, 6.6][kind - 1] : 1.9) * scale;
+      if (rectNear(x, z, kind >= 7 ? crown * 0.8 + 0.3 : Math.max(2.6, crown * 0.92 + 0.3))) return false;
       if (roadEdge(x, z) < (kind === 0 ? 4 : 1.6)) return false;
       if (skiAt(x, z).k > 0.8) return false;
       if (snowAt(x, z) > 0.3) {
@@ -1103,7 +1513,7 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     }
     // 院子里、屋后：每栋房子背后有一半的机会长一棵
     for (const h of painted.slice()) {
-      if (random() > 0.5) continue;
+      if (random() > (kit ? 0.16 : 0.5)) continue;
       const a = random() * TAU;
       const d = 9 + random() * 5;
       const x = h.x + Math.cos(a) * d;
@@ -1192,7 +1602,7 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
       const x = -752 + Math.cos(a) * r;
       const z = -556 + Math.sin(a) * r;
       const s = snowAt(x, z);
-      if (s < 0.05 || (s > 0.9 && random() < 0.25) || skiAt(x, z).k > 0.8 || !free(x, z, 3.2) || roadEdge(x, z) < 3.5 || railNear(x, z, 7)) continue;
+      if (s < 0.05 || (s > 0.9 && random() < 0.25) || skiAt(x, z).k > 0.8 || !clear(x, z, 3.2) || roadEdge(x, z) < 3.5 || railNear(x, z, 7)) continue;
       snowPines.push([x, z, 0.7 + random() * 0.9]);
       claim(x, z, 2.2);
     }
@@ -1217,6 +1627,7 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
   const card = (x, z, n, h) => {
     const i = sprite(n);
     if (i == null || riverAt(x, z).d < RIVER_HALF + 2 || lakeDistance(x, z) < 1.0) return false;
+    if (rectNear(x, z, Math.max(1.6, h * 0.27))) return false;
     treeCards.push({ x, z, y: heightAt(x, z) - 0.15, h, sprite: i });
     return true;
   };
@@ -1287,6 +1698,7 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
         const r = random() * (p.r ?? 3);
         const x = p.x + Math.cos(a) * r;
         const z = p.z + Math.sin(a) * r;
+        if (rectNear(x, z, 0.35)) continue;
         spots.push({ x, z, y: heightAt(x, z), h: 0.38 + random() * 0.34, sprite: Math.floor(random() * 139) });
       }
     }
@@ -1331,7 +1743,7 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     // 樱花和别的花果树：玉海城的绿带、街口，各镇的院子里
     for (const [x, z] of sakura) card(x, z, pick(random, [29, 28, 36, 29, 26]), 5.2 + random() * 2.2);
     for (const h of painted) {
-      if (random() > 0.14) continue;
+      if (random() > (kit ? 0.04 : 0.14)) continue;
       const a = random() * TAU;
       const x = h.x + Math.cos(a) * 9.5;
       const z = h.z + Math.sin(a) * 9.5;
@@ -1411,7 +1823,7 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
         for (let c = 0; c < 10; c++) {
           const x = d.x - 36 + c * 8 + (r % 2) * 4;
           const z = d.z - 27 + r * 9;
-          if (idx == null || riverAt(x, z).d < RIVER_HALF + 6 || roadEdge(x, z) < 2.5) continue;
+          if (idx == null || riverAt(x, z).d < RIVER_HALF + 6 || roadEdge(x, z) < 2.5 || rectNear(x, z, 2.2)) continue;
           farmCards.push({ x, z, y: heightAt(x, z) - 0.1, h: 4.6 + random() * 1.2, sprite: idx, tree: true });
           claim(x, z, 2.5);
         }
@@ -1505,10 +1917,65 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
       'transport-wheelbarrow': '独轮车',
       'transport-handcart': '手推车',
     };
-    const put = (name, x, z, h, { force = false, r = 0.8, y = null } = {}) => {
+    // 有套件的时候，这些都不再是立牌：换成立体的模型（tools/ghibli4/play_kit.py 和库里转来的），和别的东西一样登记占地。
+    // 写死的位置要是压着篱笆、墙、别的街具，就在旁边一圈圈找最近的空地；找不到就不放。
+    const KIT3 = {
+      'infra-mailbox': ['prop_mailbox'], 'infra-flower-bed': ['st_station-flower-bed', 'prop_planter_wood'], 'infra-planter-box': ['prop_planter_wood'], 'infra-urn-planter': ['inf_urn-planter'],
+      'infra-litter-bin': ['prop_bin_barrel'], 'infra-topiary': ['inf_planter-box'], 'infra-bike-rack': ['inf_bike-rack'], 'infra-phone-booth': ['prop_phonebooth'], 'infra-kiosk': ['prop_kiosk'],
+      'infra-market-stall': ['stall'], 'infra-parasol': ['prop_umbrella'], 'infra-picnic-table': ['picnic'], 'infra-festoon-pole': ['prop_lamp_string'], 'infra-street-clock': ['streetclock'],
+      'infra-notice-board': ['noticeboard'], 'infra-stone-lantern': ['stonelantern'], 'infra-stone-well': ['farm_well'], 'infra-water-pump': ['pump'], 'infra-swing-set': ['swing'], 'infra-slide': ['slide'],
+      'infra-seesaw': ['seesaw'], 'infra-merry-go-round': ['merrygo'], 'infra-sandbox': ['sandbox'], 'infra-rocking-horse': ['rockhorse'], 'infra-gazebo': ['prop_pergola'],
+      'transport-city-bicycle': ['bicycle'], 'transport-cargo-bike': ['cargobike'], 'transport-scooter': ['scooter'], 'transport-rowboat': ['rowboat'], 'transport-kayak': ['kayak'], 'transport-canoe': ['canoe'],
+      'transport-ox-cart': ['oxcart'], 'transport-wheelbarrow': ['veh_wheelbarrow'], 'transport-handcart': ['prop_handcart'],
+    };
+    const POLE = [-0.15, 0.15, -0.15, 0.15];
+    /** 这块占地里有没有树干、花牌（它们先种下的：新摆的东西让开）。 */
+    const plantNear = (rc) => {
+      for (const g of grove) if (Math.abs(g[0] - rc.x) < rc.rad + 1 && Math.abs(g[1] - rc.z) < rc.rad + 1 && rectDist(rc, g[0], g[1]) < 0.9) return true;
+      for (const c of treeCards) if (Math.abs(c.x - rc.x) < rc.rad + 1.2 && Math.abs(c.z - rc.z) < rc.rad + 1.2 && rectDist(rc, c.x, c.z) < 1.05) return true;
+      return false;
+    };
+    const put3 = (name, x0, z0, { force, r, y, turn }) => {
+      const id = (KIT3[name] ?? []).find(has);
+      if (!id) return false;
+      const it = kit.byId.get(id);
+      const boat = /rowboat|kayak|canoe/.test(id);
+      const thin = id === 'prop_umbrella' || id === 'prop_lamp_string';
+      const t = turn ?? (boat ? random() * TAU : faceRoad(x0, z0, random() * TAU) + (random() - 0.5) * 0.3);
+      let spot = null;
+      for (let i = 0; i < (force ? 18 : 1) && !spot; i++) {
+        const d = i === 0 ? 0 : 0.5 + i * 0.25;
+        const x = x0 + Math.cos(i * 2.4) * d;
+        const z = z0 + Math.sin(i * 2.4) * d;
+        const rc = makeRect(x, z, t, thin ? POLE : it.bounds, 1, 'big');
+        if (rectHit(rc, 0.12) || waterAt(x, z) != null || plantNear(rc)) continue;
+        if (!force && (!freeC(x, z, Math.min(r, 3)) || roadEdge(x, z) < 0.4)) continue;
+        spot = [x, z];
+      }
+      if (!spot) return false;
+      const [x, z] = spot;
+      const gy = y ?? heightAt(x, z);
+      const o = { y: boat ? gy + 0.17 : y ?? undefined, norect: thin };
+      if (it.tint !== 'self') o.accent = pick(random, ACCENTS);
+      const e = inst(id, x, z, t, o);
+      e.auto = true;
+      if (thin) e.rect = addRect(x, z, t, POLE, 1, 'small', e);
+      if (it.h > 0.3) {
+        const rc = makeRect(x, z, t, thin ? POLE : it.bounds, 1, 'big');
+        e.col = b.collide(rc.x, rc.z, rc.hw, rc.hd, boat ? 0.4 : it.h, t, boat ? gy : null);
+      }
+      // （交互点带着模型和它的碰撞盒：骑走、划走的时候是这一件在动）
+      if (name.startsWith('transport-')) add({ id: `vehicle-${name}-${Math.round(x)}-${Math.round(z)}`, name: VEHICLES[name] ?? '交通工具', kind: 'vehicle', vehicle: name, x, z, r: Math.max(1.8, r + 0.8), hint: boat ? 'E 推下水去划' : 'E 骑上去', model: e });
+      if (name === 'infra-stone-lantern') lanterns.push([x, gy + it.h * 0.62, z]);
+      claim(x, z, Math.min(r, 1.2));
+      return [x, z, it.h];
+    };
+    const put = (name, x, z, h, { force = false, r = 0.8, y = null, turn = null } = {}) => {
+      if (kit) return put3(name, x, z, { force, r, y, turn });
       const sp = lifeNames.get(name);
       if (sp == null) return false;
-      if (!force && (!free(x, z, r) || roadEdge(x, z) < 0.4)) return false;
+      if (!force && (!clear(x, z, r) || roadEdge(x, z) < 0.4)) return false;
+      if (force && rectNear(x, z, 0.3, ['house'])) return false;
       decor.push({ x, z, y: y ?? heightAt(x, z), h, sprite: sp });
       // 交通工具同时作为可交互的乘坐点：素材仍由 life 图集绘制，交互数据独立于装饰批次。
       if (name.startsWith('transport-')) add({ id: `vehicle-${name}-${Math.round(x)}-${Math.round(z)}`, name: VEHICLES[name] ?? '交通工具', kind: 'vehicle', vehicle: name, x, z, r: Math.max(1.8, r + 0.8), hint: 'E 乘坐' });
@@ -1517,7 +1984,8 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
       return true;
     };
     const festoon = (x, z, o) => {
-      if (put('infra-festoon-pole', x, z, 4.6, { r: 0.4, ...o })) festoons.push([x, heightAt(x, z) + 4.3, z]);
+      const p = put('infra-festoon-pole', x, z, 4.6, { r: 0.4, ...o });
+      if (p) festoons.push(kit ? [p[0], heightAt(p[0], p[1]) + p[2] * 0.93, p[1]] : [x, heightAt(x, z) + 4.3, z]);
     };
     for (const d of [...activityDecorLater, ...activityDecor]) put(d.name, d.x, d.z, d.h, { force: true, r: d.r ?? 0.8, y: d.y ?? null });
     // 家门口
@@ -1639,8 +2107,9 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
       const z = s0.az + (s0.bz - s0.az) * t + ((s0.bx - s0.ax) / len) * side * 5.4;
       put(pick(random, ['infra-planter-box', 'infra-flower-bed', 'infra-urn-planter', 'infra-litter-bin', 'infra-topiary']), x, z, 0.9 + random() * 0.4, { r: 1.2 });
     }
-    group.add(createPlantBatch(shared, plants.life, decor, { alpha: 0.16, sway: 0 }));
+    if (decor.length) group.add(createPlantBatch(shared, plants.life, decor, { alpha: 0.16, sway: 0 }));
     group.userData.decor = decor.length;
+    group.userData.decorList = decor;
   }
   group.userData.festoons = festoons;
   // 灯串：每根串灯杆和最近的一两根相连（广场一圈、老街两排）
@@ -1676,6 +2145,107 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     }
   }
 
+  // ===== 最后一遍：每一件都落地 ====================================================================================
+  // ① 还互相叠着的：能拿掉的拿掉（自动摆的、小件），连它的碰撞盒一起；
+  // ② 坡上的：往下放到最低的那只脚着地；埋得太深的就不往下放，在悬空的那一侧补一块石头地基。
+  const settle = { removed: 0, by: {}, lowered: 0, founded: 0, left: 0 };
+  if (kit) {
+    const b2 = new Builder(shared);
+    const dropCols = (x, z, rad, big) => {
+      for (let i = b.colliders.length - 1; i >= 0; i--) {
+        const c = b.colliders[i];
+        if (Math.hypot(c.x - x, c.z - z) < rad && (big ? c.hw > 3 : c.hw < 1.2)) b.colliders.splice(i, 1);
+      }
+    };
+    const remove = (e) => {
+      e.dead = true;
+      if (e.rect) e.rect.dead = true;
+      if (e.col) b.colliders.splice(b.colliders.indexOf(e.col), 1);
+      else if (painted.includes(e)) dropCols(e.x, e.z, 2.5, true);
+      else dropCols(e.x, e.z, e.rect && e.rect.rad > 6 ? 4 : 0.5, e.rect && e.rect.rad > 6);
+      settle.removed++;
+      settle.by[e.kit] = (settle.by[e.kit] ?? 0) + 1;
+    };
+    const canGo = (e) => e && !e.dead && (e.auto || SMALL.has(e.kit) || e.kit === 'tower' || (painted.includes(e) && e !== painted[0]));
+    const hitOf = (a) => {
+      let hit = null;
+      rectCells(a.x, a.z, a.rad, (k) => {
+        for (const q of rectGrid.get(k) ?? []) {
+          if (q === a || q.dead || (a.chain != null && a.chain === q.chain) || !rectsOverlap(a, q, -0.03)) continue;
+          hit = q;
+          return true;
+        }
+        return false;
+      });
+      return hit;
+    };
+    for (const e of [...kitExtras, ...painted]) {
+      for (let n = 0; n < 4 && e.rect && !e.dead; n++) {
+        const q = hitOf(e.rect);
+        if (!q) break;
+        // 小的让大的；都拿不掉的留着（体检里会报出来）
+        const mine = canGo(e);
+        const theirs = canGo(q.ref);
+        if (mine && (!theirs || e.rect.rad <= q.rad)) remove(e);
+        else if (theirs) remove(q.ref);
+        else break;
+      }
+    }
+    // 落在地上的鸟：后来摆的东西压到它了就飞走
+    for (const e of kitExtras) if (!e.rect && e.y == null && /^bird_/.test(e.kit) && rectNear(e.x, e.z, 0.08)) remove(e);
+    for (const list of [kitExtras, painted]) for (let i = list.length - 1; i >= 0; i--) if (list[i].dead) list.splice(i, 1);
+    for (const e of [...kitExtras, ...painted]) {
+      const a = e.rect;
+      const it = kit.byId.get(e.kit);
+      if (!a || !it || it.afloat || e.kit === 'fence' || a.kind === 'small') continue;
+      // 架在水上、桥上的（码头的吊车、堤头的灯）：它脚下是台子，不是地
+      if (e.y != null && (waterAt(a.x, a.z) != null || bridgeAt(a.x, a.z))) continue;
+      const house = a.kind === 'house';
+      const tall = house || it.h > 4;
+      const inset = tall ? Math.min(0.45, a.hw * 0.2) : 0;
+      let lo = 1e9;
+      let hi = -1e9;
+      for (const [u, v] of [[-1, -1], [1, -1], [1, 1], [-1, 1], [0, 0]]) {
+        const hh = heightAt(a.x + u * (a.hw - inset) * a.c + v * (a.hd - inset) * a.s, a.z - u * (a.hw - inset) * a.s + v * (a.hd - inset) * a.c);
+        lo = Math.min(lo, hh);
+        hi = Math.max(hi, hh);
+      }
+      const sy = Array.isArray(e.scale) ? e.scale[1] : e.scale ?? 1;
+      const zmin = (it.zmin ?? 0) * sy;
+      let y = e.y ?? heightAt(e.x, e.z);
+      const sink = house ? 0.55 : tall ? 0.6 : it.h > 2 ? 0.5 : 0.22;
+      // 大楼盖在坡上：上坡那一侧埋得太深（门都进土了）就整栋抬起来，下坡那一侧用地基垫
+      if (tall && hi - y > 0.75) {
+        y = hi - sink;
+        settle.raised = (settle.raised ?? 0) + 1;
+      }
+      e.y = y;
+      if (y + zmin <= lo + 0.02) continue;
+      const want = lo - zmin - 0.04;
+      if (hi - want <= sink) {
+        e.y = Math.min(y, want);
+        settle.lowered++;
+        continue;
+      }
+      e.y = Math.min(y, Math.max(want, hi - sink));
+      // 补地基：从最低处往下埋一截，到模型自己的底
+      const top = e.y + zmin + 0.06;
+      const bot = lo - 0.5;
+      if (top - bot < 0.1) continue;
+      if (!tall && e.y + zmin - lo <= 0.3) {
+        // （小件、缝不到一拃：草盖得住）
+        settle.left++;
+        continue;
+      }
+      b2.add(new THREE.BoxGeometry((a.hw - inset) * 2 + 0.16, top - bot, (a.hd - inset) * 2 + 0.16), 'stone#2', [a.x, (top + bot) / 2, a.z], Math.atan2(a.s, a.c));
+      e.founded = true;
+      settle.founded++;
+    }
+    b2.build(group);
+    // （拿掉的车、船：它的交互点也拿掉）
+    for (let i = interactables.length - 1; i >= 0; i--) if (interactables[i].model?.dead) interactables.splice(i, 1);
+  }
+
   // 每栋房子都有一个轻量级 E 交互点；店铺优先打开商店，其余建筑提供参观提示。
   for (let i = 0; i < painted.length; i++) {
     const h = painted[i];
@@ -1696,6 +2266,9 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     get bus() {
       return bus;
     },
+    get train2() {
+      return train2;
+    },
     get train() {
       return train;
     },
@@ -1703,8 +2276,43 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     rail: rail.path,
     /** 菜地 [{ id, x, z, y, where }] */
     gardenPlots,
+    /** 换成精模的那几栋：[{ glb, x, z, turn, width, depth }]（main.js 拿去交给 models.js） */
+    modelSlots,
+    /** 套件房子的清单（main.js 拿去交给 kit.js 实例化）；没有套件时是空的 */
+    kitHouses: kit ? [...painted, ...kitExtras] : [],
+    /** 街具、农具（老模型库里的小件）：[{ glb, x, z, turn, scale }] */
+    propSlots,
     /** 会亮的东西（glow.js） */
     lights: { lamps: b.lamps ?? [], lanterns: [...(b.lanterns ?? []), ...lanterns], festoons, strings, lighthouse: lighthouseLamp },
+    cull: cullStats,
+    dress: dressStats,
+    settle,
+    /** 穿模体检：数一数还有多少东西站在别的东西里（tools/town-audit.mjs）。 */
+    audit() {
+      const out = { treeTrunk: 0, treeCrown: 0, cards: 0, decor: 0, props: 0, houseHouse: 0, houseOther: 0, extraInHouse: 0, examples: [] };
+      const note = (what, x, z) => out.examples.length < 40 && out.examples.push(`${what} @ ${Math.round(x)},${Math.round(z)}`);
+      for (const [x, z, kind, scale] of grove) {
+        const crown = (kind === 0 ? 11.5 : kind <= 3 ? [5.6, 4.6, 6.6][kind - 1] : 1.9) * scale;
+        if (rectNear(x, z, 0.8)) (out.treeTrunk++, note('tree-trunk', x, z));
+        else if (kind < 7) {
+          // （树冠底下摆个信箱、长椅不算穿：只和高过树冠底的大件比）
+          const q = rectNear(x, z, crown * 0.7, ['house', 'big']);
+          if (q && (q.kind === 'house' || (kit?.byId.get(q.ref?.kit)?.h ?? 0) > 3.2)) (out.treeCrown++, note('tree-crown', x, z));
+        }
+      }
+      for (const c of treeCards) if (rectNear(c.x, c.z, 1.0)) (out.cards++, note('card', c.x, c.z));
+      for (const c of group.userData.decorList ?? []) if (rectNear(c.x, c.z, 0.2, ['house'])) (out.decor++, note('decor', c.x, c.z));
+      for (const c of propSlots) if (rectNear(c.x, c.z, 0.5)) (out.props++, note('prop', c.x, c.z));
+      for (const h of painted) {
+        if (!h.rect) continue;
+        if (rectHit(h.rect, 0, ['house'])) (out.houseHouse++, note('house-house', h.x, h.z));
+        const o = rectHit(h.rect, 0, ['big', 'small', 'proc']);
+        if (o) (out.houseOther++, note(`house-${o.kind}:${o.ref?.kit ?? ''}${h.auto ? '' : '(fixed)'}`, h.x, h.z));
+      }
+      for (const e of kitExtras) if (e.rect?.kind === 'small' && rectNear(e.x, e.z, 0.05, ['house', 'big'])) (out.extraInHouse++, note('extra-' + e.kit, e.x, e.z));
+      Object.assign(out, pairAudit());
+      return out;
+    },
     stats: { buildings: buildingMeshes.length, houses: painted.length, trees: treePlaces.length, pines: pines.length + snowPines.length, rocks: rockPlaces.length, flowers: flowerPlaces.length, crops: gardenPlots.length },
     update(dt, playerPos, camera) {
       if (camera) woods.update(camera);
@@ -1714,6 +2322,7 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
       bus?.update(dt);
       flies?.update(dt);
       train?.update(dt);
+      train2?.update(dt);
       spin?.update(dt);
       activities?.update?.(dt, playerPos, camera);
       if (camera && inkMeshes.length && (inkTick = (inkTick + 1) % 12) === 0) {

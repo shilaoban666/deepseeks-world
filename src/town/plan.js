@@ -548,12 +548,24 @@ export function skiAt(x, z) {
 /** 滑雪道中线上 t 处的地面高度。 */
 export const skiHeight = (t) => SKI.base + SKI.drop * (t * t * (3 - 2 * t) * 0.35 + t * 0.65);
 
-/** 雪：雪山小镇那一片是白的（地上盖一层雪，房顶也是）。0~1。 */
+/**
+ * 雪山小镇背后的雪坡：一道圆缓的山肩，0~1（1 在山肩顶上）。
+ * 它只是近处的一座小山——真正的"雪山"是天边画好的那几座雪峰（src/valley/backdrop.js），
+ * 远的东西照原作的办法一次画成，不用几何去堆。
+ */
+export function massifAt(x, z) {
+  const mx = (x + 760) / 600;
+  const mz = (z + 1090) / 330;
+  return Math.exp(-(mx * mx + mz * mz));
+}
+
+/** 雪：雪山小镇那一片是白的（地上盖一层雪，房顶也是），加上滑雪道。0~1。 */
 export function snowAt(x, z) {
-  // （只盖在镇子坐的那块平地上：再往外是陡坡，雪交给远山自己的雪线）
+  // （只盖在镇子坐的那块平地上，背后的山坡是绿的——
+  //   整面山坡都刷白的话，从远处看是一大块没有明暗的白板。真正的雪山是天边画的那一座，见 main.js）
   const dx = x + 752;
   const dz = z + 556;
-  if (Math.abs(dx) > 230 || dz > 230 || dz < -300) return 0;
+  if (Math.abs(dx) > 260 || dz > 230 || dz < -330) return 0;
   const d = Math.hypot(dx, dz) + (fbm(x / 30 + 3, z / 30 - 8, 2, 77) - 0.5) * 44;
   const s = 1 - smooth(138, 176, d);
   const ski = skiAt(x, z).k;
@@ -606,17 +618,15 @@ function land(x, z) {
   // 野外的底：大起伏 + 小褶皱；有人住的这一片盆地里收着一点
   const calm = 1 - smooth(640, 1020, Math.hypot(x, z + 40));
   let h = 5 + ((fbm(x / 430 + 3.1, z / 430 - 1.7, 4, 1) - 0.5) * 58 + (fbm(x / 120 + 9.3, z / 120 + 4.1, 3, 5) - 0.5) * 11) * (1 - 0.55 * calm);
-  // 北边和西边一圈林山：不高，有豁口，豁口里露出天边画的远山；靠海的地方没有
-  const hills = Math.max(smooth(-560, -940, z), smooth(-900, -1180, x)) * smooth(120, 420, cd);
-  if (hills > 0) {
-    const gaps = 0.35 + 1.0 * fbm(x / 520 + 5, z / 520 + 1, 3, 41);
-    h += 115 * hills * gaps * (0.72 + 0.28 * ridged(x / 260, z / 260, 43));
-  }
-  // 西北的雪山：一道主脊加几条支脊
-  const mx = (x + 760) / 720;
-  const mz = (z + 1100) / 380;
-  const massif = Math.exp(-(mx * mx + mz * mz));
-  if (massif > 0.002) h += massif * (300 + 80 * ridged(x / 520 + 2, z / 520 + 9, 37));
+  // 北边和西边的环山：照原作 world.js 的办法——山不矮（一百米上下），但坡很长（将近一公里才升上去）、
+  // 形状很大（八百米一个起伏）。所以天边是几道圆润的大弧，一道叠一道；没有陡坡，也就没有岩石和等高线似的笔触。
+  // 可走的范围里它只升到五六十米，大半座山在外面，隔着一层空气看。靠海的地方没有。
+  const edge = z + 160 * (fbm(x / 520 + 5, z / 520, 2, 31) - 0.5);
+  const hills = Math.max(smooth(-600, -1420, edge), smooth(-880, -1700, x)) * smooth(120, 420, cd);
+  if (hills > 0) h += 105 * hills * (0.6 + 0.8 * fbm(x / 800 + 2, z / 800 + 9, 3, 37));
+  // 雪山小镇背后的雪坡：一道圆缓的山肩，滑雪道就在它上面（真正的雪峰在天边，是画的）
+  const massif = massifAt(x, z);
+  if (massif > 0.002) h += massif * (62 + 16 * ridged(x / 520 + 2, z / 520 + 9, 37));
   // 地图外面：慢慢落回平地，融进雾里，不要一堵墙
   h *= 1 - 0.85 * smooth(1700, 2900, r);
   // 城、镇、站：各压成一块缓坡的平地
@@ -780,7 +790,7 @@ export function forestAt(x, z) {
     const dd = Math.hypot(dx, dz) / d.r;
     f = Math.max(f, (1 - smooth(0.55, 1.05, dd)) * (0.6 + 0.6 * fbm(x / 130 + 7, z / 130 + 2, 3, 61)));
   }
-  const belt = Math.max(smooth(-600, -820, z), smooth(-940, -1100, x)) * smooth(0.42, 0.6, fbm(x / 210 + 1.3, z / 210 + 8.2, 3, 67));
+  const belt = Math.max(smooth(-600, -820, z), smooth(-940, -1100, x)) * smooth(0.47, 0.62, fbm(x / 210 + 1.3, z / 210 + 8.2, 3, 67));
   f = Math.max(f, belt);
   if (f <= 0) return 0;
   if (lakeDistance(x, z) < 1.25 || riverAt(x, z).d < 22 || coastD(x, z) < 70) return 0;
@@ -814,15 +824,15 @@ export function fieldsAt(x, z) {
   return f;
 }
 
-/** 高山密度（放岩石、雪线用）。 */
+/** 高山密度（放岩石用）：雪山小镇背后那道山肩。 */
 export function mountainAt(x, z) {
-  const h = heightAt(x, z);
-  return smooth(150, 300, h);
+  return smooth(0.45, 0.8, massifAt(x, z));
 }
 
 // ---- 出生点 ----------------------------------------------------------------------------------------------------
 export const START = [HOME[0], HOME[1] + 6];
-export const START_YAW = Math.PI * 0.32;
+// （开局她面朝西北：越过磨坊和高架桥，是一层层的绿丘、云带和天边的雪峰——这个世界的第一眼）
+export const START_YAW = Math.PI + 0.5;
 /** 这里的水面有多高；不是水（或水太浅）就返回 null。湖、河、海都算。 */
 export function waterAt(x, z) {
   const h = heightAt(x, z);

@@ -45,6 +45,7 @@ uniform vec4 uWalker;        // someone walking in the open: x, z, how dark thei
 uniform vec4 uLamp;          // a flame carried through the field: where it is, how bright (0 for none)
 uniform float uFrost;        // the town's weather: frost on the meadow, 0 to 1 (the valley leaves it at 0)
 uniform float uWetness;      // the town's weather: how wet everything is after rain, 0 to 1
+uniform float uMeadowDeep;   // the town's: how much deeper a green the meadow is mixed in, as a step of tone (the valley leaves it at 0)
 
 // The carried flame's light at p, in the same measure as tGlow's.
 float lampAt(vec3 p) {
@@ -200,6 +201,8 @@ float slopeSun(float rel) {
 
 // The meadow as it is painted: three greens, chosen by tone (0 in deep shade, 1 where the light is full).
 vec3 meadowGreen(float tone) {
+  // (a deeper meadow is mixed from the deeper paints, not darkened: it stays as green as it was)
+  tone -= uMeadowDeep;
   vec3 c = mix(vec3(0.05, 0.25, 0.07), vec3(0.15, 0.46, 0.085), smoothstep(0.2, 0.5, tone));
   c = mix(c, vec3(0.3, 0.57, 0.12), smoothstep(0.56, 0.9, tone));
   // rain: a wet meadow is darker and bluer; frost: the blades go white-blue, more so where the light is

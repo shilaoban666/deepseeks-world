@@ -13,6 +13,10 @@ import { guard } from './no-pointer-lock.mjs';
 export const VIEWS = {
   // ---- 家、AI 小镇、河 ----
   home: { x: -600, z: -14, yaw: 20, pitch: 10, dist: 12 },
+  // 两列高铁交会的那一刻：把两列车往前开到车头相距 60 m 以内，人站到桥边去看
+  trains: { x: 20, z: 400, yaw: 0, pitch: 6, dist: 16, async: "const a = tg.city.train, b = tg.city.train2; for (let i = 0; i < 60 * 600; i++) { a.update(1 / 60); b.update(1 / 60); if (Math.hypot(a.position[0] - b.position[0], a.position[2] - b.position[2]) < 60) break; } const mx = (a.position[0] + b.position[0]) / 2, mz = (a.position[2] + b.position[2]) / 2; tg.whale.setPos(mx + 10, mz + 44); tg.cam.yaw = Math.atan2(10, 44); tg.cam.pitch = 0.1; tg.cam.want = tg.cam.distance = 14; for (let i = 0; i < 40; i++) tg.tick(0);" },
+  // 弹窗长什么样（不带 --nohud 拍）
+  dialog: { x: -600, z: -14, yaw: 20, pitch: 10, dist: 12, async: "document.getElementById('panel-title').textContent = '居民小屋'; document.getElementById('panel-body').innerHTML = '<p>推开木门，屋里有晒过太阳的木头香。</p><p class=\"dim\">每一栋房子都留下了居民的生活痕迹。</p>'; document.getElementById('panel-foot').innerHTML = '<button class=\"primary\">进去看看</button><button>离开</button>'; document.getElementById('panel').classList.add('on'); const p = document.getElementById('prompt'); p.innerHTML = '<kbd>E</kbd>查看建筑'; p.classList.add('on'); await new Promise((r) => setTimeout(r, 700));" },
   homeFront: { x: -600, z: -12, yaw: 340, pitch: 8, dist: 7 },
   aitown: { x: -470, z: -95, yaw: 30, pitch: 12, dist: 16 },
   river: { x: -606, z: 30, yaw: 60, pitch: 12, dist: 10 },
@@ -138,6 +142,14 @@ for (let i = 0; i < args.length; i++) {
   if (args[i].startsWith('--')) i++;
   else names.push(args[i]);
 }
+// --at "名字:x,z,yaw,pitch,dist[,fov]"：临时加一个机位（不用改上面的表）；可以写多次
+for (let i = 0; i < args.length; i++) {
+  if (args[i] !== '--at') continue;
+  const [name, rest] = args[i + 1].split(':');
+  const [x, z, yaw, pitch, dist, fov] = rest.split(',').map(Number);
+  VIEWS[name] = { x, z, yaw, pitch, dist, fov };
+  names.push(name);
+}
 const out = resolve(here, flag('out', 'shots/town'));
 const [width, height] = flag('size', '1600x900').split('x').map(Number);
 const hour = flag('hour', null);
@@ -202,6 +214,8 @@ for (const name of names.length ? names : Object.keys(VIEWS)) {
       tg.forcePose = null;
       tg.weather?.set(v.weather ?? 'clear', { immediate: true });
       if (v.setup) new Function('tg', v.setup)(tg);
+      tg.camera.fov = v.fov || 58;
+      tg.camera.updateProjectionMatrix();
       if (v.sit) tg.game.interact(tg.interior.interactables.find((i) => i.kind === 'sofa'));
       for (let i = 0; i < 50; i++) {
         if (v.walk) {

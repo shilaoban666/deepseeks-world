@@ -96,6 +96,7 @@ layout(location = 0) out vec4 outC;
 in vec2 vUv;
 uniform vec2 uHero;    // the way the valley runs
 uniform int uDetail;   // octaves
+uniform vec4 uPeak;    // one more great peak: km along the valley's line, km right of it, how broad (km², 0: none), how tall
 const mat2 M2 = mat2(0.8, -0.6, 0.6, 0.8);
 ${NOISE}
 
@@ -177,6 +178,11 @@ void main() {
   float d1 = length(p - (uHero * 18.5 - perp * 4.2));
   float d2 = length(p - (uHero * 17.0 + perp * 11.5));
   h += exp(-d1 * d1 / 7.5) * (0.7 + 1.6 * m) + exp(-d2 * d2 / 8.0) * (0.5 + 1.4 * m);
+  // (and one more if it was asked for: a place of its own may want its mountain somewhere else on the horizon)
+  if (uPeak.z > 0.0) {
+    float d3 = length(p - (uHero * uPeak.x + perp * uPeak.y));
+    h += exp(-d3 * d3 / uPeak.z) * uPeak.w * (0.7 + 1.6 * m);
+  }
   // and a further range, seen through the passes
   h += pow(ridged(p * 0.07 + vec2(31.0, 17.0), 7), 1.2) * 3.6 * smoothstep(25.5, 31.0, r);
   outC = vec4(h, 0.0, 0.0, 1.0);
@@ -196,6 +202,8 @@ uniform vec2 uSide;    // the side the afternoon's light comes from, level
 uniform vec2 uHero;    // the way the valley runs
 uniform vec2 uEl;      // the strip's lowest and highest elevation, radians
 uniform float uEye;    // the eye's height, km
+uniform vec4 uCold;    // a snow mountain's own stretch of the horizon: its direction (x, z), how much lower the snow lies there (km), the cosine of half its width
+uniform float uBankAt; // where one more length of the bank of cloud lies, radians right of the valley's line (9: none)
 
 const float TAU = 6.28318531;
 ${NOISE}
@@ -249,6 +257,11 @@ float bankAt(float az, float el, float u, out float lit) {
   float s = atan(dot(round_, vec2(-uHero.y, uHero.x)), dot(round_, uHero));
   float here = max(1.0 - smoothstep(0.2, 0.46, abs(s - 0.44)), 1.0 - smoothstep(0.14, 0.34, abs(s + 0.98)));
   float peak = 1.0 - smoothstep(0.14, 0.38, abs(s + 0.2));
+  // (and under a peak that was added, turning the short way round to it)
+  if (uBankAt < 8.0) {
+    float off = abs(s - uBankAt);
+    peak = max(peak, 1.0 - smoothstep(0.12, 0.3, min(off, TAU - off)));
+  }
   here = max(here, peak);
   top += 0.014 * peak;
   here = max(here, smoothstep(0.5, 0.64, noise(round_ * 1.4 + 5.0)) * smoothstep(1.5, 1.9, abs(s)));
@@ -389,7 +402,9 @@ void main() {
   float lit = mix(smoothstep(0.0, 0.12, ndl) * smoothstep(0.1, 0.5, sh), hillTone, max(wooded, meadow));
 
   // snow: whole only on the highest tops; below them it lies on the ledges, a facet here and a facet there
-  float deep = smoothstep(2.6, 5.4, alt + (streak - 0.5) * 0.9 + 0.3 * noise(p.xz * 0.45 + 2.0));
+  // (only within its own stretch of the horizon; everywhere else the snow lies where it always did)
+  float cold = uCold.z * smoothstep(uCold.w, mix(uCold.w, 1.0, 0.6), dot(p.xz / max(r, 1e-3), uCold.xy));
+  float deep = smoothstep(2.6, 5.4, alt + cold + (streak - 0.5) * 0.9 + 0.3 * noise(p.xz * 0.45 + 2.0));
   float snow = max(step(fract(f1.y * 7.31 + f1.w * 3.7), deep * 0.62) * (1.0 - 0.85 * smoothstep(0.5, 0.78, crag)), smoothstep(0.93, 1.0, deep));
   snow = max(snow, step(fract(f2.z * 5.17 + f2.w * 2.3), deep * 0.12)) * (1.0 - wooded) * step(0.02, deep);
 
@@ -476,8 +491,11 @@ void main() {
 /**
  * @param side the afternoon sun's level direction (x, z): which side the mountains are lit from
  * @param options.width texels round the horizon; options.ground texels along a side of the height map
+ * @param options.snowPeak one more great peak, a snow mountain, standing in one stretch of the horizon and nowhere
+ *   else: { at: [km along the valley's line, km right of it], broad: km², tall, lower: km the snow lies lower there,
+ *   width: degrees of the horizon that is its own }. Left out, the far country is as it always was.
  */
-export function createBackdrop(renderer, hero, side, { width = 8192, ground = 4096 } = {}) {
+export function createBackdrop(renderer, hero, side, { width = 8192, ground = 4096, snowPeak = null } = {}) {
   width = Math.min(width, renderer.capabilities.maxTextureSize);
   ground = Math.min(ground, renderer.capabilities.maxTextureSize);
   const el = [THREE.MathUtils.degToRad(-2.6), THREE.MathUtils.degToRad(21.4)];
@@ -501,7 +519,20 @@ export function createBackdrop(renderer, hero, side, { width = 8192, ground = 40
     scene.add(mesh);
     return scene;
   };
-  const groundScene = stage(heightFragment, { uHero: { value: new THREE.Vector2(hero[0], hero[1]) }, uDetail: { value: ground > 2048 ? 10 : 9 } });
+  const peak = new THREE.Vector4();
+  const cold = new THREE.Vector4(1, 0, 0, 2);
+  let bankAt = 9;
+  if (snowPeak) {
+    const [u, v] = snowPeak.at;
+    peak.set(u, v, snowPeak.broad ?? 8, snowPeak.tall ?? 1);
+    // (the way to it, in the world: along the valley's line and to its right)
+    const x = hero[0] * u - hero[1] * v;
+    const z = hero[1] * u + hero[0] * v;
+    const far = Math.hypot(x, z);
+    cold.set(x / far, z / far, snowPeak.lower ?? 1, Math.cos(THREE.MathUtils.degToRad((snowPeak.width ?? 45) / 2)));
+    bankAt = Math.atan2(v, u);
+  }
+  const groundScene = stage(heightFragment, { uHero: { value: new THREE.Vector2(hero[0], hero[1]) }, uDetail: { value: ground > 2048 ? 10 : 9 }, uPeak: { value: peak } });
   const paintScene = stage(paintFragment, {
     tHeight: { value: heights.texture },
     uTexel: { value: SPAN / ground },
@@ -509,6 +540,8 @@ export function createBackdrop(renderer, hero, side, { width = 8192, ground = 40
     uHero: { value: new THREE.Vector2(hero[0], hero[1]) },
     uEl: { value: new THREE.Vector2(el[0], el[1]) },
     uEye: { value: 0.06 },
+    uCold: { value: cold },
+    uBankAt: { value: bankAt },
   });
   const camera = new THREE.Camera();
   /** Draws a scene into a target in upright strips, so no one draw holds the GPU for long. */

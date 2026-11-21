@@ -141,6 +141,7 @@ export function createField({
     uFogColor: { value: new THREE.Color(0.55, 0.6, 0.7) },
     uFrost: { value: 0 },
     uWetness: { value: 0 },
+    uMeadowDeep: { value: 0 },
     uFogSunColor: { value: new THREE.Color(1.0, 0.75, 0.45) },
     uFogDensity: { value: 0.0016 },
     uFireColor: { value: new THREE.Color(0, 0, 0) },

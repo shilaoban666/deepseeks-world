@@ -5,7 +5,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { COMMON } from '../lib/index.js';
 import { paintMaterial, outlineMaterial } from './paint.js';
 import { plain } from './buildings.js';
-import { HALF, LAKE, SEA, RIVER, RIVER_HALF, riverAt, riverLevel, heightAt, lakeDistance, forestAt, fieldsAt, mountainAt, smooth } from './plan.js';
+import { HALF, LAKE, SEA, RIVER, RIVER_HALF, riverAt, riverLevel, heightAt, lakeDistance, forestAt, fieldsAt, snowAt, mountainAt, smooth } from './plan.js';
 
 // ---- 远景地面：场地（草）之外的丘陵、林山、雪山，一直铺到雾里 ------------------------------------
 // 做法照原作的 horizon.js：内缘和草地是同一种绿、同一种光，往外按"画"来上色——
@@ -25,7 +25,7 @@ ${COMMON}
 layout(location = 0) out vec4 outC;
 in vec3 vWorld;
 in vec3 vNormal;
-uniform sampler2D tFar;   // 林（红）、田（绿）
+uniform sampler2D tFar;   // 林（红）、田（绿）、雪（蓝）
 uniform float uFarInv;
 
 void main() {
@@ -48,7 +48,9 @@ void main() {
   float sx = strokeCoord(vWorld);
   float sy = strokeCoord2(xz);
   col = paintGround(col, xz, dist, 0.0);
-  col = landStrokes(landStrokes(col, xz, dist, sx, fwidth(sx)), xz, dist, sy, fwidth(sy));
+  // （顺着等高线的那组笔触只画在缓坡上：坡一陡，它们就排成一级级的梯田）
+  col = mix(col, landStrokes(col, xz, dist, sx, fwidth(sx)), 1.0 - smoothstep(0.02, 0.08, 1.0 - N.y));
+  col = landStrokes(col, xz, dist, sy, fwidth(sy));
 
   // 田：一块块不同颜色的拼布
   vec2 fq = vec2(xz.x * 0.82 + xz.y * 0.57, -xz.x * 0.57 + xz.y * 0.82) / vec2(46.0, 30.0);
@@ -65,26 +67,31 @@ void main() {
 
   vec3 lit = col * meadowLight(sunny);
 
-  // 岩：陡的地方、高的地方。两阶色，暖灰对冷灰
+  // 岩：只在很陡的坡上露一点。两阶色，暖灰对冷灰
   float steep = 1.0 - N.y;
-  float rock = smoothstep(0.26, 0.44, steep + (c.g - 0.5) * 0.16) * smoothstep(60.0, 150.0, vWorld.y + (b.r - 0.5) * 60.0);
-  rock = max(rock, smoothstep(170.0, 260.0, vWorld.y + (b.g - 0.5) * 70.0) * 0.85);
+  float rock = smoothstep(0.3, 0.46, steep + (c.g - 0.5) * 0.16);
   float ndl = smoothstep(-0.05, 0.25, dot(N, uSunDir));
   vec3 stone = mix(vec3(0.3, 0.33, 0.42) * (uSkyColor * 1.5 + 0.1), vec3(0.62, 0.57, 0.5) * (uSunColor * 0.4 + uSkyColor * 0.3), ndl);
   stone *= mix(0.86, 1.08, e.r);
   lit = mix(lit, stone, rock);
 
-  // 雪：高处，背风的缓坡上多；阴面是蓝的
-  float snow = smoothstep(235.0, 300.0, vWorld.y + (c.b - 0.5) * 80.0 + (e.a - 0.5) * 24.0) * smoothstep(0.62, 0.38, steep + (e.g - 0.5) * 0.2);
-  vec3 white = mix(vec3(0.62, 0.74, 0.95) * (uSkyColor * 1.6 + 0.12), vec3(1.0, 0.99, 0.96) * (uSunColor * 0.42 + uSkyColor * 0.36), ndl);
+  // 雪：雪山小镇背后那道山肩（plan.snowAt 烘进图里的蓝通道），边缘参差；阴面是蓝的，云影也是蓝的——
+  // 平涂的两个调子，不带灰
+  float snow = smoothstep(0.42, 0.58, far4.b + (c.b - 0.5) * 0.22 + (e.a - 0.5) * 0.1);
+  // （和镇上的雪地同一套三个调子：paint.js 的 snow）
+  vec3 Ls = normalize(vec3(uSunDir.x, max(uSunDir.y, 0.3), uSunDir.z));
+  float snowSun = cloud * slopeSun(clamp(0.5 + (dot(N, Ls) - Ls.y) * 1.2, 0.0, 1.0)) + (e.b - 0.5) * 0.06;
+  vec3 white = mix(vec3(0.5, 0.61, 0.84) * (uSkyColor * 1.05 + 0.24), vec3(0.8, 0.87, 0.98) * (uSunColor * 0.28 + uSkyColor * 0.5), smoothstep(0.3, 0.38, snowSun));
+  white = mix(white, vec3(0.97, 0.955, 0.925) * (uSunColor * 0.4 + uSkyColor * 0.34), smoothstep(0.62, 0.7, snowSun));
   lit = mix(lit, white, snow);
 
   lit = mix(lit, vec3(0.86, 0.9, 0.96) * (uSunColor * 0.36 + uSkyColor * 0.5), uFrost * 0.65);
-  outC = vec4(applyFog(lit, vWorld), 1.0);
+  // （和原作 horizon.js 一样：远处的地少吃一点收尾的笔触——它本来就是按"画"上的色，再揉一遍，柔和的过渡会被揉成一块块硬边）
+  outC = vec4(applyFog(lit, vWorld), mix(1.0, 0.4, smoothstep(520.0, 700.0, dist)));
 }
 `;
 
-/** 远地用的图：林（红）、田（绿），烘一次。 */
+/** 远地用的图：林（红）、田（绿）、雪（蓝），烘一次。 */
 function farMap(side, size = 512) {
   const data = new Uint8Array(size * size * 4);
   for (let j = 0; j < size; j++) {
@@ -94,6 +101,7 @@ function farMap(side, size = 512) {
       const k = (i + j * size) * 4;
       data[k] = 255 * forestAt(x, z);
       data[k + 1] = 255 * fieldsAt(x, z);
+      data[k + 2] = 255 * snowAt(x, z);
       data[k + 3] = 255;
     }
   }
@@ -171,9 +179,16 @@ export function createFarGround(shared, inner = { centre: [0, 0], half: HALF }) 
 // 太阳在水上是一路碎金。风大的时候皱得厉害。
 const lakeVertex = /* glsl */ `
 out vec3 vWorld;
+#ifdef RIVER
+in vec2 aFlow;
+out vec2 vFlow;
+#endif
 void main() {
   vec4 w = modelMatrix * vec4(position, 1.0);
   vWorld = w.xyz;
+  #ifdef RIVER
+  vFlow = aFlow;
+  #endif
   gl_Position = projectionMatrix * viewMatrix * w;
 }
 `;
@@ -186,6 +201,27 @@ in vec3 vWorld;
 uniform vec3 uZenith, uMid, uHorizon, uGlow;
 uniform samplerCube tClouds;
 uniform vec4 uLake;   // 湖心 x, z，半径 x, z
+#ifdef RIVER
+in vec2 vFlow;
+#endif
+
+// 画出来的水纹：顺着水流拉长的一道道细线（噪声的等高线），两层、两个速度，往下游走。
+// 返回 (亮线, 暗线, 法线的扰动 x, z)
+vec4 strokes(vec2 xz, vec2 dir, float speed, float dist) {
+  vec2 perp = vec2(-dir.y, dir.x);
+  float al = dot(xz, dir);
+  float ac = dot(xz, perp);
+  float t = uTime * speed;
+  float a = texture(tNoise, vec2((al - t) / 13.0, ac / 2.3)).r;
+  float b = texture(tNoise, vec2((al - t * 1.6) / 7.0 + 0.37, ac / 1.3 + 0.61)).g;
+  // 线宽跟着距离走：近处细（不然贴着水面看是一条条白带子），远处宽一点才看得见
+  float w = 0.005 + min(dist, 90.0) * 0.00075;
+  float hi = smoothstep(0.60 - w, 0.60, a) * (1.0 - smoothstep(0.60 + w, 0.60 + 2.0 * w, a));
+  hi += 0.7 * smoothstep(0.66 - w, 0.66, b) * (1.0 - smoothstep(0.66 + w, 0.66 + 2.0 * w, b));
+  float lo = smoothstep(0.40 - 2.0 * w, 0.40, a) * (1.0 - smoothstep(0.40 + w, 0.40 + 3.0 * w, a));
+  vec2 n = (vec2(a, b) - 0.5) * 2.0;
+  return vec4(hi, lo, n.x * dir + n.y * perp);
+}
 
 vec3 skyAt(vec3 d) {
   float h = max(d.y, 0.0);
@@ -207,6 +243,18 @@ void main() {
   vec2 r1 = texture(tNoiseHi, (xz - flow * 0.22) / 7.3).rg - 0.5;
   vec2 r2 = texture(tNoiseHi, (xz.yx + flow * 0.31) / 2.1 + 0.4).ba - 0.5;
   vec2 rip = (r1 + r2 * 0.6) * 0.04 * U * smoothstep(0.0, 0.5, depth) / (1.0 + dist * 0.01);
+  #ifdef RIVER
+  vec2 fdir = normalize(vFlow + vec2(1e-4, 0.0));
+  float fspeed = 1.5;
+  #else
+  vec2 fdir = normalize(uWind.xy + vec2(1e-4, 0.0));
+  float fspeed = 0.3 + 0.25 * U;
+  #endif
+  float deep = smoothstep(0.03, 0.45, depth);
+  vec4 st = strokes(xz, fdir, fspeed, dist) * deep;
+  // 近处淡：脚边的水主要看倒影和水底，水纹只是轻轻几笔
+  float stFade = (0.3 + 0.7 * smoothstep(5.0, 40.0, dist)) / (1.0 + dist * dist * 0.00012);
+  rip += st.zw * 0.022 / (1.0 + dist * 0.01);
   vec3 N = normalize(vec3(rip.x, 1.0, rip.y));
   vec3 R = reflect(-V, N);
   R.y = abs(R.y);
@@ -222,6 +270,14 @@ void main() {
   vec3 col = mix(bed, mirror, clamp(fres * 1.15 + 0.12, 0.0, 1.0));
   float glint = pow(max(dot(R, uSunDir), 0.0), 420.0) * shade;
   col += uSunColor * glint * 2.5;
+  // 水纹：暗的一笔压下去，亮的一笔提起来（都是画上去的线，不是高光）
+  col = mix(col, col * vec3(0.72, 0.82, 0.9), st.y * 0.5 * stFade);
+  col = mix(col, vec3(0.9, 0.96, 1.0) * (uSkyColor * 0.85 + uSunColor * 0.35), st.x * 0.46 * stFade * (0.55 + 0.45 * shade));
+  #ifdef RIVER
+  // 靠岸的浅水里，水绕着走：一圈圈往外荡的细纹
+  float ring = sin(depth * 26.0 - uTime * 2.2 + texture(tNoise, xz / 9.0).r * 6.0);
+  col = mix(col, vec3(0.93, 0.97, 1.0) * (uSkyColor * 0.85 + uSunColor * 0.3), smoothstep(0.86, 0.98, ring) * smoothstep(0.75, 0.2, depth) * smoothstep(0.05, 0.14, depth) * 0.45 * stFade);
+  #endif
   // 水边一道细细的白沫，随波一明一暗
   float foam = smoothstep(0.16, 0.03, depth) * smoothstep(0.35, 0.6, texture(tNoise, xz / 1.7 + flow * 0.02).r + 0.25 * sin(uTime * 0.9 + xz.x * 0.4));
   col = mix(col, vec3(0.92, 0.96, 0.98) * (uSkyColor * 0.9 + uSunColor * 0.3), foam * 0.7);
@@ -270,6 +326,7 @@ export function createLake(shared) {
   {
     const pos = [];
     const idx = [];
+    const flowDir = [];
     const half = RIVER_HALF + 9;
     let n = 0;
     for (let i = 0; i + 1 < RIVER.length; i++) {
@@ -284,6 +341,7 @@ export function createLake(shared) {
         const z = az + ((bz - az) * j) / rows;
         const y = riverLevel(riverAt(x, z).t);
         pos.push(x + nx * half, y, z + nz * half, x - nx * half, y, z - nz * half);
+        flowDir.push(nz, -nx, nz, -nx);
         if (j > 0) idx.push(n - 2, n, n - 1, n - 1, n, n + 1);
         n += 2;
       }
@@ -291,14 +349,17 @@ export function createLake(shared) {
       const y = riverLevel(riverAt(bx, bz).t);
       const c0 = pos.length / 3;
       pos.push(bx, y, bz);
+      for (let k = 0; k <= 13; k++) flowDir.push(nz, -nx);
       for (let k = 0; k <= 12; k++) pos.push(bx + Math.cos((k / 12) * Math.PI * 2) * half, y, bz + Math.sin((k / 12) * Math.PI * 2) * half);
       for (let k = 0; k < 12; k++) idx.push(c0, c0 + 2 + k, c0 + 1 + k);
       n = pos.length / 3;
     }
     const rg = new THREE.BufferGeometry();
     rg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    rg.setAttribute('aFlow', new THREE.Float32BufferAttribute(flowDir, 2));
     rg.setIndex(idx);
-    const river = new THREE.Mesh(rg, open);
+    const stream = new THREE.ShaderMaterial({ glslVersion: THREE.GLSL3, defines: { RIVER: 1 }, vertexShader: lakeVertex, fragmentShader: lakeFragment, uniforms: open.uniforms, transparent: true, depthWrite: false });
+    const river = new THREE.Mesh(rg, stream);
     river.material.side = THREE.DoubleSide;
     river.renderOrder = 5;
     river.frustumCulled = false;
@@ -840,15 +901,20 @@ void main() {
     }
   }
   vec4 r = cellRand(id, 9.0);
-  float gap = smoothstep(0.04, 0.14, d2 - d1);
-  // 颜色：暖米、灰、偶尔一块偏红偏青
-  vec3 stone = mix(vec3(0.6, 0.56, 0.48), vec3(0.5, 0.5, 0.5), r.x);
-  stone = mix(stone, vec3(0.62, 0.48, 0.4), step(0.86, r.y) * 0.7);
-  stone = mix(stone, vec3(0.44, 0.5, 0.52), step(0.9, r.z) * 0.7);
-  stone *= 0.86 + 0.24 * r.w;
-  stone *= 0.92 + 0.16 * texture(tNoise, xz / 0.31).b;
-  // 缝里是土，靠边的缝里长了草
-  vec3 seam = mix(vec3(0.24, 0.2, 0.15), vec3(0.16, 0.3, 0.1), smoothstep(0.75, 0.3, edge) * 0.7 + 0.2 * n);
+  // 缝：细细的一道，近看才清楚；远了就淡下去，路是一片暖色，不是一张网
+  float dist = distance(vWorld, uCamPos);
+  float gap = smoothstep(0.02, 0.085, d2 - d1);
+  gap = mix(gap, 1.0, smoothstep(14.0, 40.0, dist) * 0.7);
+  // 颜色：一种暖的米灰，石头和石头之间只差一点点明暗和冷暖——背景画里的石板路是"一片"，不是马赛克
+  vec3 stone = mix(vec3(0.62, 0.57, 0.47), vec3(0.57, 0.56, 0.5), smoothstep(0.3, 0.7, r.x));
+  stone = mix(stone, vec3(0.68, 0.58, 0.5), step(0.9, r.y) * 0.45);
+  stone = mix(stone, vec3(0.55, 0.59, 0.58), step(0.92, r.z) * 0.45);
+  stone *= 0.93 + 0.12 * r.w;
+  // 大片的深浅（几米一块），像水彩的晕；每块石头上一点笔触
+  stone *= 0.94 + 0.12 * texture(tNoise, xz / 6.3).r;
+  stone *= 0.96 + 0.08 * texture(tNoise, xz / 0.31).b;
+  // 缝里是比石头深一点的暖褐，靠边的缝里长了草
+  vec3 seam = mix(stone * vec3(0.62, 0.58, 0.52), vec3(0.2, 0.36, 0.12), smoothstep(0.75, 0.3, edge) * 0.7 + 0.15 * n);
   vec3 albedo = mix(seam, stone, gap);
   float shade = cloudAt(xz);
   vec3 sun = uSunColor * 0.4 * max(dot(normalize(vN), uSunDir), 0.0) * 1.25;

@@ -1,0 +1,1895 @@
+{
+ "style": "吉卜力风房屋套件（tools/ghibli4）",
+ "parts": {
+  "wall": 0,
+  "roof": 1,
+  "wood": 2,
+  "stone": 3,
+  "glass": 4,
+  "accent": 5,
+  "leaf": 6,
+  "plain": 7,
+  "cloth": 8,
+  "lamp": 9
+ },
+ "total_tris": 133841,
+ "items": [
+  {
+   "id": "cottage_a",
+   "shape": "cottage",
+   "style": "euro",
+   "w": 6.6,
+   "d": 5.8,
+   "h": 6.66,
+   "tris": 1185,
+   "bounds": [
+    -5.7,
+    3.65,
+    -3.79,
+    3.4
+   ],
+   "front": 2.9,
+   "zmin": -1.2
+  },
+  {
+   "id": "cottage_b",
+   "shape": "cottage",
+   "style": "euro",
+   "w": 5.8,
+   "d": 6.8,
+   "h": 7.17,
+   "tris": 1482,
+   "bounds": [
+    -3.41,
+    3.41,
+    -4.29,
+    3.75
+   ],
+   "front": 3.4,
+   "zmin": -1.2
+  },
+  {
+   "id": "cottage_c",
+   "shape": "cottage",
+   "style": "euro",
+   "w": 7.0,
+   "d": 6.0,
+   "h": 6.72,
+   "tris": 1762,
+   "bounds": [
+    -4.01,
+    3.85,
+    -3.91,
+    3.5
+   ],
+   "front": 3.0,
+   "zmin": -1.2
+  },
+  {
+   "id": "cottage_d",
+   "shape": "cottage",
+   "style": "euro",
+   "w": 6.0,
+   "d": 6.2,
+   "h": 9.09,
+   "tris": 2048,
+   "bounds": [
+    -3.6,
+    3.6,
+    -4.11,
+    3.45
+   ],
+   "front": 3.1,
+   "zmin": -1.2
+  },
+  {
+   "id": "house_a",
+   "shape": "house",
+   "style": "euro",
+   "w": 7.6,
+   "d": 6.8,
+   "h": 9.7,
+   "tris": 1869,
+   "bounds": [
+    -4.25,
+    4.25,
+    -4.29,
+    3.9
+   ],
+   "front": 3.4,
+   "zmin": -1.2
+  },
+  {
+   "id": "house_b",
+   "shape": "house",
+   "style": "euro",
+   "w": 6.8,
+   "d": 7.4,
+   "h": 10.18,
+   "tris": 2805,
+   "bounds": [
+    -5.8,
+    4.0,
+    -4.59,
+    4.05
+   ],
+   "front": 3.7,
+   "zmin": -1.2
+  },
+  {
+   "id": "house_c",
+   "shape": "house",
+   "style": "euro",
+   "w": 8.0,
+   "d": 6.6,
+   "h": 9.41,
+   "tris": 2204,
+   "bounds": [
+    -4.35,
+    4.35,
+    -4.19,
+    3.8
+   ],
+   "front": 3.3,
+   "zmin": -1.2
+  },
+  {
+   "id": "house_d",
+   "shape": "house",
+   "style": "euro",
+   "w": 7.2,
+   "d": 7.0,
+   "h": 9.81,
+   "tris": 2372,
+   "bounds": [
+    -4.05,
+    4.11,
+    -4.65,
+    4.0
+   ],
+   "front": 3.5,
+   "zmin": -1.2
+  },
+  {
+   "id": "house_e",
+   "shape": "house",
+   "style": "euro",
+   "w": 6.6,
+   "d": 7.2,
+   "h": 9.97,
+   "tris": 2326,
+   "bounds": [
+    -3.9,
+    3.9,
+    -4.75,
+    3.95
+   ],
+   "front": 3.6,
+   "zmin": -1.2
+  },
+  {
+   "id": "tall_a",
+   "shape": "tall",
+   "style": "euro",
+   "w": 6.0,
+   "d": 7.4,
+   "h": 12.18,
+   "tris": 3589,
+   "bounds": [
+    -3.7,
+    3.7,
+    -4.85,
+    4.05
+   ],
+   "front": 3.7,
+   "zmin": -1.2
+  },
+  {
+   "id": "tall_b",
+   "shape": "tall",
+   "style": "euro",
+   "w": 6.4,
+   "d": 7.0,
+   "h": 12.74,
+   "tris": 3609,
+   "bounds": [
+    -3.75,
+    3.75,
+    -4.52,
+    4.0
+   ],
+   "front": 3.5,
+   "zmin": -1.2
+  },
+  {
+   "id": "tall_c",
+   "shape": "tall",
+   "style": "euro",
+   "w": 5.6,
+   "d": 7.6,
+   "h": 12.3,
+   "tris": 3297,
+   "bounds": [
+    -3.5,
+    3.5,
+    -4.81,
+    4.15
+   ],
+   "front": 3.8,
+   "zmin": -1.2
+  },
+  {
+   "id": "wing_a",
+   "shape": "wing",
+   "style": "euro",
+   "w": 10.4,
+   "d": 9.4,
+   "h": 9.33,
+   "tris": 4166,
+   "bounds": [
+    -5.55,
+    5.8,
+    -5.37,
+    5.2
+   ],
+   "front": 4.7,
+   "zmin": -1.2
+  },
+  {
+   "id": "wing_b",
+   "shape": "wing",
+   "style": "euro",
+   "w": 9.8,
+   "d": 9.0,
+   "h": 9.74,
+   "tris": 4359,
+   "bounds": [
+    -5.5,
+    5.25,
+    -5.16,
+    5.0
+   ],
+   "front": 4.5,
+   "zmin": -1.2
+  },
+  {
+   "id": "long_a",
+   "shape": "long",
+   "style": "euro",
+   "w": 13.8,
+   "d": 6.6,
+   "h": 11.89,
+   "tris": 4846,
+   "bounds": [
+    -7.25,
+    7.35,
+    -4.16,
+    3.7
+   ],
+   "front": 3.3,
+   "zmin": -1.2
+  },
+  {
+   "id": "long_b",
+   "shape": "long",
+   "style": "farm",
+   "w": 12.5,
+   "d": 6.8,
+   "h": 6.95,
+   "tris": 1176,
+   "bounds": [
+    -6.76,
+    9.05,
+    -4.4,
+    3.9
+   ],
+   "front": 3.4,
+   "zmin": -1.2
+  },
+  {
+   "id": "long_c",
+   "shape": "long",
+   "style": "euro",
+   "w": 13.2,
+   "d": 6.4,
+   "h": 11.98,
+   "tris": 4588,
+   "bounds": [
+    -7.05,
+    6.95,
+    -4.04,
+    3.6
+   ],
+   "front": 3.2,
+   "zmin": -1.2
+  },
+  {
+   "id": "church",
+   "shape": "church",
+   "style": "special",
+   "w": 8.6,
+   "d": 18.0,
+   "h": 20.0,
+   "tris": 1394,
+   "bounds": [
+    -5.15,
+    5.35,
+    -9.55,
+    9.35
+   ],
+   "front": 9.0,
+   "zmin": -1.2
+  },
+  {
+   "id": "round",
+   "shape": "round",
+   "style": "special",
+   "w": 7.0,
+   "d": 7.0,
+   "h": 13.75,
+   "tris": 1534,
+   "bounds": [
+    -4.05,
+    4.05,
+    -4.14,
+    3.85
+   ],
+   "front": 3.5,
+   "zmin": -1.2
+  },
+  {
+   "id": "slim",
+   "shape": "slim",
+   "style": "special",
+   "w": 3.6,
+   "d": 3.6,
+   "h": 14.7,
+   "tris": 902,
+   "bounds": [
+    -2.37,
+    2.37,
+    -2.6,
+    2.37
+   ],
+   "front": 1.8,
+   "zmin": -1.2
+  },
+  {
+   "id": "machiya_a",
+   "shape": "house",
+   "style": "jp",
+   "w": 6.4,
+   "d": 8.0,
+   "h": 6.61,
+   "tris": 872,
+   "bounds": [
+    -3.7,
+    3.7,
+    -4.95,
+    4.75
+   ],
+   "front": 4.0,
+   "zmin": -1.2
+  },
+  {
+   "id": "machiya_b",
+   "shape": "house",
+   "style": "jp",
+   "w": 7.2,
+   "d": 7.6,
+   "h": 6.52,
+   "tris": 788,
+   "bounds": [
+    -4.1,
+    4.1,
+    -4.75,
+    4.55
+   ],
+   "front": 3.8,
+   "zmin": -1.2
+  },
+  {
+   "id": "machiya_c",
+   "shape": "cottage",
+   "style": "jp",
+   "w": 5.6,
+   "d": 7.4,
+   "h": 6.47,
+   "tris": 894,
+   "bounds": [
+    -3.3,
+    3.3,
+    -4.65,
+    4.45
+   ],
+   "front": 3.7,
+   "zmin": -1.2
+  },
+  {
+   "id": "machiya_d",
+   "shape": "tall",
+   "style": "jp",
+   "w": 6.8,
+   "d": 8.2,
+   "h": 8.95,
+   "tris": 1360,
+   "bounds": [
+    -4.0,
+    4.0,
+    -5.05,
+    4.85
+   ],
+   "front": 4.1,
+   "zmin": -1.2
+  },
+  {
+   "id": "machiya_e",
+   "shape": "long",
+   "style": "jp",
+   "w": 11.0,
+   "d": 7.6,
+   "h": 6.52,
+   "tris": 1032,
+   "bounds": [
+    -6.0,
+    6.0,
+    -4.75,
+    4.55
+   ],
+   "front": 3.8,
+   "zmin": -1.2
+  },
+  {
+   "id": "machiya_f",
+   "shape": "house",
+   "style": "jp",
+   "w": 6.0,
+   "d": 7.8,
+   "h": 6.57,
+   "tris": 1016,
+   "bounds": [
+    -3.5,
+    3.5,
+    -4.98,
+    4.65
+   ],
+   "front": 3.9,
+   "zmin": -1.2
+  },
+  {
+   "id": "machiya_g",
+   "shape": "house",
+   "style": "jp",
+   "w": 7.0,
+   "d": 7.4,
+   "h": 5.88,
+   "tris": 1010,
+   "bounds": [
+    -4.0,
+    4.0,
+    -4.65,
+    4.45
+   ],
+   "front": 3.7,
+   "zmin": -1.2
+  },
+  {
+   "id": "machiya_h",
+   "shape": "cottage",
+   "style": "jp",
+   "w": 5.2,
+   "d": 7.0,
+   "h": 5.78,
+   "tris": 744,
+   "bounds": [
+    -3.1,
+    3.1,
+    -4.45,
+    4.25
+   ],
+   "front": 3.5,
+   "zmin": -1.2
+  },
+  {
+   "id": "machiya_i",
+   "shape": "tall",
+   "style": "jp",
+   "w": 6.2,
+   "d": 7.8,
+   "h": 8.86,
+   "tris": 1344,
+   "bounds": [
+    -3.6,
+    3.6,
+    -4.98,
+    4.65
+   ],
+   "front": 3.9,
+   "zmin": -1.2
+  },
+  {
+   "id": "machiya_j",
+   "shape": "wing",
+   "style": "jp",
+   "w": 8.4,
+   "d": 8.0,
+   "h": 6.61,
+   "tris": 1140,
+   "bounds": [
+    -4.7,
+    4.7,
+    -5.08,
+    4.75
+   ],
+   "front": 4.0,
+   "zmin": -1.2
+  },
+  {
+   "id": "jphouse_a",
+   "shape": "wing",
+   "style": "jp",
+   "w": 8.6,
+   "d": 7.0,
+   "h": 5.06,
+   "tris": 602,
+   "bounds": [
+    -5.1,
+    5.1,
+    -4.55,
+    4.3
+   ],
+   "front": 3.5,
+   "zmin": -1.2
+  },
+  {
+   "id": "jphouse_b",
+   "shape": "cottage",
+   "style": "jp",
+   "w": 7.2,
+   "d": 6.6,
+   "h": 4.94,
+   "tris": 598,
+   "bounds": [
+    -4.4,
+    4.4,
+    -4.35,
+    4.1
+   ],
+   "front": 3.3,
+   "zmin": -1.2
+  },
+  {
+   "id": "kura_a",
+   "shape": "tall",
+   "style": "jp",
+   "w": 5.4,
+   "d": 6.4,
+   "h": 7.3,
+   "tris": 702,
+   "bounds": [
+    -3.25,
+    3.25,
+    -4.09,
+    4.0
+   ],
+   "front": 3.2,
+   "zmin": -1.2
+  },
+  {
+   "id": "lamp",
+   "shape": "prop",
+   "style": "prop",
+   "w": 0.6,
+   "d": 1.0,
+   "h": 3.36,
+   "tris": 84,
+   "bounds": [
+    -0.19,
+    0.19,
+    -0.79,
+    0.16
+   ],
+   "front": 0.8,
+   "zmin": 0.0
+  },
+  {
+   "id": "bench",
+   "shape": "prop",
+   "style": "prop",
+   "w": 2.2,
+   "d": 0.7,
+   "h": 1.1,
+   "tris": 132,
+   "bounds": [
+    -1.1,
+    1.1,
+    -0.36,
+    0.3
+   ],
+   "front": 0.4,
+   "zmin": 0.0
+  },
+  {
+   "id": "fence",
+   "shape": "prop",
+   "style": "prop",
+   "w": 1.6,
+   "d": 0.2,
+   "h": 1.2,
+   "tris": 72,
+   "bounds": [
+    -0.88,
+    0.8,
+    -0.08,
+    0.08
+   ],
+   "front": 0.1,
+   "fit": [
+    1.6,
+    1.1,
+    null
+   ],
+   "zmin": -0.3
+  },
+  {
+   "id": "stonelantern",
+   "shape": "prop",
+   "style": "prop",
+   "w": 1.0,
+   "d": 1.0,
+   "h": 2.24,
+   "tris": 116,
+   "bounds": [
+    -0.44,
+    0.44,
+    -0.4,
+    0.4
+   ],
+   "front": 0.5,
+   "zmin": 0.0
+  },
+  {
+   "id": "stall",
+   "shape": "prop",
+   "style": "prop",
+   "w": 3.2,
+   "d": 2.0,
+   "h": 2.62,
+   "tris": 812,
+   "bounds": [
+    -1.75,
+    1.75,
+    -1.27,
+    1.05
+   ],
+   "front": 1.0,
+   "zmin": 0.0
+  },
+  {
+   "id": "fountain",
+   "shape": "prop",
+   "style": "prop",
+   "w": 13.0,
+   "d": 13.0,
+   "h": 5.8,
+   "tris": 356,
+   "bounds": [
+    -6.6,
+    6.6,
+    -6.6,
+    6.6
+   ],
+   "front": 6.5,
+   "zmin": -0.6
+  },
+  {
+   "id": "haystack",
+   "shape": "prop",
+   "style": "prop",
+   "w": 3.0,
+   "d": 3.0,
+   "h": 3.3,
+   "tris": 88,
+   "bounds": [
+    -1.52,
+    1.52,
+    -1.45,
+    1.45
+   ],
+   "front": 1.5,
+   "zmin": 0.0
+  },
+  {
+   "id": "logpile",
+   "shape": "prop",
+   "style": "prop",
+   "w": 2.2,
+   "d": 1.8,
+   "h": 1.53,
+   "tris": 144,
+   "bounds": [
+    -1.1,
+    1.2,
+    -0.83,
+    0.85
+   ],
+   "front": 0.9,
+   "zmin": 0.01
+  },
+  {
+   "id": "crate",
+   "shape": "prop",
+   "style": "prop",
+   "w": 1.2,
+   "d": 1.2,
+   "h": 1.1,
+   "tris": 44,
+   "bounds": [
+    -0.58,
+    0.58,
+    -0.58,
+    0.58
+   ],
+   "front": 0.6,
+   "zmin": 0.0
+  },
+  {
+   "id": "snowman",
+   "shape": "prop",
+   "style": "prop",
+   "w": 1.4,
+   "d": 1.4,
+   "h": 2.5,
+   "tris": 474,
+   "bounds": [
+    -1.01,
+    1.01,
+    -0.64,
+    0.59
+   ],
+   "front": 0.7,
+   "zmin": -0.12
+  },
+  {
+   "id": "gate",
+   "shape": "landmark",
+   "style": "lm",
+   "w": 18,
+   "d": 3.2,
+   "h": 10.52,
+   "tris": 320,
+   "bounds": [
+    -9.5,
+    9.5,
+    -2.25,
+    2.25
+   ],
+   "front": 1.6,
+   "sign": [
+    8.15,
+    1.0,
+    5.4,
+    1.2
+   ],
+   "zmin": -0.8
+  },
+  {
+   "id": "gatetower",
+   "shape": "landmark",
+   "style": "lm",
+   "w": 15.0,
+   "d": 9.0,
+   "h": 13.3,
+   "tris": 808,
+   "bounds": [
+    -7.4,
+    7.4,
+    -4.55,
+    4.55
+   ],
+   "front": 4.5,
+   "sign": [
+    5.3,
+    4.2,
+    4.2,
+    1.0
+   ],
+   "zmin": -1.5
+  },
+  {
+   "id": "palace",
+   "shape": "landmark",
+   "style": "lm",
+   "w": 48,
+   "d": 37.6,
+   "h": 23.3,
+   "tris": 3420,
+   "bounds": [
+    -24.12,
+    24.12,
+    -20.6,
+    17.12
+   ],
+   "front": 20.6,
+   "sign": [
+    8.3,
+    8.15,
+    5.6,
+    1.2
+   ],
+   "zmin": -1.5
+  },
+  {
+   "id": "mosque",
+   "shape": "landmark",
+   "style": "lm",
+   "w": 27.0,
+   "d": 22.7,
+   "h": 22.6,
+   "tris": 1670,
+   "bounds": [
+    -14.5,
+    14.5,
+    -12.2,
+    10.35
+   ],
+   "front": 12.2,
+   "zmin": -1.6
+  },
+  {
+   "id": "temple",
+   "shape": "landmark",
+   "style": "lm",
+   "w": 23.0,
+   "d": 20,
+   "h": 13.6,
+   "tris": 1230,
+   "bounds": [
+    -12.2,
+    12.2,
+    -11.0,
+    9.4
+   ],
+   "front": 11,
+   "sign": [
+    4.95,
+    5.78,
+    4.0,
+    0.8
+   ],
+   "zmin": -1.5
+  },
+  {
+   "id": "gym",
+   "shape": "landmark",
+   "style": "lm",
+   "w": 53.0,
+   "d": 57.1,
+   "h": 31.4,
+   "tris": 3672,
+   "bounds": [
+    -26.7,
+    26.7,
+    -30.6,
+    26.7
+   ],
+   "front": 30.6,
+   "sign": [
+    5.6,
+    28.3,
+    5.0,
+    1.1
+   ],
+   "zmin": -1.5
+  },
+  {
+   "id": "hall_a",
+   "shape": "landmark",
+   "style": "lm",
+   "w": 18,
+   "d": 11.0,
+   "h": 10.98,
+   "tris": 5595,
+   "bounds": [
+    -9.45,
+    9.53,
+    -7.55,
+    6.1
+   ],
+   "front": 5.5,
+   "fit": [
+    18,
+    8.6,
+    11
+   ],
+   "sign": [
+    4.4,
+    5.92,
+    4.4,
+    0.9
+   ],
+   "zmin": -1.2
+  },
+  {
+   "id": "hall_b",
+   "shape": "landmark",
+   "style": "lm",
+   "w": 18,
+   "d": 11.0,
+   "h": 14.14,
+   "tris": 8519,
+   "bounds": [
+    -9.55,
+    9.55,
+    -7.55,
+    6.1
+   ],
+   "front": 5.5,
+   "fit": [
+    18,
+    11.4,
+    11
+   ],
+   "sign": [
+    4.4,
+    5.92,
+    4.4,
+    0.9
+   ],
+   "zmin": -1.2
+  },
+  {
+   "id": "hall_small",
+   "shape": "landmark",
+   "style": "lm",
+   "w": 16,
+   "d": 9.6,
+   "h": 7.94,
+   "tris": 1582,
+   "bounds": [
+    -8.41,
+    8.51,
+    -5.95,
+    5.4
+   ],
+   "front": 4.8,
+   "fit": [
+    16,
+    6.2,
+    9.6
+   ],
+   "sign": [
+    3.75,
+    5.05,
+    4.6,
+    0.8
+   ],
+   "zmin": -1.2
+  },
+  {
+   "id": "hall_flat",
+   "shape": "landmark",
+   "style": "lm",
+   "w": 17.0,
+   "d": 11.0,
+   "h": 14.5,
+   "tris": 4646,
+   "bounds": [
+    -8.8,
+    8.8,
+    -6.8,
+    5.8
+   ],
+   "front": 5.5,
+   "fit": [
+    17,
+    11.4,
+    11
+   ],
+   "sign": [
+    4.05,
+    5.6,
+    6.6,
+    1.0
+   ],
+   "zmin": -1.2
+  },
+  {
+   "id": "neonshop",
+   "shape": "landmark",
+   "style": "lm",
+   "w": 24,
+   "d": 14,
+   "h": 14.2,
+   "tris": 1746,
+   "bounds": [
+    -12.3,
+    12.3,
+    -9.7,
+    7.3
+   ],
+   "front": 7,
+   "fit": [
+    24,
+    10,
+    14
+   ],
+   "sign": [
+    6.95,
+    7.4,
+    15.5,
+    3.0
+   ],
+   "zmin": -1.2
+  },
+  {
+   "id": "tower",
+   "shape": "landmark",
+   "style": "lm",
+   "w": 25.0,
+   "d": 25.0,
+   "h": 67.4,
+   "tris": 3790,
+   "bounds": [
+    -12.9,
+    12.9,
+    -14.1,
+    12.9
+   ],
+   "front": 12.5,
+   "fit": [
+    22,
+    60,
+    22
+   ],
+   "zmin": -1.5
+  },
+  {
+   "id": "apartment",
+   "shape": "landmark",
+   "style": "lm",
+   "w": 26,
+   "d": 13.0,
+   "h": 20.52,
+   "tris": 9902,
+   "bounds": [
+    -14.1,
+    14.1,
+    -8.03,
+    7.6
+   ],
+   "front": 6.5,
+   "fit": [
+    26,
+    15.5,
+    13
+   ],
+   "zmin": -1.2
+  },
+  {
+   "id": "clocktower",
+   "shape": "landmark",
+   "style": "lm",
+   "w": 8.6,
+   "d": 8.6,
+   "h": 42.3,
+   "tris": 1338,
+   "bounds": [
+    -4.38,
+    4.38,
+    -4.65,
+    4.38
+   ],
+   "front": 4.3,
+   "fit": [
+    null,
+    36,
+    null
+   ],
+   "zmin": -1.5
+  },
+  {
+   "id": "warehouse",
+   "shape": "landmark",
+   "style": "lm",
+   "w": 30,
+   "d": 16,
+   "h": 11.75,
+   "tris": 1772,
+   "bounds": [
+    -15.5,
+    15.5,
+    -9.63,
+    8.6
+   ],
+   "front": 8,
+   "fit": [
+    30,
+    7,
+    16
+   ],
+   "zmin": -1.2
+  },
+  {
+   "id": "crane",
+   "shape": "landmark",
+   "style": "lm",
+   "w": 11.6,
+   "d": 10,
+   "h": 24.05,
+   "tris": 500,
+   "bounds": [
+    -5.8,
+    5.8,
+    -22.11,
+    5.2
+   ],
+   "front": 5,
+   "fit": [
+    null,
+    24,
+    null
+   ],
+   "zmin": -0.4
+  },
+  {
+   "id": "containers",
+   "shape": "landmark",
+   "style": "lm",
+   "w": 12.6,
+   "d": 5.4,
+   "h": 5.2,
+   "tris": 400,
+   "bounds": [
+    -6.26,
+    6.27,
+    -2.73,
+    2.7
+   ],
+   "front": 2.7,
+   "zmin": 0.0
+  },
+  {
+   "id": "windmill_a",
+   "shape": "landmark",
+   "style": "lm",
+   "w": 7.82,
+   "d": 7.82,
+   "h": 16.54,
+   "tris": 870,
+   "bounds": [
+    -4.85,
+    4.65,
+    -4.21,
+    4.11
+   ],
+   "front": 3.91,
+   "fit": [
+    null,
+    13,
+    null
+   ],
+   "zmin": -1.5
+  },
+  {
+   "id": "windmill_b",
+   "shape": "landmark",
+   "style": "lm",
+   "w": 7.82,
+   "d": 7.82,
+   "h": 16.54,
+   "tris": 728,
+   "bounds": [
+    -4.85,
+    4.65,
+    -4.21,
+    4.14
+   ],
+   "front": 3.91,
+   "fit": [
+    null,
+    13,
+    null
+   ],
+   "zmin": -1.5
+  },
+  {
+   "id": "watermill",
+   "shape": "landmark",
+   "style": "lm",
+   "w": 10.4,
+   "d": 7.4,
+   "h": 8.71,
+   "tris": 980,
+   "bounds": [
+    -5.7,
+    6.9,
+    -4.64,
+    4.45
+   ],
+   "front": 3.7,
+   "zmin": -2.5
+  },
+  {
+   "id": "greenhouse",
+   "shape": "landmark",
+   "style": "lm",
+   "w": 20.4,
+   "d": 12.4,
+   "h": 8.6,
+   "tris": 1160,
+   "bounds": [
+    -10.4,
+    10.4,
+    -7.03,
+    6.33
+   ],
+   "front": 6.2,
+   "fit": [
+    20,
+    8,
+    12
+   ],
+   "zmin": -1.5
+  },
+  {
+   "id": "beacon",
+   "shape": "landmark",
+   "style": "lm",
+   "w": 3.4,
+   "d": 3.4,
+   "h": 9.01,
+   "tris": 438,
+   "bounds": [
+    -1.7,
+    1.7,
+    -1.7,
+    1.7
+   ],
+   "front": 1.7,
+   "fit": [
+    null,
+    9,
+    null
+   ],
+   "zmin": -2.0
+  },
+  {
+   "id": "bird_sparrow",
+   "shape": "bird",
+   "style": "prop",
+   "w": 0.16,
+   "d": 0.41,
+   "h": 0.19,
+   "tris": 256,
+   "bounds": [
+    -0.06,
+    0.06,
+    -0.21,
+    0.23
+   ],
+   "front": 0.19,
+   "zmin": -0.0
+  },
+  {
+   "id": "bird_pigeon",
+   "shape": "bird",
+   "style": "prop",
+   "w": 0.24,
+   "d": 0.63,
+   "h": 0.29,
+   "tris": 256,
+   "bounds": [
+    -0.1,
+    0.1,
+    -0.31,
+    0.35
+   ],
+   "front": 0.29,
+   "zmin": -0.0
+  },
+  {
+   "id": "bird_gull",
+   "shape": "bird",
+   "style": "prop",
+   "w": 0.32,
+   "d": 0.86,
+   "h": 0.42,
+   "tris": 256,
+   "bounds": [
+    -0.13,
+    0.13,
+    -0.46,
+    0.47
+   ],
+   "front": 0.38,
+   "zmin": -0.0
+  },
+  {
+   "id": "bird_crow",
+   "shape": "bird",
+   "style": "prop",
+   "w": 0.27,
+   "d": 0.72,
+   "h": 0.35,
+   "tris": 256,
+   "bounds": [
+    -0.11,
+    0.11,
+    -0.38,
+    0.4
+   ],
+   "front": 0.32,
+   "zmin": -0.0
+  },
+  {
+   "id": "bird_egret",
+   "shape": "bird",
+   "style": "prop",
+   "w": 0.47,
+   "d": 1.24,
+   "h": 1.49,
+   "tris": 281,
+   "bounds": [
+    -0.19,
+    0.19,
+    -0.76,
+    0.68
+   ],
+   "front": 0.56,
+   "zmin": -0.0
+  },
+  {
+   "id": "bird_crane",
+   "shape": "bird",
+   "style": "prop",
+   "w": 0.57,
+   "d": 1.52,
+   "h": 1.95,
+   "tris": 304,
+   "bounds": [
+    -0.24,
+    0.24,
+    -0.89,
+    0.84
+   ],
+   "front": 0.68,
+   "zmin": -0.0
+  },
+  {
+   "id": "bird_duck",
+   "shape": "bird",
+   "style": "prop",
+   "w": 0.29,
+   "d": 0.68,
+   "h": 0.35,
+   "tris": 240,
+   "bounds": [
+    -0.15,
+    0.15,
+    -0.41,
+    0.34
+   ],
+   "front": 0.35,
+   "afloat": true,
+   "zmin": -0.02
+  },
+  {
+   "id": "bird_duck_white",
+   "shape": "bird",
+   "style": "prop",
+   "w": 0.31,
+   "d": 0.73,
+   "h": 0.4,
+   "tris": 240,
+   "bounds": [
+    -0.16,
+    0.16,
+    -0.44,
+    0.36
+   ],
+   "front": 0.37,
+   "afloat": true,
+   "zmin": -0.02
+  },
+  {
+   "id": "bird_hen",
+   "shape": "bird",
+   "style": "prop",
+   "w": 0.26,
+   "d": 0.62,
+   "h": 0.42,
+   "tris": 304,
+   "bounds": [
+    -0.11,
+    0.11,
+    -0.34,
+    0.31
+   ],
+   "front": 0.31,
+   "zmin": -0.0
+  },
+  {
+   "id": "bird_rooster",
+   "shape": "bird",
+   "style": "prop",
+   "w": 0.29,
+   "d": 0.8,
+   "h": 0.52,
+   "tris": 304,
+   "bounds": [
+    -0.12,
+    0.12,
+    -0.39,
+    0.45
+   ],
+   "front": 0.35,
+   "zmin": -0.0
+  },
+  {
+   "id": "bird_bluetit",
+   "shape": "bird",
+   "style": "prop",
+   "w": 0.14,
+   "d": 0.36,
+   "h": 0.17,
+   "tris": 256,
+   "bounds": [
+    -0.06,
+    0.06,
+    -0.18,
+    0.2
+   ],
+   "front": 0.16,
+   "zmin": -0.0
+  },
+  {
+   "id": "bird_owl",
+   "shape": "bird",
+   "style": "prop",
+   "w": 0.4,
+   "d": 0.4,
+   "h": 0.86,
+   "tris": 195,
+   "bounds": [
+    -0.2,
+    0.2,
+    -0.19,
+    0.16
+   ],
+   "front": 0.2,
+   "zmin": 0.0
+  },
+  {
+   "id": "bicycle",
+   "shape": "vehicle",
+   "style": "prop",
+   "w": 0.68,
+   "d": 1.8,
+   "h": 1.04,
+   "tris": 518,
+   "bounds": [
+    -0.18,
+    0.38,
+    -0.88,
+    0.88
+   ],
+   "front": 0.9,
+   "zmin": -0.03
+  },
+  {
+   "id": "bus",
+   "shape": "vehicle",
+   "style": "prop",
+   "w": 2.4,
+   "d": 6.52,
+   "h": 2.8,
+   "tris": 460,
+   "bounds": [
+    -1.18,
+    1.18,
+    -3.2,
+    3.31
+   ],
+   "front": 3.2,
+   "zmin": 0.0
+  },
+  {
+   "id": "car",
+   "shape": "vehicle",
+   "style": "prop",
+   "w": 1.5,
+   "d": 3.38,
+   "h": 1.8,
+   "tris": 510,
+   "bounds": [
+    -0.75,
+    0.75,
+    -1.69,
+    1.67
+   ],
+   "front": 1.7,
+   "zmin": 0.0
+  },
+  {
+   "id": "truck",
+   "shape": "vehicle",
+   "style": "prop",
+   "w": 1.5,
+   "d": 3.38,
+   "h": 1.76,
+   "tris": 602,
+   "bounds": [
+    -0.72,
+    0.72,
+    -1.8,
+    1.55
+   ],
+   "front": 1.78,
+   "zmin": 0.0
+  },
+  {
+   "id": "rowboat",
+   "shape": "boat",
+   "style": "prop",
+   "w": 1.32,
+   "d": 3.5,
+   "h": 0.49,
+   "tris": 265,
+   "bounds": [
+    -0.74,
+    0.74,
+    -1.78,
+    1.72
+   ],
+   "front": 1.78,
+   "afloat": true,
+   "zmin": -0.2
+  },
+  {
+   "id": "fishboat",
+   "shape": "boat",
+   "style": "prop",
+   "w": 2.9,
+   "d": 7.6,
+   "h": 4.8,
+   "tris": 787,
+   "bounds": [
+    -1.43,
+    1.43,
+    -3.83,
+    3.71
+   ],
+   "front": 3.85,
+   "afloat": true,
+   "zmin": -0.5
+  },
+  {
+   "id": "sailboat",
+   "shape": "boat",
+   "style": "prop",
+   "w": 2.1,
+   "d": 6.1,
+   "h": 8.2,
+   "tris": 282,
+   "bounds": [
+    -0.99,
+    0.99,
+    -3.12,
+    2.92
+   ],
+   "front": 3.15,
+   "afloat": true,
+   "zmin": -0.43
+  },
+  {
+   "id": "pier",
+   "shape": "boat",
+   "style": "prop",
+   "w": 2.7,
+   "d": 12.8,
+   "h": 2.73,
+   "tris": 852,
+   "bounds": [
+    -1.3,
+    1.3,
+    -11.78,
+    0.98
+   ],
+   "front": 11.8,
+   "afloat": true,
+   "zmin": -3.0
+  },
+  {
+   "id": "fishcrate",
+   "shape": "prop",
+   "style": "prop",
+   "w": 0.92,
+   "d": 0.62,
+   "h": 0.37,
+   "tris": 457,
+   "bounds": [
+    -0.53,
+    0.51,
+    -0.3,
+    0.3
+   ],
+   "front": 0.31,
+   "zmin": 0.0
+  },
+  {
+   "id": "fishrack",
+   "shape": "prop",
+   "style": "prop",
+   "w": 2.8,
+   "d": 0.6,
+   "h": 1.92,
+   "tris": 705,
+   "bounds": [
+    -1.35,
+    1.35,
+    -0.29,
+    0.29
+   ],
+   "front": 0.3,
+   "zmin": -0.01
+  },
+  {
+   "id": "scooter",
+   "shape": "vehicle",
+   "style": "prop",
+   "w": 0.68,
+   "d": 1.6,
+   "h": 1.05,
+   "tris": 322,
+   "bounds": [
+    -0.2,
+    0.36,
+    -0.76,
+    0.78
+   ],
+   "front": 0.8,
+   "zmin": -0.02
+  },
+  {
+   "id": "cargobike",
+   "shape": "vehicle",
+   "style": "prop",
+   "w": 0.72,
+   "d": 1.9,
+   "h": 1.1,
+   "tris": 590,
+   "bounds": [
+    -0.18,
+    0.38,
+    -0.88,
+    0.98
+   ],
+   "front": 0.9,
+   "zmin": -0.03
+  },
+  {
+   "id": "canoe",
+   "shape": "boat",
+   "style": "prop",
+   "w": 0.92,
+   "d": 4.64,
+   "h": 0.47,
+   "tris": 216,
+   "bounds": [
+    -0.45,
+    0.45,
+    -2.32,
+    2.32
+   ],
+   "front": 2.32,
+   "afloat": true,
+   "zmin": -0.14
+  },
+  {
+   "id": "kayak",
+   "shape": "boat",
+   "style": "prop",
+   "w": 0.68,
+   "d": 4.04,
+   "h": 0.48,
+   "tris": 220,
+   "bounds": [
+    -0.84,
+    0.84,
+    -2.01,
+    2.01
+   ],
+   "front": 2.02,
+   "afloat": true,
+   "zmin": -0.06
+  },
+  {
+   "id": "oxcart",
+   "shape": "vehicle",
+   "style": "prop",
+   "w": 1.8,
+   "d": 3.95,
+   "h": 1.44,
+   "tris": 644,
+   "bounds": [
+    -0.89,
+    0.89,
+    -2.5,
+    1.43
+   ],
+   "front": 2.5,
+   "zmin": -0.03
+  },
+  {
+   "id": "swing",
+   "shape": "play",
+   "style": "prop",
+   "w": 3.6,
+   "d": 2.0,
+   "h": 2.56,
+   "tris": 112,
+   "bounds": [
+    -1.76,
+    1.76,
+    -0.95,
+    0.95
+   ],
+   "front": 1.0,
+   "zmin": -0.02
+  },
+  {
+   "id": "slide",
+   "shape": "play",
+   "style": "prop",
+   "w": 1.0,
+   "d": 4.3,
+   "h": 2.3,
+   "tris": 184,
+   "bounds": [
+    -0.44,
+    0.44,
+    -1.9,
+    2.34
+   ],
+   "front": 1.95,
+   "zmin": -0.02
+  },
+  {
+   "id": "seesaw",
+   "shape": "play",
+   "style": "prop",
+   "w": 0.68,
+   "d": 3.5,
+   "h": 1.06,
+   "tris": 108,
+   "bounds": [
+    -0.3,
+    0.3,
+    -1.67,
+    1.67
+   ],
+   "front": 1.75,
+   "zmin": 0.0
+  },
+  {
+   "id": "merrygo",
+   "shape": "play",
+   "style": "prop",
+   "w": 2.4,
+   "d": 2.4,
+   "h": 1.16,
+   "tris": 250,
+   "bounds": [
+    -1.15,
+    1.15,
+    -1.12,
+    1.12
+   ],
+   "front": 1.2,
+   "zmin": 0.0
+  },
+  {
+   "id": "sandbox",
+   "shape": "play",
+   "style": "prop",
+   "w": 2.8,
+   "d": 2.8,
+   "h": 0.43,
+   "tris": 163,
+   "bounds": [
+    -1.4,
+    1.4,
+    -1.4,
+    1.4
+   ],
+   "front": 1.4,
+   "zmin": 0.0
+  },
+  {
+   "id": "rockhorse",
+   "shape": "play",
+   "style": "prop",
+   "w": 0.48,
+   "d": 1.52,
+   "h": 1.19,
+   "tris": 367,
+   "bounds": [
+    -0.21,
+    0.21,
+    -0.74,
+    0.62
+   ],
+   "front": 0.78,
+   "zmin": -0.01
+  },
+  {
+   "id": "picnic",
+   "shape": "prop",
+   "style": "prop",
+   "w": 1.9,
+   "d": 1.84,
+   "h": 0.98,
+   "tris": 280,
+   "bounds": [
+    -0.91,
+    0.91,
+    -0.9,
+    0.9
+   ],
+   "front": 0.92,
+   "zmin": -0.03
+  },
+  {
+   "id": "pump",
+   "shape": "prop",
+   "style": "prop",
+   "w": 1.0,
+   "d": 1.14,
+   "h": 1.32,
+   "tris": 144,
+   "bounds": [
+    -0.5,
+    0.5,
+    -0.52,
+    0.64
+   ],
+   "front": 0.5,
+   "zmin": 0.0
+  },
+  {
+   "id": "noticeboard",
+   "shape": "prop",
+   "style": "prop",
+   "w": 2.0,
+   "d": 0.56,
+   "h": 2.16,
+   "tris": 126,
+   "bounds": [
+    -1.0,
+    1.0,
+    -0.26,
+    0.26
+   ],
+   "front": 0.28,
+   "zmin": 0.0
+  },
+  {
+   "id": "streetclock",
+   "shape": "prop",
+   "style": "prop",
+   "w": 0.88,
+   "d": 0.6,
+   "h": 3.8,
+   "tris": 506,
+   "bounds": [
+    -0.42,
+    0.42,
+    -0.3,
+    0.3
+   ],
+   "front": 0.3,
+   "zmin": 0.0
+  }
+ ]
+}

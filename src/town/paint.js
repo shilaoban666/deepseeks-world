@@ -32,7 +32,7 @@ uniform vec3 uLit;
 uniform vec3 uShade;
 uniform vec3 uLit2;
 uniform vec3 uShade2;
-uniform float uKind;   // 0 墙, 1 瓦, 2 木, 3 石, 4 玻璃, 5 平色
+uniform float uKind;   // 0 墙, 1 瓦, 2 木, 3 石, 4 玻璃, 5 平色, 6 灯, 7 雪
 uniform float uStain;  // 墙上水渍的浓度
 uniform float uRows;   // 瓦的行数 / 木的横纹数
 uniform float uNight;
@@ -119,6 +119,25 @@ void main() {
     col = mix(uShade * sky * 0.9, uLit * (uSkyColor * 2.2 + 0.25), 0.55);
     float streak = smoothstep(0.16, 0.0, abs(fract((vUv.x + vUv.y) * 0.9) - 0.35));
     col += (uSkyColor + 0.2) * streak * 0.5;
+  } else if (uKind > 6.5) {
+    // ---- 雪：背景画里的雪地——三个平涂的调子：阳光里的暖白、半明的淡蓝白、影子里的蓝 ----
+    vec2 sxz = vWorld.xz;
+    // （云影、树影、人影：落在雪上都是蓝的）
+    float open = cloudAt(sxz);
+    // 这片坡大的走向（和草地读的是同一张坡向图），和雪堆自己朝哪边
+    vec3 Nb = landNormal(sxz);
+    vec3 toSun = normalize(vec3(uSunDir.x, 0.0, uSunDir.z) + vec3(1e-4, 0.0, 0.0));
+    float brush = texture(tNoise, sxz / 23.0).r - 0.5;
+    float lee = smoothstep(-0.05, -0.02, dot(N - Nb, toSun) + brush * 0.03);
+    // （大的坡向只算它本来的斜度，不像草地那样放大三倍：一整面雪坡不该因为略微背着太阳就全进了影子）
+    vec3 Ls = normalize(vec3(uSunDir.x, max(uSunDir.y, 0.3), uSunDir.z));
+    float rel = clamp(0.5 + (dot(Nb, Ls) - Ls.y) * 1.2, 0.0, 1.0);
+    float sunny = open * slopeSun(rel) * mix(0.42, 1.0, lee) + brush * 0.04;
+    vec3 white = vec3(0.97, 0.955, 0.925) * (uSunColor * 0.4 + uSkyColor * 0.34);
+    vec3 pale = vec3(0.8, 0.87, 0.98) * (uSunColor * 0.28 + uSkyColor * 0.5);
+    vec3 blue = vec3(0.5, 0.61, 0.84) * (uSkyColor * 1.05 + 0.24);
+    col = mix(blue, pale, smoothstep(0.3, 0.38, sunny));
+    col = mix(col, white, smoothstep(0.62, 0.7, sunny));
   } else if (uKind > 5.5) {
     // ---- 灯：自己亮 ----
     col = uLit * mix(0.5 + 0.4 * dot(uSkyColor, vec3(0.333)), 3.2, uNight);
@@ -182,7 +201,7 @@ void main() {
 }
 `;
 
-const KINDS = { wall: 0, roof: 1, wood: 2, stone: 3, glass: 4, flat: 5, glow: 6 };
+const KINDS = { wall: 0, roof: 1, wood: 2, stone: 3, glass: 4, flat: 5, glow: 6, snow: 7 };
 
 // ---- 贴图登记表 ------------------------------------------------------------------------------------------------
 // 按材质类型登记一张 albedo 贴图和它的世界尺寸。main.js 载入后调 configureAlbedo()。
@@ -279,7 +298,7 @@ export async function loadAlbedo(url) {
  * @param shared 场地的 uniforms（光、雾、相机）
  * @param o.lit 受光色（0~1 的线性光，按颜料调，不是 sRGB）
  * @param o.shade 背光色
- * @param o.kind wall / roof / wood / stone / glass / flat
+ * @param o.kind wall / roof / wood / stone / glass / flat / glow / snow（雪地：三个平涂的调子，吃云影和树影）
  */
 export function paintMaterial(shared, { lit, shade, lit2 = null, shade2 = null, kind = 'flat', stain = 0.5, rows = 12, cut = false, indoor = false, side = THREE.FrontSide, albedo = null } = {}) {
   // 贴图：优先用调用方指定的，否则按材质类型查登记表

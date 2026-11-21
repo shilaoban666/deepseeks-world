@@ -17,7 +17,7 @@ const JUMP = 5.6;
  * @param o.woods 会长的树（爬树用）；o.particles 粒子；o.field 草地（点火）；o.plan 地图函数
  * @param o.weather 天气（下雨不能晒太阳、点不着火）；o.plants 物件图集（水下的鱼）；o.shared uniforms
  */
-export function createActions({ whale, mover, cam, game, hud, woods, particles, field, plan, weather, plants, shared, scene }) {
+export function createActions({ rig = null, whale, mover, cam, game, hud, woods, particles, field, plan, weather, plants, shared, scene }) {
   const s = whale.state;
   const st = game.state;
   let mode = 'ground';
@@ -318,6 +318,7 @@ export function createActions({ whale, mover, cam, game, hud, woods, particles, 
     }
     return null;
   };
+  let rental = null;
   const startBoat = (it = {}) => {
     if (aboard) return true;
     if (st.riding) return void hud.toast('先从车上下来');
@@ -346,6 +347,10 @@ export function createActions({ whale, mover, cam, game, hud, woods, particles, 
     s.z = to[1];
     const level = plan.waterAt(s.x, s.z);
     aboard = { vehicle, name, home: it.land ? it : null, v: 0, level, phase: 0, idx: boatIdx[vehicle] ?? -1, vmax: vehicle === 'transport-rowboat' ? 4.4 : 5.4 };
+    // 立体的船：岸上那一条推下水（它的碰撞盒让开）；租来的另要一条
+    aboard.it = it;
+    aboard.model = rig ? (it.model?.slot ? it.model : (rental ??= rig.spawn('rowboat'))) : null;
+    if (it.model?.col) it.model.col.off = true;
     if (aboard.home) {
       // 租船的地方：在船上的时候，提示换成"还船"
       it.hintAshore ??= it.hint;
@@ -369,6 +374,22 @@ export function createActions({ whale, mover, cam, game, hud, woods, particles, 
       return false;
     }
     if (game.fishing) game.stopFishing?.();
+    if (a.model) {
+      if (a.model === rental) rig.move(rental, 0, -999, 0, 0);
+      else {
+        // 船留在靠岸的水边：离上岸的地方两三米，下次还从这儿推
+        const d = Math.hypot(s.x - to[0], s.z - to[1]) || 1;
+        const k = Math.min(1, 2.8 / d);
+        const bx = to[0] + (s.x - to[0]) * k;
+        const bz = to[1] + (s.z - to[1]) * k;
+        const wl = plan.waterAt(bx, bz);
+        const by = wl ?? plan.heightAt(bx, bz) + 0.17;
+        rig.move(a.model, bx, by, bz, s.yaw);
+        if (a.it) Object.assign(a.it, { x: (bx + to[0]) / 2, z: (bz + to[1]) / 2, r: Math.max(a.it.r ?? 2.8, 3.4) });
+        if (a.model.col) Object.assign(a.model.col, { x: bx, z: bz, c: Math.cos(s.yaw), s: Math.sin(s.yaw), ty: undefined, base: wl ?? by - 0.17, off: false });
+        mover.dirty?.();
+      }
+    }
     s.x = to[0];
     s.z = to[1];
     s.y = s.groundY = plan.walkAt(s.x, s.z);
@@ -387,7 +408,8 @@ export function createActions({ whale, mover, cam, game, hud, woods, particles, 
     const bob = Math.sin(a.phase * 1.7) * 0.045;
     s.y = a.level + SEAT + bob;
     s.groundY = s.y - 9; // 水上没有影子
-    if (boatAt && a.idx >= 0) {
+    if (a.model) rig.move(a.model, s.x, a.level + bob, s.z, s.yaw);
+    else if (boatAt && a.idx >= 0) {
       boatAt.setXYZ(a.idx, s.x + Math.sin(cam.yaw) * 0.14, a.level - 0.3 + bob, s.z + Math.cos(cam.yaw) * 0.14);
       boatAt.needsUpdate = true;
     }
@@ -720,8 +742,16 @@ export function createActions({ whale, mover, cam, game, hud, woods, particles, 
         const rideBoost = game.state.riding ? (game.state.riding.vehicle?.includes('boat') || game.state.riding.vehicle?.includes('canoe') || game.state.riding.vehicle?.includes('kayak') ? 1.3 : 1.65) : 1;
         const moved = mover.step(dt, s, cam, (st.stamina > 15 ? 1 : 0.72) * rideBoost, true);
         moving = moved.moved > 0.004;
-        const g = ground(s.x, s.z);
+        // 脚下：地面，或者踩得到的东西的顶（箱子、长椅、栈桥、台阶……）
+        const terr = ground(s.x, s.z);
+        const g = Math.max(terr, mover.floorAt?.(s.x, s.z, s.y) ?? -Infinity);
+        const onThing = g > terr + 0.2;
         s.groundY = g;
+        // 走出了边：脚下空了就往下掉（小落差直接跟着地面走）
+        if (!air && s.y > g + 0.5) {
+          air = true;
+          s.vy = 0;
+        }
         if (air) {
           // Integrate in small fixed slices so a long frame cannot skip through the ground.
           const slices = Math.max(1, Math.ceil(dt / 0.025));
@@ -739,7 +769,7 @@ export function createActions({ whale, mover, cam, game, hud, woods, particles, 
           }
         } else s.y = g;
         // 走进深水 → 游泳
-        const w = depthHere();
+        const w = onThing ? null : depthHere();
         if (w && w.depth > 1.0 && !air) enterSwim(w.level);
         else if (w && w.depth > 0.15) {
           // 蹚水：脚下一圈圈涟漪

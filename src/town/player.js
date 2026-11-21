@@ -229,7 +229,7 @@ export function createWhalechan(shared, arts) {
     update(dt, camera, moving, pose = null) {
       const pos = group.position;
       pos.x = state.x;
-      pos.y = state.y;
+      pos.y = state.y + (state.lift ?? 0);
       pos.z = state.z;
       // 立牌绕着 Y 转向相机
       const yawToCam = Math.atan2(camera.position.x - state.x, camera.position.z - state.z);
@@ -308,7 +308,8 @@ export function createWhalechan(shared, arts) {
 export function createCamera(camera, canvas, dom) {
   const cam = {
     yaw: START_YAW + Math.PI,
-    pitch: 0.22,
+    // （开局镜头放低：地平线在画面中间，上半幅是天和云——和原作开场一样；俯着看，画面里只有地）
+    pitch: 0.07,
     distance: 7.5,
     want: 7.5,
     pivot: new THREE.Vector3(),
@@ -396,7 +397,11 @@ export function createCamera(camera, canvas, dom) {
         const pz = cam.pivot.z + offZ * t;
         const py = cam.pivot.y + (offY + 0.6) * t;
         for (const c of boxes) {
-          if (Math.abs(px - c.x) < c.hw + 0.35 && Math.abs(pz - c.z) < c.hd + 0.35 && py < groundAt(c.x, c.z) + (c.top ?? 20)) {
+          const ddx = px - c.x;
+          const ddz = pz - c.z;
+          const cc = c.c ?? 1;
+          const cs = c.s ?? 0;
+          if (Math.abs(ddx * cc - ddz * cs) < c.hw + 0.35 && Math.abs(ddx * cs + ddz * cc) < c.hd + 0.35 && py < (c.base ?? groundAt(c.x, c.z)) + (c.top ?? 20)) {
             k = Math.max(0.16, (i - 1.2) / steps);
             break scan;
           }
@@ -432,19 +437,73 @@ export function createMover(o) {
   window.addEventListener('keyup', (e) => keys.delete(e.code));
   window.addEventListener('blur', () => keys.clear());
 
-  /** 圆形的人对轴对齐的盒子：把圆推出去，并返回最后一次接触法线。 */
+  // ---- 碰撞盒：有朝向、有高度 ----
+  // 每个盒子有顶（topY）。脚比顶低不到 STEP 的（台阶、路牙、矮箱子）直接迈上去；跳起来够得着的能落在上面；
+  // 再高的才是墙，把人推出去。站在盒子上往外走，走出边就掉下去（actions.js 里的重力）。
+  const STEP = 0.5;
+  const groundOf = (x, z) => (o.groundAt ? o.groundAt(x, z) : 0);
+  const topOf = (c) => (c.ty ??= (c.base ?? groundOf(c.x, c.z)) + (c.top ?? 20));
+  // 按 16 m 的格子分好（上万个盒子，每帧只问脚边那几格）
+  const CELL = 16;
+  let gridOf = null;
+  let grid = null;
+  let gridN = -1;
+  const near = (x, z) => {
+    const all = list();
+    if (all !== gridOf || all.length !== gridN) {
+      gridOf = all;
+      gridN = all.length;
+      grid = new Map();
+      for (const c of all) {
+        const r = Math.hypot(c.hw, c.hd);
+        for (let i = Math.floor((c.x - r) / CELL); i <= Math.floor((c.x + r) / CELL); i++) {
+          for (let j = Math.floor((c.z - r) / CELL); j <= Math.floor((c.z + r) / CELL); j++) {
+            const k = i * 4096 + j;
+            if (!grid.has(k)) grid.set(k, []);
+            grid.get(k).push(c);
+          }
+        }
+      }
+    }
+    return grid.get(Math.floor(x / CELL) * 4096 + Math.floor(z / CELL)) ?? EMPTY;
+  };
+  const EMPTY = [];
+  /** 脚下踩得到的最高的盒子顶（脚在 y；比脚高出 STEP 以上的不算）。没有就是 -Infinity。 */
+  const floorAt = (x, z, y, pad = 0.12) => {
+    let best = -Infinity;
+    for (const c of near(x, z)) {
+      if (c.off) continue;
+      const dx = x - c.x;
+      const dz = z - c.z;
+      const cc = c.c ?? 1;
+      const cs = c.s ?? 0;
+      if (Math.abs(dx * cc - dz * cs) > c.hw + pad || Math.abs(dx * cs + dz * cc) > c.hd + pad) continue;
+      const t = topOf(c);
+      if (t <= y + STEP && t > best) best = t;
+    }
+    return best;
+  };
+  /** 圆形的人对有朝向的盒子：把圆推出去，并返回最后一次接触法线。 */
   const pushOut = (p, radius) => {
     let nx = 0;
     let nz = 0;
     let hit = false;
+    const feet = p.y ?? 0;
     // Three passes resolve corners and adjacent building boxes without tunnelling
     // through a second box after the first correction.
     for (let pass = 0; pass < 3; pass++) {
       let changed = false;
-      for (const c of list()) {
-        const dx = p.x - c.x;
-        const dz = p.z - c.z;
-        if (Math.abs(dx) > c.hw + radius + 2 || Math.abs(dz) > c.hd + radius + 2) continue;
+      for (const c of near(p.x, p.z)) {
+        if (c.off) continue;
+        const wx = p.x - c.x;
+        const wz = p.z - c.z;
+        const cc = c.c ?? 1;
+        const cs = c.s ?? 0;
+        const dx = wx * cc - wz * cs;
+        const dz = wx * cs + wz * cc;
+        if (Math.abs(dx) > c.hw + radius || Math.abs(dz) > c.hd + radius) continue;
+        // 迈得上去、或者已经在它上面：不是墙
+        if (topOf(c) <= feet + STEP) continue;
         const px = Math.min(c.hw, Math.max(-c.hw, dx));
         const pz = Math.min(c.hd, Math.max(-c.hd, dz));
         const ox = dx - px;
@@ -467,9 +526,11 @@ export function createMover(o) {
               ax = 0; az = Math.sign(dz || 1); depth = radius + edgeZ;
             }
           }
-          p.x += ax * depth;
-          p.z += az * depth;
-          nx += ax; nz += az;
+          const gx = ax * cc + az * cs;
+          const gz = -ax * cs + az * cc;
+          p.x += gx * depth;
+          p.z += gz * depth;
+          nx += gx; nz += gz;
           hit = changed = true;
         }
       }
@@ -483,6 +544,12 @@ export function createMover(o) {
 
   return {
     keys,
+    floorAt,
+    STEP,
+    /** 有盒子挪了地方（骑走的车）：格子重排 */
+    dirty() {
+      gridN = -1;
+    },
     /** 返回这一帧走了多远（给小地图和脚步声用）。 */
     step(dt, p, cam, speedScale = 1, allowWater = false) {
       const f = cam.forward;

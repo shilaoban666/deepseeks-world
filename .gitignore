@@ -13,3 +13,7 @@ shots/*
 *.log
 .env
 .test/
+
+# Python 缓存、Blender 自动备份
+__pycache__/
+*.blend1

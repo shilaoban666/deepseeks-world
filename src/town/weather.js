@@ -13,24 +13,29 @@ import { COMMON } from '../lib/index.js';
 /** 每种天气的目标值。overcast 阴的程度；rain/snow 降水；wind 风速 m/s；sun 太阳强度；temp 气温 */
 export const WEATHERS = {
   sunny: { name: '大太阳', icon: '☀️', overcast: 0, rain: 0, snow: 0, wind: 1.6, sun: 1.3, exposure: 1.07, temp: 32, leaves: 0, lightning: 0, frost: 0 },
-  clear: { name: '晴', icon: '🌤️', overcast: 0.08, rain: 0, snow: 0, wind: 3, sun: 1, exposure: 1, temp: 24, leaves: 0, lightning: 0, frost: 0 },
-  cloudy: { name: '多云', icon: '☁️', overcast: 0.5, rain: 0, snow: 0, wind: 4, sun: 1, exposure: 0.97, temp: 20, leaves: 0.15, lightning: 0, frost: 0 },
-  windy: { name: '大风', icon: '🌬️', overcast: 0.32, rain: 0, snow: 0, wind: 10.5, sun: 1, exposure: 1, temp: 17, leaves: 1, lightning: 0, frost: 0 },
+  clear: { name: '晴', icon: '🌤️', overcast: 0, rain: 0, snow: 0, wind: 3, sun: 1, exposure: 1, temp: 24, leaves: 0, lightning: 0, frost: 0 },
+  cloudy: { name: '多云', icon: '☁️', overcast: 0.36, rain: 0, snow: 0, wind: 4, sun: 1, exposure: 0.97, temp: 20, leaves: 0.15, lightning: 0, frost: 0 },
+  windy: { name: '大风', icon: '🌬️', overcast: 0.12, rain: 0, snow: 0, wind: 10.5, sun: 1, exposure: 1, temp: 17, leaves: 1, lightning: 0, frost: 0 },
   rain: { name: '下雨', icon: '🌧️', overcast: 0.86, rain: 0.75, snow: 0, wind: 5, sun: 1, exposure: 0.84, temp: 15, leaves: 0.2, lightning: 0, frost: 0 },
   storm: { name: '雷雨', icon: '⛈️', overcast: 1, rain: 1, snow: 0, wind: 9, sun: 1, exposure: 0.7, temp: 13, leaves: 0.7, lightning: 1, frost: 0 },
   frost: { name: '冰霜', icon: '❄️', overcast: 0.55, rain: 0, snow: 0.85, wind: 2.6, sun: 1, exposure: 1.02, temp: -3, leaves: 0, lightning: 0, frost: 1 },
 };
 const ORDER = ['sunny', 'clear', 'cloudy', 'windy', 'rain', 'storm', 'frost'];
-/** 自动模式下，下一个天气往哪儿走（权重）。冰霜很少，雷雨总在下雨之后。 */
+/**
+ * 自动模式下，下一个天气往哪儿走（权重）。这个世界的"平常"是晴天——蓝天、白云、饱和的绿，画风就立在这上面；
+ * 阴雨是偶尔来一场、很快过去的事。冰霜很少，雷雨总在下雨之后。
+ */
 const NEXT = {
-  sunny: { sunny: 2, clear: 4, cloudy: 2 },
-  clear: { sunny: 3, clear: 3, cloudy: 3, windy: 1 },
-  cloudy: { clear: 3, cloudy: 1, windy: 2, rain: 3, frost: 0.5 },
-  windy: { cloudy: 3, clear: 2, rain: 2, storm: 1 },
-  rain: { cloudy: 3, rain: 2, storm: 2, clear: 1 },
-  storm: { rain: 4, cloudy: 2 },
-  frost: { frost: 2, cloudy: 3, clear: 2 },
+  sunny: { sunny: 3, clear: 6, cloudy: 1 },
+  clear: { sunny: 4, clear: 6, cloudy: 1.5, windy: 1.5 },
+  cloudy: { clear: 5, sunny: 1, windy: 1, rain: 2, frost: 0.3 },
+  windy: { clear: 5, sunny: 1, cloudy: 1.5, rain: 0.8 },
+  rain: { clear: 3, cloudy: 3, rain: 1, storm: 1 },
+  storm: { rain: 3, cloudy: 2, clear: 2 },
+  frost: { frost: 1, cloudy: 2, clear: 4 },
 };
+/** 一种天气停多久（游戏小时，[最短, 最长]）：晴天长，坏天气短。 */
+const STAY = { sunny: [5, 9], clear: [6, 11], cloudy: [2, 3.5], windy: [2, 3.5], rain: [1.5, 3], storm: [1, 2], frost: [2, 3.5] };
 
 // ---- 雨和雪：一盒跟着镜头走的粒子，位置全在显卡里算 ----------------------------------------------------------
 const fallVertex = /* glsl */ `
@@ -284,7 +289,9 @@ export function createWeather({ field, frame, particles, lite = false, ignite = 
   const cur = { ...WEATHERS.clear, wet: 0, frostNow: 0 };
   let kind = 'clear';
   let auto = true;
-  let nextChange = 3 * 60; // 游戏分钟
+  // 下一次换天气的时刻（游戏分钟）。开局先晴上大半天：第一眼看到的必须是这个世界最好看的样子。
+  // （以前写死 3 * 60，而开局已经是第 500 分钟——一进游戏天气就变了，多半变成阴天）
+  let nextChange = null;
   let windAngle = 0.6;
   let flash = 0;
   let boltLife = 0;
@@ -373,6 +380,8 @@ export function createWeather({ field, frame, particles, lite = false, ignite = 
      */
     update(dt, camera, { minutes = 0, outdoor = true, night = 0 } = {}) {
       // 自动换天气
+      const stay = (k) => (STAY[k][0] + Math.random() * (STAY[k][1] - STAY[k][0])) * 60;
+      if (nextChange === null || minutes < nextChange - 900) nextChange = minutes + (nextChange === null ? 10 * 60 : stay(kind)); // 开局，或者跨天了
       if (auto && minutes > nextChange) {
         const w = NEXT[kind];
         let r = Math.random() * Object.values(w).reduce((a, b) => a + b, 0);
@@ -383,9 +392,8 @@ export function createWeather({ field, frame, particles, lite = false, ignite = 
             break;
           }
         }
-        nextChange = minutes + (2 + Math.random() * 3) * 60;
+        nextChange = minutes + stay(kind);
       }
-      if (minutes < nextChange - 600) nextChange = minutes + 3 * 60; // 跨天了
       // 往目标靠：云来得快、雨来得慢；地慢慢湿、慢慢干；霜慢慢结
       const t = WEATHERS[kind];
       const k = (rate) => Math.min(1, dt * rate);
@@ -469,28 +477,31 @@ export function createWeather({ field, frame, particles, lite = false, ignite = 
     apply() {
       if (!base.sun) return;
       const o = cur.overcast;
-      const sunK = (1 - 0.86 * o) * cur.sun;
+      // 颜色跟着阴的程度走，但不是一条直线：薄云、大风的天还是蓝天白云、饱和的绿，
+      // 要到真正阴下来（下雨、雷雨）才发灰、起雾。g 是"灰"的程度。
+      const g = o * o;
+      const sunK = (1 - 0.86 * Math.pow(o, 1.5)) * cur.sun;
       u.uSunColor.value.copy(base.sun).multiplyScalar(sunK);
-      u.uSkyColor.value.copy(grey(base.sky, 0.6 * o)).multiplyScalar(1 - 0.22 * o + 0.15 * cur.frostNow);
-      u.uFogColor.value.copy(grey(base.fog, 0.6 * o)).multiplyScalar(1 - 0.18 * o + 0.1 * cur.frostNow);
-      u.uFogSunColor.value.copy(grey(base.fogSun, 0.7 * o)).multiplyScalar(1 - 0.3 * o);
-      u.uFogDensity.value = base.density * (1 + 2.2 * o * o + 1.6 * cur.rain + 1.2 * cur.snow);
+      u.uSkyColor.value.copy(grey(base.sky, 0.6 * g)).multiplyScalar(1 - 0.22 * g + 0.15 * cur.frostNow);
+      u.uFogColor.value.copy(grey(base.fog, 0.6 * g)).multiplyScalar(1 - 0.18 * g + 0.1 * cur.frostNow);
+      u.uFogSunColor.value.copy(grey(base.fogSun, 0.7 * g)).multiplyScalar(1 - 0.3 * g);
+      u.uFogDensity.value = base.density * (1 + 2.2 * g * g + 1.6 * cur.rain + 1.2 * cur.snow);
       u.uCloudShade.value = 0.15 + 0.4 * o;
       if (sky && base.zenith) {
         const su = sky.uniforms;
         const fogC = u.uFogColor.value;
-        su.uZenith.value.copy(grey(base.zenith, 0.75 * o)).lerp(fogC, 0.35 * o).multiplyScalar(1 - 0.25 * o);
-        su.uMid.value.copy(grey(base.mid, 0.75 * o)).lerp(fogC, 0.45 * o);
-        su.uHorizon.value.copy(grey(base.horizon, 0.7 * o)).lerp(fogC, 0.5 * o);
-        su.uBankLit.value.copy(grey(base.bankLit, 0.6 * o)).multiplyScalar(1 - 0.35 * o);
-        su.uBankShade.value.copy(grey(base.bankShade, 0.6 * o)).multiplyScalar(1 - 0.3 * o);
+        su.uZenith.value.copy(grey(base.zenith, 0.75 * g)).lerp(fogC, 0.35 * g).multiplyScalar(1 - 0.25 * g);
+        su.uMid.value.copy(grey(base.mid, 0.75 * g)).lerp(fogC, 0.45 * g);
+        su.uHorizon.value.copy(grey(base.horizon, 0.7 * g)).lerp(fogC, 0.5 * g);
+        su.uBankLit.value.copy(grey(base.bankLit, 0.6 * g)).multiplyScalar(1 - 0.35 * g);
+        su.uBankShade.value.copy(grey(base.bankShade, 0.6 * g)).multiplyScalar(1 - 0.3 * g);
       }
       frame.exposure *= cur.exposure * (1 + flash * 1.6);
       // 冷暖：大太阳偏暖，雨天偏冷，霜天偏蓝白
       const warm = (cur.sun - 1) * 0.8;
-      frame.grade.x *= 1 + warm * 0.12 - o * 0.06 - cur.frostNow * 0.04;
-      frame.grade.y *= 1 + warm * 0.04 - o * 0.03;
-      frame.grade.z *= 1 - warm * 0.08 + o * 0.03 + cur.frostNow * 0.05;
+      frame.grade.x *= 1 + warm * 0.12 - g * 0.06 - cur.frostNow * 0.04;
+      frame.grade.y *= 1 + warm * 0.04 - g * 0.03;
+      frame.grade.z *= 1 - warm * 0.08 + g * 0.03 + cur.frostNow * 0.05;
     },
   };
   return weather;

@@ -195,11 +195,11 @@ const colour = () => new THREE.Color();
  * The sky's two pictures, the clouds and the far mountains, which need nothing from the land: make them first and
  * the graphics card can be painting them while the land is worked out. `light(hour)` paints the clouds for an hour.
  */
-export function createSkyParts(renderer, { cloudSize = 1024, cloudSteps = 110, liveClouds = true, cloudStrips = 8, backdropWidth = 8192 } = {}) {
+export function createSkyParts(renderer, { cloudSize = 1024, cloudSteps = 110, liveClouds = true, cloudStrips = 8, backdropWidth = 8192, snowPeak = null } = {}) {
   const clouds = createClouds(renderer, HERO, { size: cloudSize, steps: cloudSteps, live: liveClouds, strips: cloudStrips });
   const afternoon = new THREE.Vector3();
   sunAt(16, afternoon);
-  const backdrop = createBackdrop(renderer, HERO, [afternoon.x, afternoon.z], { width: backdropWidth, ground: backdropWidth > 4096 ? 4096 : 2048 });
+  const backdrop = createBackdrop(renderer, HERO, [afternoon.x, afternoon.z], { width: backdropWidth, ground: backdropWidth > 4096 ? 4096 : 2048, snowPeak });
   const sunDir = new THREE.Vector3();
   const c = { fog: colour(), lit: colour(), mid: colour(), shade: colour(), under: colour() };
   const parts = {

@@ -52,6 +52,7 @@ in vec3 vOwnN;
 in vec2 vUp;
 in vec2 vFace;
 uniform float uNight;   // the town's: how deep the night is, 0 by day (the valley never sets it)
+uniform float uTown;    // the town's: 1 where houses are walked among, and so carry what a street painter adds (the valley leaves it 0)
 float lampGlow = 0.0;
 void main() {
   vec3 N = normalize(vNormal);
@@ -113,6 +114,29 @@ void main() {
     if (vUp.x > 0.0) {
       // how high this wall stands
       float top = -1.6 + (vOwn.y + 1.6) / max(vUp.x, 0.02);
+      if (uTown > 0.5) {
+        // Seen from the street a wall is more than limewash. Some houses are timber-framed above the ground floor:
+        // a beam along each floor and a post between the bays, drawn in the dark brown of old oak.
+        float fine = 1.0 - smoothstep(0.1, 0.3, px);
+        float timbered = step(0.6, fract(seed * 41.3));
+        float along = abs(fract((vOwn.y - 0.2) / 3.0 + 0.5) - 0.5) * 3.0;
+        float post = abs(fract(run / 2.4) - 0.5) * 2.4;
+        float beam = max(1.0 - smoothstep(0.08, 0.11, along), 1.0 - smoothstep(0.07, 0.1, post));
+        // (and one brace leaning across every other bay)
+        float lean = abs(fract((run + (vOwn.y - 0.2) * 0.8) / 4.8) - 0.5) * 4.8;
+        beam = max(beam, (1.0 - smoothstep(0.06, 0.09, lean * 0.78)) * step(0.5, fract(floor(run / 2.4) * 0.5 + 0.25)));
+        paint = mix(paint, vec3(0.3, 0.19, 0.12) * (0.88 + 0.4 * dabs), beam * timbered * step(3.08, vOwn.y) * step(vOwn.y, top - 0.02) * fine);
+        // Ivy on others: it climbs from the foot of the wall, higher in some places than in others, its edge all leaves.
+        float ivied = step(0.56, fract(seed * 23.9));
+        float climb = texture(tNoise, vec2(run * 0.07 + seed * 3.0, seed * 1.3)).r;
+        float reach = (climb - 0.42) * 2.6 * (top + 0.5);
+        float leaves = (texture(tStrokes, vec2(run, vOwn.y) / 2.6 + seed).r - 0.5) * 2.2 + (texture(tNoise, vec2(run, vOwn.y) / 0.7).g - 0.5) * 0.7;
+        float ivy = ivied * smoothstep(0.0, 0.18, reach - vOwn.y + leaves);
+        float tuft = texture(tStrokes, vec2(run, vOwn.y) / 1.3 + 0.3).r;
+        vec3 leaf = mix(vec3(0.06, 0.22, 0.09), vec3(0.17, 0.42, 0.11), smoothstep(0.42, 0.56, tuft));
+        leaf = mix(leaf, vec3(0.36, 0.55, 0.14), smoothstep(0.62, 0.7, tuft));
+        paint = mix(paint, leaf, ivy);
+      }
       // windows: in bays set out from the middle of the wall, a storey at a time; not every bay has one
       float sy = (vOwn.y - 0.2) / 3.0;
       float storey = floor(sy);
@@ -143,6 +167,17 @@ void main() {
       lampGlow = pane * has * (1.0 - bars) * step(0.38, hash12(vec2(bay, storey) * 1.7 + seed * 91.0));
       // the sill, and its line of shadow
       paint *= 1.0 - 0.3 * step(abs(bx), 0.6) * step(-0.84, wy) * step(wy, -0.74) * has;
+      if (uTown > 0.5 && fract(seed * 17.3) > 0.42) {
+        // a window box on some houses: terracotta, a row of leaves, flowers in two or three colours spilling over it
+        float fine = 1.0 - smoothstep(0.08, 0.24, px);
+        float box = step(abs(bx), 0.64) * step(-1.06, wy) * step(wy, -0.84) * has * fine;
+        paint = mix(paint, vec3(0.62, 0.33, 0.2) * (0.9 + 0.3 * dabs), box);
+        vec2 fq = vec2(bx * 5.5 + bay * 3.1, wy * 5.5 + storey * 1.7);
+        vec4 fr = cellRand(floor(fq), 7.0 + seed);
+        float heap = step(abs(bx), 0.7) * step(-0.9, wy) * step(wy, -0.6 + 0.12 * fr.x) * has * fine;
+        vec3 bloom = fr.y < 0.3 ? vec3(0.86, 0.2, 0.18) : fr.y < 0.55 ? vec3(0.96, 0.8, 0.24) : fr.y < 0.78 ? vec3(0.95, 0.93, 0.88) : vec3(0.9, 0.5, 0.66);
+        paint = mix(paint, mix(vec3(0.14, 0.4, 0.12), bloom, step(0.45, fr.z) * step(length(fract(fq) - 0.5), 0.42)), heap);
+      }
       paint = mix(paint, vec3(0.74, 0.7, 0.62) * (0.9 + 0.3 * dabs), doorway);
       paint = mix(paint, vec3(0.3, 0.18, 0.1) * (0.82 + 0.3 * step(0.5, fract(run * 3.2 + 0.25))), door);
       // the eaves throw a band of shadow along the top of a sunlit wall

@@ -492,6 +492,8 @@ whale.setPos(plan.START[0], plan.START[1]);
 const cam = createCamera(camera, canvas, document.body);
 // 室外：镜头不穿进房子（细杆子不算，免得一路抖）
 const bigBoxes = city.colliders.filter((c) => c.hw > 1.2 && c.hd > 1.2);
+// 建筑投影体：所有房子、地标、高架墩与大亭台，烘进 tShade 的 G 通道（定向投影 + 墙脚接触 AO）
+const shadowCasters = city.colliders.filter((c) => !c.off && (c.top ?? 0) >= 2.0 && c.hw >= 0.85 && c.hd >= 0.85);
 cam.obstacles = () => (indoor ? null : bigBoxes);
 let indoor = false;
 let seated = null; // { x, z, yaw, lookAt: {x,y,z}, kind }
@@ -603,6 +605,7 @@ const game = createGame({
       whale.setPos(interior.spawn.x, interior.spawn.z);
       whale.state.y = 0;
       whale.state.yaw = interior.spawn.yaw;
+      whale.setIndoor(true);
       cam.setIndoor(true);
       cam.yaw = 0.35;
       cam.distance = cam.want = 9.5;
@@ -616,6 +619,7 @@ const game = createGame({
       // 出门站在门口，不在屋子正中间
       whale.setPos(outdoorDoor.x, outdoorDoor.z);
       whale.state.yaw = 0;
+      whale.setIndoor(false);
       cam.setIndoor(false);
       cam.distance = cam.want = 7.5;
       cam.pitch = 0.22;
@@ -727,31 +731,47 @@ const dayLight = (clock) => {
   let night = 0;
   if (clock > DUSK) night = Math.min(1, (clock - DUSK) / 1.2);
   else if (clock < DAWN) night = Math.min(1, (DAWN - clock) / 1.0);
-  return { hour, night };
+  // 清晨（5:00~9:30）：清透淡粉蓝朝霞 + 轻薄晨雾，与傍晚暖金黄昏区分开
+  let morning = 0;
+  if (clock >= 5.0 && clock <= 9.5) {
+    morning = clock < 6.8 ? Math.min(1, (clock - 5.0) / 1.8) : Math.max(0, 1 - (clock - 6.8) / 2.7);
+  }
+  return { hour, night, morning };
 };
+const MORNING_FOG = new THREE.Color(0.68, 0.78, 0.9);
 const syncSky = () => {
   const clock = frozenClock ?? (game.state.minutes / 60) % 24;
-  const { hour, night } = dayLight(clock);
+  const { hour, night, morning } = dayLight(clock);
   if (sky && Math.abs(hour - skyHour) > 0.02) {
     const first = skyHour < 0;
     skyHour = hour;
     sky.setHour(hour, !first);
-    // 树影跟着太阳走（太阳挪了一刻钟以上才重烘）
+    // 树影与建筑定向投影跟着太阳走（太阳挪了一刻钟以上才重烘）
     if (first || Math.abs(hour - shadeHour) > 0.25) {
       shadeHour = hour;
-      city.woods.cast(field.uniforms.uSunDir.value);
+      city.woods.cast(field.uniforms.uSunDir.value, shadowCasters);
     }
   }
   if (sky) {
     frame.exposure = sky.exposure * (1 - 0.25 * night);
-    // 夜里泛光开大一点：灯、灯串、萤火虫会晕开
+    // 夜里泛光开大一点：灯、灯串、萤火虫、星月会晕开
     frame.bloom = 0.1 + 0.16 * night;
     frame.grade.set(1 - 0.8 * night, 1 - 0.68 * night, 1 - 0.36 * night);
     field.uniforms.uNight.value = night;
+    sky.uniforms.uMorning.value = morning;
     nightNow = night;
     // 天气在这一刻的天光上再调一层（屋里有自己的灯，不调）
     if (!indoor) {
       weather.apply();
+      if (morning > 0.01 && night < 0.5) {
+        // 清晨微薄晨雾与清透冷暖：比下午多一点蓝白空气感
+        const m = morning * (1 - night);
+        field.uniforms.uFogDensity.value *= 1 + 0.28 * m;
+        field.uniforms.uFogColor.value.lerp(MORNING_FOG, 0.18 * m);
+        frame.grade.x *= 1 - 0.02 * m;
+        frame.grade.y *= 1 + 0.01 * m;
+        frame.grade.z *= 1 + 0.035 * m;
+      }
       underwaterLook();
     }
   }
@@ -1080,7 +1100,7 @@ function tick(dt) {
   if (!indoor) life?.update(dt, camera, nightNow);
   glow.setGrade(frame.grade);
   glow.update(dt, farming.ripe());
-  if (!indoor) field.uniforms.uWalker.value.set(whale.state.x, whale.state.z, 0.55, 2.2);
+  if (!indoor) field.uniforms.uWalker.value.set(whale.state.x, whale.state.z, 0.55 * (1 - nightNow), 2.2 * (1 - nightNow));
   else interior.update(dt);
   game.update(dt);
   bigmap.update(dt, !indoor);

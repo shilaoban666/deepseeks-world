@@ -172,14 +172,20 @@ void main() {
 
 const outlineVert = /* glsl */ `
 uniform float uThick;
+uniform vec3 uCamPos;
 out vec3 vWorld;
 void main() {
-  vec3 p = position + normal * uThick;
   #ifdef USE_INSTANCING
-  vec4 w = modelMatrix * instanceMatrix * vec4(p, 1.0);
+  mat4 mm = modelMatrix * instanceMatrix;
   #else
-  vec4 w = modelMatrix * vec4(p, 1.0);
+  mat4 mm = modelMatrix;
   #endif
+  vec4 w0 = mm * vec4(position, 1.0);
+  float dist = distance(w0.xyz, uCamPos);
+  // 近处收细免得贴脸变黑框，中远距保持和 kit.js 后处理墨线协调的纤细手绘感
+  float thick = uThick * clamp(dist * 0.065, 0.42, 1.25);
+  vec3 p = position + normal * thick;
+  vec4 w = mm * vec4(p, 1.0);
   vWorld = w.xyz;
   gl_Position = projectionMatrix * viewMatrix * w;
 }

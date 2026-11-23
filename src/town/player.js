@@ -9,11 +9,17 @@ import { heightAt, walkAt, inLake, START, START_YAW, HALF } from './plan.js';
 
 const billboardVertex = /* glsl */ `
 out vec2 vUv;
+out vec2 vLocalUv;
 out vec3 vWorld;
+out vec3 vRight;
+out vec3 vFwd;
 void main() {
   vUv = uv;
+  vLocalUv = uv;
   vec4 w = modelMatrix * vec4(position, 1.0);
   vWorld = w.xyz;
+  vRight = normalize(mat3(modelMatrix) * vec3(1.0, 0.0, 0.0));
+  vFwd = normalize(mat3(modelMatrix) * vec3(0.0, 0.0, 1.0));
   gl_Position = projectionMatrix * viewMatrix * w;
 }
 `;
@@ -23,14 +29,41 @@ ${COMMON}
 uniform sampler2D tArt;
 uniform vec3 uTint;
 uniform float uAlpha;
+uniform float uIndoor;
 in vec2 vUv;
+in vec2 vLocalUv;
 in vec3 vWorld;
+in vec3 vRight;
+in vec3 vFwd;
 layout(location = 0) out vec4 outC;
 void main() {
   vec4 t = texture(tArt, vUv);
   if (t.a < 0.5) discard;
-  vec3 col = t.rgb * uTint;
-  outC = vec4(applyFog(col, vWorld), uAlpha);
+  // 2.5D 柔球柱虚拟法线：让角色吃太阳方向、树荫、建筑阴影、黄昏与雨雪，不再像自发光贴纸
+  vec2 sp = (vLocalUv - vec2(0.5, 0.54)) * vec2(1.85, 1.35);
+  vec3 N = normalize(vRight * (sp.x * 0.55) + vec3(0.0, sp.y * 0.32 + 0.22, 0.0) + vFwd * 0.86);
+  float ndl = dot(N, uSunDir);
+  float lit = smoothstep(-0.38, 0.48, ndl);
+  // 室外吃云影、树荫与建筑投影；室内吃暖灯
+  float occ = uIndoor > 0.5 ? 1.0 : smoothstep(0.18, 0.85, openAt(vWorld.xz));
+  vec3 sunL = (uSunColor * 0.29 + uSkyColor * 0.38) * 1.12;
+  float skyGrey = dot(uSkyColor, vec3(0.333));
+  vec3 skyL = mix(vec3(skyGrey), uSkyColor, 0.62) * 0.98 + 0.22;
+  vec3 light = uIndoor > 0.5
+    ? mix(vec3(0.84, 0.8, 0.78), vec3(1.08, 1.02, 0.94), lit) * (0.45 + 0.34 * dot(uSunColor, vec3(0.333)))
+    : mix(skyL, sunL, lit * occ);
+  // 极克制的边缘暖阳轮廓光，提升角色与背景的空气层次
+  float rim = smoothstep(0.45, 0.92, length(sp)) * max(0.0, dot(normalize(vRight * sp.x + vec3(0.0, 0.4, 0.0)), uSunDir) * 0.5 + 0.5);
+  vec3 col = t.rgb * uTint * light;
+  if (uIndoor < 0.5) {
+    col += uSunColor * (0.045 * rim * occ);
+    // 雨天微湿压深；霜雪天头顶沾一层极淡微霜
+    col = mix(col, col * vec3(0.84, 0.88, 0.94), uWetness * 0.28);
+    float crown = smoothstep(0.72, 0.96, vLocalUv.y);
+    col = mix(col, vec3(0.95, 0.97, 1.0) * (uSunColor * 0.32 + uSkyColor * 0.42), uFrost * crown * 0.26);
+    col = applyFog(col, vWorld);
+  }
+  outC = vec4(col, uAlpha);
 }
 `;
 
@@ -58,12 +91,18 @@ const clipVertex = /* glsl */ `
 uniform vec4 uRect;
 uniform float uFlip;
 out vec2 vUv;
+out vec2 vLocalUv;
 out vec3 vWorld;
+out vec3 vRight;
+out vec3 vFwd;
 void main() {
   float u = mix(uv.x, 1.0 - uv.x, uFlip);
   vUv = uRect.xy + vec2(u, uv.y) * uRect.zw;
+  vLocalUv = vec2(u, uv.y);
   vec4 w = modelMatrix * vec4(position, 1.0);
   vWorld = w.xyz;
+  vRight = normalize(mat3(modelMatrix) * vec3(1.0, 0.0, 0.0));
+  vFwd = normalize(mat3(modelMatrix) * vec3(0.0, 0.0, 1.0));
   gl_Position = projectionMatrix * viewMatrix * w;
 }
 `;
@@ -90,13 +129,14 @@ export async function loadWhalechan(shared, base = './figures/') {
         rej,
       ),
     );
+  const indoorU = { value: 0 };
   const textures = await Promise.all(VIEWS.map((v) => load(`whalechan-${v}.png`)));
   const make = (tex) =>
     new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3,
       vertexShader: billboardVertex,
       fragmentShader: billboardFragment,
-      uniforms: { ...shared, tArt: { value: tex }, uTint: { value: new THREE.Color(1, 1, 1) }, uAlpha: { value: 0.16 } },
+      uniforms: { ...shared, tArt: { value: tex }, uTint: { value: new THREE.Color(1, 1, 1) }, uAlpha: { value: 0.16 }, uIndoor: indoorU },
       side: THREE.DoubleSide,
     });
   const mats = Object.fromEntries(VIEWS.map((v, i) => [v, make(textures[i])]));
@@ -117,7 +157,7 @@ export async function loadWhalechan(shared, base = './figures/') {
               glslVersion: THREE.GLSL3,
               vertexShader: clipVertex,
               fragmentShader: billboardFragment,
-              uniforms: { ...shared, tArt: { value: tex }, uTint: { value: new THREE.Color(1, 1, 1) }, uAlpha: { value: 0.16 }, uRect: { value: new THREE.Vector4(0, 0, 1, 1) }, uFlip: { value: 0 } },
+              uniforms: { ...shared, tArt: { value: tex }, uTint: { value: new THREE.Color(1, 1, 1) }, uAlpha: { value: 0.16 }, uIndoor: indoorU, uRect: { value: new THREE.Vector4(0, 0, 1, 1) }, uFlip: { value: 0 } },
               side: THREE.DoubleSide,
             }),
           };
@@ -127,7 +167,7 @@ export async function loadWhalechan(shared, base = './figures/') {
   } catch (e) {
     console.warn('主角动画没载入，用静态立绘', e);
   }
-  return { ...mats, art: ART, clips };
+  return { ...mats, art: ART, clips, indoorU };
 }
 
 /** 把角度收进 [-π, π]。 */
@@ -300,6 +340,9 @@ export function createWhalechan(shared, arts) {
       state.x = x;
       state.z = z;
       state.y = walkAt(x, z);
+    },
+    setIndoor(on) {
+      if (arts.indoorU) arts.indoorU.value = on ? 1 : 0;
     },
   };
 }

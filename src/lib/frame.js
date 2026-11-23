@@ -504,7 +504,10 @@ export function createFrame(renderer, field, { samples = 4, fireScale = 0.5, blo
   const finalMaterial = fs(
     head +
       /* glsl */ `
-    uniform sampler2D tHdr, tBloom; uniform float uBloom, uExposure, uVignette, uPaint; uniform vec3 uGrade; uniform vec2 uPaintTexel; uniform highp sampler2D tDepth;
+    uniform sampler2D tHdr, tBloom; uniform float uBloom, uExposure, uVignette, uPaint; uniform vec3 uGrade; uniform vec2 uPaintTexel; uniform highp sampler2D tDepth; uniform mat4 uProj;
+    float linZ(float d) {
+      return uProj[3][2] / (d * 2.0 - 1.0 + uProj[2][2]);
+    }
     // The frame as paint: round each point, four overlapping patches; the calmest of them gives its colour. Edges
     // stay where they are and everything between them goes flat, as a loaded brush leaves it.
     vec3 painted(vec2 uv) {
@@ -547,24 +550,36 @@ export function createFrame(renderer, field, { samples = 4, fireScale = 0.5, blo
       vec3 o = sum / total;
       return o / (1.0 - min(o, vec3(0.985)));
     }
-    // The inked line round a figure. A figure's parts each write a small alpha of their own (valley/wanderer.js),
-    // smaller than anything else writes; where one of those meets a different alpha, there is a line.
+    // The inked line round a figure or near 3D kit building. Parts write small distinct alphas (< 0.23);
+    // lines appear where two parts meet OR where a foreground inked object (< 0.23) steps sharply in depth
+    // in front of another same-part building (preventing adjacent buildings from merging).
     float inkAt(vec2 uv) {
       float a = textureLod(tHdr, uv, 0.0).a;
       float da = textureLod(tDepth, uv, 0.0).r;
+      float za = linZ(da);
       vec2 w = uPaintTexel * max(1.0, 1.0 / (uPaintTexel.y * 1080.0));
       float e = 0.0;
+      float de = 0.0;
       for (int k = 0; k < 4; k++) {
         vec2 o = k == 0 ? vec2(1.0, 0.0) : k == 1 ? vec2(-1.0, 0.0) : k == 2 ? vec2(0.0, 1.0) : vec2(0.0, -1.0);
         float b = textureLod(tHdr, uv + o * w, 0.0).a;
         if (min(a, b) >= 0.23) continue;
-        // (a line where the figure stands in front of something, or one of its parts meets another: none where a
-        // blade of grass stands in front of it, or every blade would be inked)
+        // (a line where the figure/building stands in front of something, or one of its parts meets another:
+        // none where a blade of grass stands in front of it, or every blade would be inked)
         float db = textureLod(tDepth, uv + o * w, 0.0).r;
         if (max(a, b) >= 0.23 && (a < b ? db < da : da < db)) continue;
         e = max(e, abs(a - b));
+        // depth-step silhouette between two same-part buildings/props (closer pixel must be an inked object)
+        float frontA = da < db ? a : b;
+        if (frontA < 0.23) {
+          float zb = linZ(db);
+          float zMin = min(za, zb);
+          float dz = abs(za - zb) / max(zMin, 1.0);
+          float distFade = 1.0 - smoothstep(46.0, 68.0, zMin);
+          de = max(de, smoothstep(0.065, 0.14, dz) * smoothstep(0.35, 0.9, abs(za - zb)) * distFade);
+        }
       }
-      return smoothstep(0.008, 0.022, e);
+      return max(smoothstep(0.008, 0.022, e), de * 0.78);
     }
     vec3 aces(vec3 x) { return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0); }
     vec3 toSrgb(vec3 c) { return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c)); }
@@ -585,7 +600,7 @@ export function createFrame(renderer, field, { samples = 4, fireScale = 0.5, blo
       float n = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));
       outC = vec4(c + (n - 0.5) / 255.0, 1.0);
     }`,
-    { tHdr: { value: rtComposite.texture }, tBloom: { value: rtUp[0].texture }, uBloom: { value: bloom }, uExposure: { value: exposure }, uVignette: { value: 0.14 }, uGrade: { value: new THREE.Vector3(1, 1, 1) }, uPaint: { value: 0 }, tDepth: { value: depth }, uPaintTexel: { value: new THREE.Vector2(1, 1) } },
+    { tHdr: { value: rtComposite.texture }, tBloom: { value: rtUp[0].texture }, uBloom: { value: bloom }, uExposure: { value: exposure }, uVignette: { value: 0.14 }, uGrade: { value: new THREE.Vector3(1, 1, 1) }, uPaint: { value: 0 }, tDepth: { value: depth }, uPaintTexel: { value: new THREE.Vector2(1, 1) }, uProj: view.uProj },
   );
 
   field.renderer = renderer;

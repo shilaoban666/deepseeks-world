@@ -63,11 +63,11 @@ layout(location = 0) out vec4 outC;
 void main() {
   vec4 t = texture(tAtlas, vUv);
   if (t.a < uCutoff) discard;
-  // 跟着一天的光：受光面用太阳色，整体再压一点天空色；夜里压暗
+  // 跟着一天的光：夜晚太阳落山后收掉残留日落红光（免得浅色树干超过 1.1 触发自发光豁免），保留环境光由 uGrade 统一压蓝
   float lit = 0.55 + 0.45 * clamp(dot(normalize(vN), uSunDir) * 0.5 + 0.5, 0.0, 1.0);
-  vec3 tint = uSunColor * (0.30 + 0.18 * lit) + uSkyColor * 0.34;
-  tint = mix(tint, tint * vec3(0.42, 0.46, 0.62), uNight);
-  vec3 col = t.rgb * tint * 1.9;
+  float occ = smoothstep(0.22, 0.85, openAt(vWorld.xz));
+  vec3 tint = uSunColor * (0.30 + 0.18 * lit) * mix(0.45, 1.0, occ) * (1.0 - 0.72 * uNight) + uSkyColor * (0.36 + 0.22 * uNight);
+  vec3 col = t.rgb * tint * 1.82;
   // 少数几个像素的 alpha：让笔触收尾跳过、并且自动描墨线
   col = mix(col, vec3(0.84, 0.88, 0.94) * (uSunColor * 0.36 + uSkyColor * 0.5), uFrost * 0.55 * vSway);
   outC = vec4(applyFog(col, vWorld), uAlpha);

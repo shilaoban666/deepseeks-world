@@ -40,9 +40,9 @@ layout(location = 0) out vec4 outC;
 void main() {
   vec4 t = texture(tAtlas, vUv);
   if (t.a < 0.5) discard;
-  vec3 tint = uSunColor * 0.4 + uSkyColor * 0.34;
-  tint = mix(tint, tint * vec3(0.42, 0.46, 0.62), uNight);
-  outC = vec4(applyFog(t.rgb * tint * 1.9, vWorld), 0.16);
+  // 夜晚收掉残留日落太阳光，由 frame.js 的 uGrade 统一压蓝（不发荧光也不死黑）
+  vec3 tint = uSunColor * 0.4 * (1.0 - 0.72 * uNight) + uSkyColor * (0.35 + 0.22 * uNight);
+  outC = vec4(applyFog(t.rgb * tint * 1.82, vWorld), 0.16);
 }
 `;
 

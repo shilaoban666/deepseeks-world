@@ -74,7 +74,7 @@ const STYLE = {
 };
 const FOOT = { cottage: [7, 10], house: [7.5, 11], wing: [10.5, 11], tall: [7, 8.5], long: [8, 19], church: [9, 22], round: [7.4, 7.4], slim: [3.8, 3.8] };
 
-export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar = 560, density = 1, plants = null, roadTex = false, models = [], kit = null } = {}) {
+export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar = 560, density = 1, plants = null, roadTex = false, models = [], kit = null, vehicleAssets = null } = {}) {
   const group = new THREE.Group();
   const b = new Builder(shared);
   // ---- 街具和地标换成套件里的模型 ----
@@ -136,7 +136,13 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
   const gym = swap(gym0, (o) => has('gym') && inst('gym', o.x, o.z, o.rotY ?? 0, { y: o.y, wall: PALETTE.wall[1], roof: [0.2, 0.46, 0.44] }));
   const stall = swap(stall0, (o) => has('stall') && inst('stall', o.x, o.z, o.rotY ?? 0, { y: o.y, accent: clothOf(o.c2 ?? 'cloth#0') }));
   const lamp = swap(lamp0, (x, z, rot = 0) => has('lamp') && inst('lamp', x, z, rot));
-  const bench = swap(bench0, (x, z, rot = 0) => has('bench') && inst('bench', x, z, rot));
+  const benchRaw = swap(bench0, (x, z, rot = 0) => has('bench') && inst('bench', x, z, rot));
+  let benchSeq = 0;
+  const bench = (b2, x, z, rot = 0) => {
+    const res = benchRaw(b2, x, z, rot);
+    add({ id: `bench-city-${++benchSeq}`, name: '长椅', kind: 'chair', x, z, r: 2.5, hint: 'E 坐下', seat: { x, y: heightAt(x, z) + 0.44, z, yaw: rot }, map: false });
+    return res;
+  };
   const stoneLantern = swap(stoneLantern0, (x, z) => has('stonelantern') && inst('stonelantern', x, z, 0));
   const fence = swap(fence0, (x1, z1, x2, z2, height = 1.1) => {
     if (!has('fence')) return null;
@@ -1095,11 +1101,18 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     // 总站
     const si = rail.nearest(20, 372);
     const gy = heightAt(stationHall.x, stationHall.z);
-    LM.grandStation(b, { x: stationHall.x, z: stationHall.z, rotY: 0, w: 70, d: 30, h: 18, sign: '高铁站', y: gy, platformY: rail.path[si][1] - gy - 0.2 });
+    const gs = LM.grandStation(b, { x: stationHall.x, z: stationHall.z, rotY: 0, w: 70, d: 30, h: 18, sign: '高铁站', y: gy, platformY: rail.path[si][1] - gy - 0.2 });
     claim(stationHall.x, stationHall.z, 40);
     claim(stationHall.x, stationHall.z + 30, 16);
-    RAIL_STATIONS.find((s) => s.main).exit = [stationHall.x, stationHall.z + 30];
-    add({ id: 'station', name: '高铁站', kind: 'station', stop: '高铁站', x: stationHall.x, z: stationHall.z + 26, r: 12, hint: 'E 看车次' });
+    const mainSt = RAIL_STATIONS.find((s) => s.main);
+    mainSt.exit = [stationHall.x, stationHall.z + 30];
+    mainSt.platform = gs.platform;
+    mainSt.stopMidS = rail.cum[si] - rail.cum[6];
+    add({ id: 'station', name: '高铁站', kind: 'station', stop: '高铁站', x: stationHall.x, z: stationHall.z + 26, r: 12, hint: 'E 购票候车' });
+    add({ id: 'station-plat-main', name: '高铁站 · 站台乘车点', kind: 'station', stop: '高铁站', x: gs.platform[0], z: gs.platform[2], r: 12, hint: 'E 购票 / 乘车', map: false });
+    gs.benches?.forEach((sb, bi) => {
+      add({ id: `bench-station-main-${bi}`, name: '站台长椅', kind: 'chair', x: sb.x, z: sb.z, r: 2.8, hint: 'E 坐下候车', seat: sb, map: false });
+    });
     for (const sx of [-1, 1]) for (let k = 0; k < 3; k++) lamp(b, stationHall.x + sx * (14 + k * 12), stationHall.z + 34, 0);
     for (const sx of [-1, 1]) bench(b, stationHall.x + sx * 8, stationHall.z + 40, 0);
     // 四个小站：站房朝着镇子那一边
@@ -1116,12 +1129,18 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
       let rot = Math.atan2(-tz, tx); // 局部 x 沿着铁轨
       const town = D(toward[st.name]);
       if (Math.sin(rot) * (town.x - p[0]) + Math.cos(rot) * (town.z - p[2]) < 0) rot += Math.PI;
-      LM.smallStation(b, { x: p[0], z: p[2], rotY: rot, name: st.name, deckY: p[1] });
+      const ss = LM.smallStation(b, { x: p[0], z: p[2], rotY: rot, name: st.name, deckY: p[1] });
       const ex = p[0] + Math.sin(rot) * 20;
       const ez = p[2] + Math.cos(rot) * 20;
       st.exit = [ex, ez];
+      st.platform = ss.platform;
+      st.stopMidS = rail.cum[i] - rail.cum[6];
       claim(p[0] + Math.sin(rot) * 10, p[2] + Math.cos(rot) * 10, 13);
-      add({ id: `station-${st.name}`, name: st.name, kind: 'station', stop: st.name, x: ex, z: ez, r: 7, hint: 'E 看车次' });
+      add({ id: `station-${st.name}`, name: st.name, kind: 'station', stop: st.name, x: ex, z: ez, r: 7, hint: 'E 购票候车' });
+      add({ id: `station-plat-${st.name}`, name: `${st.name} · 站台`, kind: 'station', stop: st.name, x: ss.platform[0], z: ss.platform[2], r: 10, hint: 'E 购票 / 乘车', map: false });
+      if (ss.bench) {
+        add({ id: `bench-station-${st.name}`, name: '站台长椅', kind: 'chair', x: ss.bench.x, z: ss.bench.z, r: 2.8, hint: 'E 坐下候车', seat: ss.bench, map: false });
+      }
     }
     // 高架：有路、有河、有房子的地方不立桥墩
     LM.viaduct(b, rail.path, { width: 8, pierEvery: 24, groundAt: heightAt, skip: (x, z) => roadEdge(x, z) < 4 || riverAt(x, z).d < RIVER_HALF + 3 || lakeDistance(x, z) < 1.06 || !free(x, z, 1.6) || heightAt(x, z) < SEA.level + 0.3 });
@@ -1138,8 +1157,8 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     // 两列车，一股道一列，对着开：一列从这头出发、一列从那头出发，各自到头停一会儿再折回来，路上总会交会
     const line = rail.path.slice(6, rail.path.length - 6);
     const halts = stops.map((s) => s - rail.cum[6]).filter((s) => s > 30);
-    train = LM.createTrain(shared, line, { cars: 5, speed: 34, stops: halts, dwell: 8, loop: false, accel: 2.2, side: 1.8 });
-    train2 = LM.createTrain(shared, line, { cars: 5, speed: 34, stops: halts, dwell: 8, loop: false, accel: 2.2, side: -1.8, from: 1, stripe: [0.78, 0.3, 0.22] });
+    train = LM.createTrain(shared, line, { cars: 5, speed: 34, stops: halts, dwell: 8, loop: false, accel: 2.2, side: 1.8, assets: vehicleAssets });
+    train2 = LM.createTrain(shared, line, { cars: 5, speed: 34, stops: halts, dwell: 8, loop: false, accel: 2.2, side: -1.8, from: 1, stripe: [0.78, 0.3, 0.22], assets: vehicleAssets });
     for (const t of [train, train2]) if (t?.group) group.add(t.group);
   }
 
@@ -1408,7 +1427,7 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
   // 农家旁边是草垛、稻草人、蜂箱、农具架；和式的房子旁边是石灯笼、水缸、竹篱。
   const propSlots = []; // （老办法：一件一个 GLB、各用各的材质。现在都走套件那一个着色器了，这里空着）
   // 模型库里转过来的三百多种模型：房侧的杂物、街具、公交站、集市、车站、农家、船、地标、鸟和鱼（dressing.js）
-  const dressStats = kit ? dress({ kit, random, painted, inst, makeRect, rectHit, rectNear, freeC, collide: (...a) => b.collide(...a), railNear, faceRoad, extras: kitExtras }) : null;
+  const dressStats = kit ? dress({ kit, random, painted, inst, makeRect, rectHit, rectNear, freeC, collide: (...a) => b.collide(...a), railNear, faceRoad, extras: kitExtras, add }) : null;
 
   // ===== 路面和广场 ============================================================================================
   {

@@ -29,7 +29,7 @@ for (const c of CROPS) {
   ITEMS[c.id] = { name: c.name, icon: '🥕', price: c.sell * 2, sell: c.sell, crop: c.id };
 }
 
-export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, onMap, onRide, busStops = [], metroStops = [], railStations = RAIL_STATIONS, fishSprites = null, farmSprites = null, fishAtlas = './textures/plants/fish.png' }) {
+export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, onBookRail, onMap, onRide, onAnimate, busStops = [], metroStops = [], railStations = RAIL_STATIONS, fishSprites = null, farmSprites = null, fishAtlas = './textures/plants/fish.png' }) {
   // 作物的图标：手绘的收获物，种子用作物本身的小图
   if (farmSprites) {
     for (const c of CROPS) {
@@ -146,6 +146,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
       return true;
     }
     state.stats.fish++;
+    onAnimate?.('cheer', 1.6);
     const first = !state.dex[f.id];
     state.dex[f.id] = (state.dex[f.id] ?? 0) + 1;
     // 传说的鱼拍张照就放回去；其余进背包（做饭用）
@@ -185,6 +186,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
       const got = farm.harvest(i, state.luck);
       add(got.crop.id, got.n);
       state.stats.harvested++;
+      onAnimate?.('cheer', 1.25);
       const back = Math.random() < 0.35;
       if (back) add(`seed-${got.crop.id}`, 1);
       syncStats();
@@ -207,6 +209,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
           if (!take(`seed-${id}`, 1)) return;
           farm.plant(i, id, state.day * 1440 + state.minutes);
           state.stats.planted++;
+          onAnimate?.('farm_plant', 1.05);
           hud.close();
           hud.toast(`种下了${CROP[id].name}。${p.water > 0.05 ? '地是湿的' : '记得浇水'}，大约 ${hoursLeft(farm.plot(i))}后能收`);
         });
@@ -219,6 +222,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
     // 地干了：E 一下就是浇水（身边几块一起浇），再按 E 才看长势
     if (!wetNow) {
       const n = waterAround();
+      onAnimate?.('farm_water', 1.15);
       return void hud.toast(n > 1 ? `提着水壶浇了 ${n} 块地` : `给${c.name}浇了水`);
     }
     hud.open(
@@ -235,6 +239,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
           disabled: wetNow,
           onClick: () => {
             farm.water(i);
+            onAnimate?.('farm_water', 1.15);
             hud.close();
             hud.toast(`给${c.name}浇了水`);
           },
@@ -243,6 +248,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
           label: '铲掉',
           onClick: () => {
             farm.clear(i);
+            onAnimate?.('farm_plant', 0.95);
             hud.close();
             hud.toast('铲掉了，地空出来了');
           },
@@ -297,6 +303,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
           for (const [k, n] of Object.entries(r.need)) take(k, n);
           add('cooked', 1);
           state.stats.cooked++;
+          onAnimate?.('cook', 1.45);
           hud.toast(`做好了 ${r.name}`);
           syncStats();
           openCook();
@@ -307,6 +314,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
 
   // ---- 商店 --------------------------------------------------------------------------------------------------
   const shop = (title, list, blurb, buysCrops = false) => {
+    onAnimate?.('wave', 1.1);
     const rows = list.map((k) => `<tr><td>${ITEMS[k].icon} ${ITEMS[k].name}${ITEMS[k].seedOf ? ` <span class="dim">· ${CROP[ITEMS[k].seedOf].hours} 小时熟，卖 ${CROP[ITEMS[k].seedOf].sell}/个</span>` : ''}</td><td class="need">${ITEMS[k].price} 金币</td></tr>`).join('');
     const mine = CROPS.reduce((n, c) => n + (state.bag[c.id] ?? 0), 0);
     hud.open(
@@ -381,6 +389,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
       arcade = null;
       hud.close();
       syncStats();
+      onAnimate?.('cheer', 1.4);
       hud.toast(`打完 5 轮，共 ${got} 分，换到 ${got * 3} 金币`);
     }
     return true;
@@ -417,6 +426,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
       }
       case 'snowman':
         state.minutes += 6;
+        onAnimate?.('cheer', 1.25);
         hud.toast(['给雪人拍实了一把雪，它看起来更圆了', '把雪人的鼻子扶正了。它好像在笑', '把自己的围巾借雪人围了一会儿，又拿回来了（冷）'][Math.floor(Math.random() * 3)]);
         break;
       case 'boat': {
@@ -490,6 +500,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
       case 'shell': {
         if (state.picked[it.id] === state.day) return void hud.toast('这一片捡过了，等明天潮水再送来');
         state.picked[it.id] = state.day;
+        onAnimate?.('gather', 1.0);
         const n = 1 + Math.floor(Math.random() * 2);
         add('shell', n);
         if (Math.random() < 0.06 + state.luck * 0.02) {
@@ -556,6 +567,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
                 state.hunger = Math.max(0, state.hunger - (port ? 6 : 12));
                 state.coins += pay;
                 syncStats();
+                onAnimate?.('work', 1.5);
                 hud.close();
                 hud.toast(port ? `十箱货搬完了，胳膊酸酸的。工头数了 ${pay} 金币给你` : `整理了一下午推理链，还喝到了咖啡。领到 ${pay} 金币`);
               },
@@ -574,6 +586,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
           state.coins += 6;
         }
         syncStats();
+        onAnimate?.(win ? 'cheer' : 'read', 1.35);
         hud.toast(win ? '樱花落在棋盘上。你走了一步怪棋，老爷爷想了很久，认输了（彩头 6 金币）' : '老爷爷落子很慢，赢得很快。「再来？」他笑眯眯地问');
         break;
       }
@@ -639,6 +652,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
           state.stamina = Math.min(100, state.stamina + 14);
           state.coins = Math.max(0, state.coins - 5);
           syncStats();
+          onAnimate?.('cheer', 1.35);
           hud.toast('跑了两圈，体力 +14（门票 5 金币）');
         } else hud.toast('太累了，先吃点东西');
         break;
@@ -652,6 +666,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
         state.stats.read++;
         state.stamina = Math.min(100, state.stamina + 6);
         syncStats();
+        onAnimate?.('read', 1.6);
         hud.open('图书馆', `<p>${books[Math.floor(Math.random() * books.length)]}</p><p class="dim">安静得能听见翻页的声音。</p>`, [
           { label: '合上书', onClick: () => hud.close() },
         ]);
@@ -663,6 +678,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
         state.stats.read++;
         const first = today('study') === 0;
         bump('study');
+        onAnimate?.('read', 1.6);
         if (first && Math.random() < 0.5) {
           state.coins += 12;
           hud.toast(`在${it.name}上了半节课，随堂小测居然全对——奖学金 12 金币`);
@@ -672,6 +688,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
       }
       case 'pray':
         state.luck = Math.min(3, state.luck + 1);
+        onAnimate?.('pray', 1.6);
         hud.open(
           it.name,
           '<p>你闭上眼睛，听见风穿过屋檐。</p><p class="ok">获得祝福：接下来钓到东西的概率更高（运气 +1）</p>',
@@ -682,10 +699,12 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
         if (state.coins < 1) return void hud.toast('没钱许愿了');
         state.coins -= 1;
         syncStats();
+        onAnimate?.('pray', 1.5);
         hud.toast('硬币沉进水里，翻了个身。愿望说给水听');
         break;
       case 'mail': {
         const letters = ['一封是广告：「玉海城第一届钓鱼大赛报名中」', '一张明信片，背面画着一朵云', '一封信写着「鱼片，记得按时吃饭」', '里面只有一张白纸，可能重要，可能不重要'];
+        onAnimate?.('wave', 1.1);
         hud.open('信箱', `<p>${letters[Math.floor(Math.random() * letters.length)]}</p>`, [{ label: '收好', onClick: () => hud.close() }]);
         break;
       }
@@ -715,6 +734,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
                     state.coins += q.reward;
                     state.quests = quests.filter((x) => x !== q);
                     syncStats();
+                    onAnimate?.('cheer', 1.5);
                     hud.close();
                     hud.toast(`完成委托，+${q.reward} 金币`);
                   },
@@ -744,6 +764,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
         const today = state.day;
         if (state.picked[it.id] === today) return void hud.toast(it.kind === 'orchard' ? '今天摘过了，留点给鸟吃' : '今天的菜摘过了');
         state.picked[it.id] = today;
+        onAnimate?.('gather', 1.05);
         const n = 2 + Math.floor(Math.random() * 3);
         add(it.kind === 'orchard' ? 'fruit' : 'veg', n);
         hud.toast(it.kind === 'orchard' ? `摘了 ${n} 个果子（${it.fruit ?? '水果'}）` : `摘了 ${n} 把青菜`);
@@ -781,24 +802,23 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
         hud.open(it.name, `<p>${it.text ?? ''}</p>`, [{ label: '嗯', onClick: () => hud.close() }]);
         break;
       case 'station': {
-        // 高铁：高架已经通了，五个站随便坐。it.stop 是这一站的名字（没有就按离得最近的站算）
+        // 高铁：购票 → 上站台候车（可坐在长椅休息）→ 列车进站开门 → 登车坐在车厢内沿高架旅行
         const here = railStations.find((st) => st.name === it.stop) ?? railStations.reduce((a, b) => (a && Math.hypot(a.x - it.x, a.z - it.z) <= Math.hypot(b.x - it.x, b.z - it.z) ? a : b), null);
         const fare = 5;
         const stops = railStations.filter((st) => st !== here);
         hud.open(
           here?.name ?? '高铁站',
-          `<p>大厅里很亮，广播在报站。车票 ${fare} 金币，一站大约 8 分钟。</p><p class="dim">高架从雪山绕过田园、海边新城、高铁总站，一路到大学城和湖边小镇。按 M 可以看地图。</p>`,
+          `<p>站台上的蓝白牌子被风吹得亮堂堂的。车票 ${fare} 金币，一站大约 8 分钟。</p><p class="dim">买票后会前往站台候车（可以坐在站台长椅上休息），列车进站开门后按 <kbd>E</kbd> 登车进入车厢。</p>`,
           [
             ...stops.map((st) => ({
-              label: `🚄 去 ${st.name}（${fare}）`,
+              label: `🚄 购票去 ${st.name}（${fare}）`,
               disabled: state.coins < fare,
               onClick: () => {
                 state.coins -= fare;
-                state.minutes += 8;
                 hud.close();
-                onTravel?.(st);
+                if (onBookRail) onBookRail(here, st, fare);
+                else onTravel?.(st);
                 syncStats();
-                hud.toast(`坐高铁到了 ${st.name}`);
               },
             })),
             { label: '看看地图', onClick: () => { hud.close(); onMap?.(); } },
@@ -868,6 +888,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
         ]);
         break;
       case 'gather':
+        onAnimate?.('gather', 1.0);
         if (Math.random() < 0.75 + state.luck * 0.05) {
           add('flower', 1);
           hud.toast('采到一朵野花');
@@ -877,6 +898,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
         state.stamina = Math.min(100, state.stamina + 12);
         state.minutes += 10;
         syncStats();
+        onAnimate?.('cheer', 1.45);
         hud.toast(['荡了一会儿秋千，风从耳边过去（体力 +12）', '从滑梯上溜下来，裙子沾了点沙（体力 +12）', '转了几圈旋转木马，有点晕（体力 +12）'][Math.floor(Math.random() * 3)]);
         break;
       case 'home':
@@ -914,6 +936,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
           state.hunger = Math.min(100, state.hunger + 45);
           syncStats();
           onSit?.(it);
+          onAnimate?.('eat', 1.4);
           hud.toast('坐下来吃完了，很满足');
         } else if (it.seat) {
           onSit?.(it);
@@ -926,12 +949,14 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
         state.stamina = 100;
         state.hunger = Math.max(6, state.hunger - 14);
         syncStats();
+        onAnimate?.('sleep', 1.8);
         hud.toast(`睡到第二天早上（第 ${state.day} 天）`);
         break;
       case 'desk':
         state.stamina = Math.min(100, state.stamina + 4);
         syncStats();
         if (it.seat) onSit?.(it);
+        onAnimate?.('read', 1.5);
         hud.open('书房', '<p>桌上摊着一本手绘背景的画册，边角被翻得起了毛。</p><p class="dim">「颜色要按颜料去调，不要按光去调。」</p>', [
           { label: '合上', onClick: () => hud.close() },
         ]);
@@ -940,9 +965,11 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
         state.stamina = Math.min(100, state.stamina + 20);
         state.hunger = Math.max(0, state.hunger - 4);
         syncStats();
+        onAnimate?.('cheer', 1.25);
         hud.toast('洗了个热水澡，整个人都松了（体力 +20）');
         break;
       default:
+        onAnimate?.('wave', 1.0);
         hud.toast(it.name);
     }
   };
@@ -1038,6 +1065,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
         take(key, 1);
         state.hunger = Math.min(100, state.hunger + c.food);
         syncStats();
+        onAnimate?.('eat', 1.3);
         return `吃掉了一个${c.name}，饱食 +${c.food}`;
       }
       if (key === 'pearl') return '圆圆的，亮晶晶的。舍不得卖';
@@ -1048,6 +1076,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
         state.hunger = Math.min(100, state.hunger + FOOD[key]);
         if (key === 'tea') state.stamina = Math.min(100, state.stamina + 15);
         syncStats();
+        onAnimate?.('eat', 1.3);
         return `吃掉了 ${ITEMS[key].icon}${ITEMS[key].name}，饱食 +${FOOD[key]}`;
       }
       return '';

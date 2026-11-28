@@ -676,7 +676,7 @@ export function grandStation(b, o) {
       lamp(b, p[0], p[2], rotY);
     }
   }
-  // 背面：站台 + 雨棚（80 m）
+  // 背面：站台 + 雨棚（80 m）+ 候车长椅
   const pz = -(zf + 6);
   const pl = o.platformLen ?? 80;
   put(box(pl, pY + 1.2, 6), 'mason#2', 0, (pY - 1.2) / 2, pz);
@@ -684,9 +684,19 @@ export function grandStation(b, o) {
   put(box(pl, 0.3, 7.4), 'roof#9', 0, pY + 4.7, pz);
   put(box(pl, 0.4, 0.5), 'wall#6', 0, pY + 4.4, pz + 1.6);
   for (let i = 0; i < 9; i++) put(cyl(0.22, 4.5, 8), 'wall#6', -pl / 2 + 2 + ((pl - 4) * i) / 8, pY + 2.25, pz + 1.6);
+  const benches = [];
+  for (const bx of [-10, 10]) {
+    put(box(4.6, 0.12, 0.7), 'wood#1', bx, pY + 0.5, pz + 1.0);
+    for (const lx of [-1.8, 1.8]) put(box(0.12, 0.5, 0.6), 'wood#2', bx + lx, pY + 0.25, pz + 1.0);
+    const bp = at(bx, pY + 0.48, pz + 1.0);
+    benches.push({ x: bp[0], y: bp[1], z: bp[2], yaw: rotY + PI });
+  }
   hit(0, 0, L / 2 + 0.4, zf + 0.4, h + 2);
   for (const sx of [-1, 1]) hit(sx * (L / 2 + ww / 2), 0, ww / 2 + 0.4, wd / 2 + 0.4, W + 2);
-  return { rotY, w, d, h, platform: at(0, pY, pz) };
+  // 站台与站台旁高架轨面都可站立，不会踩空掉下去
+  hit(0, pz, pl / 2, 3.1, pY);
+  hit(0, pz - 5.5, pl / 2, 4.2, pY - 0.25);
+  return { rotY, w, d, h, platform: at(0, pY, pz), benches };
 }
 
 // ---- 12 乡村小站 -----------------------------------------------------------------------------------------------
@@ -743,9 +753,10 @@ export function smallStation(b, o) {
     const hh = ph * t * 0.96;
     for (const dz of [-0.8, 0.8]) put(box(0.16, hh + 1.0, 0.16), 'wood#2', lx, (hh + 1.0) / 2 - 0.05, sz + dz);
   }
-  // 楼梯一级一级都踩得住，上到站台；站台是一整块能站的板
+  // 楼梯一级一级都踩得住，上到站台；站台与紧邻的高架轨面都可站立，不会掉下去
   for (let i = 0; i < n; i++) hit(run / 2 - 0.5 * (i + 0.5), sz, 0.29, 0.85, rise * (i + 1));
-  hit(0, pz, 17, 2.5, ph);
+  hit(0, pz, 17, 2.6, ph);
+  hit(0, 0, 18, 4.2, ph - 0.3);
   // 售票小屋（地面，楼梯脚旁）
   const hx = o.houseX ?? run / 2 + 4.2;
   const hz = o.houseZ ?? 14;
@@ -761,7 +772,8 @@ export function smallStation(b, o) {
   put(box(4.0, 0.9, 0.12), 'wood#2', hx, 3.2, hz + 2.6);
   b.addSign(name, at(hx, 3.2, hz + 2.68), rotY, { w: 3.6, h: 0.72, bg: '#1f4b7a', fg: '#ffffff' });
   hit(hx, hz, 3.3, 2.8, 5.6);
-  return { rotY, platform: at(0, ph, pz), platformH: ph, stairRun: run };
+  const bp = at(sx0, ph + 0.48, pz + 0.9);
+  return { rotY, platform: at(0, ph, pz), platformH: ph, stairRun: run, bench: { x: bp[0], y: bp[1], z: bp[2], yaw: rotY + PI } };
 }
 
 // ---- 13 风车 / 14 水磨坊 ---------------------------------------------------------------------------------------
@@ -1342,14 +1354,13 @@ function carParts(nose) {
  */
 export function createTrain(shared, path, opts = {}) {
   // side：偏到哪一股道上（米，顺着行驶方向的右手边为正）；dir：一开始往哪头开（1 / -1）；from：一开始停在哪头（0 起点 / 1 终点）；stripe：腰线的颜色
-  const { cars = 5, speed = 34, stops = [], dwell = 8, loop = false, accel = 1.2, side = 0, from = 0, stripe = null } = opts;
+  const { cars = 5, speed = 34, stops = [], dwell = 8, loop = false, accel = 1.2, side = 0, from = 0, stripe = null, assets = null } = opts;
   const group = new THREE.Group();
   const sp = sampler(path);
-  const GAP = 25;
+  const GAP = 24.5;
   const WHITE = [0.95, 0.96, 0.97];
   const BLUE = stripe ?? [0.2, 0.4, 0.72];
   const DARK = [0.14, 0.17, 0.24];
-  // 几何体：车头 / 中间 / 车尾 三种，材质共用一套
   const mats = {
     white: paintMaterial(shared, { lit: WHITE, shade: WHITE.map((c) => c * 0.62), kind: 'flat' }),
     blue: paintMaterial(shared, { lit: BLUE, shade: BLUE.map((c) => c * 0.62), kind: 'flat' }),
@@ -1367,14 +1378,22 @@ export function createTrain(shared, path, opts = {}) {
     return geoCache.get(nose);
   };
   const list = [];
+  const allDoors = [];
   for (let i = 0; i < cars; i++) {
     const nose = cars === 1 ? 1 : i === 0 ? 1 : i === cars - 1 ? -1 : 0;
-    const g = geosFor(nose);
+    const hsrKind = nose > 0 ? 'HSR_Head' : nose < 0 ? 'HSR_Tail' : 'HSR_Mid';
+    const custom = assets?.hasHsr ? assets.createHsrCar(hsrKind) : null;
     const car = new THREE.Group();
     car.rotation.order = 'YXZ';
-    for (const m of [new THREE.Mesh(g.white, mats.white), new THREE.Mesh(g.blue, mats.blue), new THREE.Mesh(g.dark, mats.dark), new THREE.Mesh(g.white, mats.ink)]) {
-      m.frustumCulled = false;
-      car.add(m);
+    if (custom) {
+      car.add(custom.group);
+      allDoors.push(...custom.doors);
+    } else {
+      const g = geosFor(nose);
+      for (const m of [new THREE.Mesh(g.white, mats.white), new THREE.Mesh(g.blue, mats.blue), new THREE.Mesh(g.dark, mats.dark), new THREE.Mesh(g.white, mats.ink)]) {
+        m.frustumCulled = false;
+        car.add(m);
+      }
     }
     group.add(car);
     list.push(car);
@@ -1383,11 +1402,13 @@ export function createTrain(shared, path, opts = {}) {
   const tail = (cars - 1) * GAP;
   const sMin = Math.min(sp.total, tail + 12);
   const sMax = Math.max(sMin, sp.total - 12);
-  const halts = stops.map((s) => Math.min(sMax, Math.max(sMin, s + tail / 2))).sort((a, c) => a - c);
+  const halts = stops.map((st) => Math.min(sMax, Math.max(sMin, st + tail / 2))).sort((a, c) => a - c);
   let s = from ? sMax : Math.min(sMax, Math.max(sMin, opts.start != null ? opts.start + tail / 2 : sMin));
   let v = 0;
   let dir = opts.dir ?? (from ? -1 : 1);
   let wait = 0;
+  let doorOpen = 0;
+  let holdDoors = false;
   const lead = [0, 0, 0];
   const place = () => {
     for (let i = 0; i < cars; i++) {
@@ -1398,9 +1419,8 @@ export function createTrain(shared, path, opts = {}) {
       const dy = p1[1] - p0[1];
       const dz = p1[2] - p0[2];
       const car = list[i];
-      // （两股道：往线路方向的右手边偏 side 米）
       const hl = Math.hypot(dx, dz) || 1;
-      car.position.set((p0[0] + p1[0]) / 2 - (dz / hl) * side, (p0[1] + p1[1]) / 2 + 0.25, (p0[2] + p1[2]) / 2 + (dx / hl) * side);
+      car.position.set((p0[0] + p1[0]) / 2 - (dz / hl) * side, (p0[1] + p1[1]) / 2 + 0.12, (p0[2] + p1[2]) / 2 + (dx / hl) * side);
       if (dx * dx + dz * dz > 1e-6) {
         car.rotation.y = Math.atan2(dx, dz);
         car.rotation.x = -Math.atan2(dy, Math.hypot(dx, dz));
@@ -1412,6 +1432,14 @@ export function createTrain(shared, path, opts = {}) {
       }
     }
   };
+  const animateDoors = (dt, shouldOpen) => {
+    const want = shouldOpen ? 1 : 0;
+    doorOpen += (want - doorOpen) * Math.min(1, dt * 5);
+    for (const d of allDoors) {
+      d.mesh.position.z = d.baseZ + 1.15 * doorOpen;
+      d.mesh.position.x = d.baseX + d.side * 0.08 * doorOpen;
+    }
+  };
   /** 前方（按行驶方向）最近的停靠点；没有就是线路尽头。 */
   const target = () => {
     let best = dir > 0 ? sMax : sMin;
@@ -1421,16 +1449,64 @@ export function createTrain(shared, path, opts = {}) {
   place();
   return {
     group,
+    cars: list,
+    halts,
+    /** 让列车从合适距离进站（候车时不必干等好几分钟） */
+    approachStop(stopMidS, leadDist = 72) {
+      const targetS = Math.min(sMax, Math.max(sMin, stopMidS + tail / 2));
+      if (Math.abs(s - targetS) < 2) {
+        wait = Math.max(wait, dwell);
+        holdDoors = true;
+        return;
+      }
+      if (Math.abs(s - targetS) > leadDist) {
+        // 把列车调到距离站台 leadDist 米处，平顺进站减速停靠（约 4~5 秒进站）
+        const d = targetS - s >= 0 ? 1 : -1;
+        dir = d;
+        s = Math.min(sMax, Math.max(sMin, targetS - d * leadDist));
+        v = Math.min(speed * 0.9, Math.sqrt(2 * accel * leadDist) + 1.5);
+        wait = 0;
+        place();
+      }
+      holdDoors = true;
+    },
+    /** 乘客已上车：关门发车前往指定站点 */
+    departToward(destMidS) {
+      holdDoors = false;
+      wait = 0;
+      const targetS = Math.min(sMax, Math.max(sMin, destMidS + tail / 2));
+      dir = targetS >= s ? 1 : -1;
+      v = Math.max(v, 3.0);
+    },
+    setHoldDoors(on) {
+      holdDoors = !!on;
+    },
+    /** 列车是否已停稳在指定站台 */
+    isStoppedAt(stopMidS, tol = 4) {
+      const targetS = Math.min(sMax, Math.max(sMin, stopMidS + tail / 2));
+      return wait > 0 && Math.abs(s - targetS) < tol;
+    },
+    /** 获取车厢内靠窗座位的世界坐标与朝向 */
+    seatWorld(carIdx = 1, outPos = new THREE.Vector3(), outYaw = { value: 0 }) {
+      const car = list[Math.min(list.length - 1, Math.max(0, carIdx))];
+      if (!car) return null;
+      car.updateMatrixWorld(true);
+      // 车厢内部右侧靠窗座位（高度约地板 0.62 + 坐垫 0.42）
+      outPos.set(0.92, 0.85, 2.2).applyMatrix4(car.matrixWorld);
+      outYaw.value = car.rotation.y + (dir < 0 ? Math.PI : 0);
+      return outPos;
+    },
     update(dt) {
       dt = Math.min(dt, 0.1);
       if (sMax - sMin < 1) return;
       if (wait > 0) {
-        wait -= dt;
+        if (!holdDoors) wait -= dt;
+        animateDoors(dt, true);
         return;
       }
+      animateDoors(dt, false);
       const t = target();
       const dist = (t - s) * dir;
-      // 加速有限，离停靠点近了按 v² = 2·a·d 减速
       v = Math.max(0.5, Math.min(v + accel * dt, speed, Math.sqrt(2 * accel * Math.max(0, dist))));
       const stepLen = v * dt;
       if (stepLen >= dist - 0.02) {
@@ -1452,6 +1528,9 @@ export function createTrain(shared, path, opts = {}) {
     },
     get s() {
       return s;
+    },
+    get doorOpen() {
+      return doorOpen;
     },
   };
 }

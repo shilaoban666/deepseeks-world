@@ -10,20 +10,25 @@ import { paintMaterial, outlineMaterial } from './paint.js';
 import { SKI_COURSE, SNOW_LIFT } from './activities.js';
 
 const GRAVITY = 16;
-const JUMP = 5.6;
+const JUMP = 5.8;
+const JUMP_DOUBLE = 6.2;
 
 /**
  * @param o.whale 主角；o.mover 走路；o.cam 镜头；o.game 游戏状态（体力、钓鱼）；o.hud 界面
  * @param o.woods 会长的树（爬树用）；o.particles 粒子；o.field 草地（点火）；o.plan 地图函数
  * @param o.weather 天气（下雨不能晒太阳、点不着火）；o.plants 物件图集（水下的鱼）；o.shared uniforms
  */
-export function createActions({ rig = null, whale, mover, cam, game, hud, woods, particles, field, plan, weather, plants, shared, scene }) {
+export function createActions({ rig = null, whale, mover, cam, game, hud, woods, particles, field, plan, weather, plants, shared, scene, vehicleAssets = null }) {
   const s = whale.state;
   const st = game.state;
   let mode = 'ground';
   let air = false;
+  let jumpCount = 0;
+  let doubleJumpTimer = 0;
+  let prevGroundY = s.y;
   let tree = null; // 正在爬的树 { x, z, top }
   let oxygen = 100;
+  const handPos = new THREE.Vector3();
   let dustAcc = 0;
   let rippleAcc = 0;
   let bubbleAcc = 0;
@@ -34,12 +39,15 @@ export function createActions({ rig = null, whale, mover, cam, game, hud, woods,
   let kiteLine = null;
   let kitePhase = 0;
   {
-    const shape = new THREE.Shape();
-    shape.moveTo(0, 0.7); shape.lineTo(0.55, 0); shape.lineTo(0, -0.7); shape.lineTo(-0.55, 0); shape.closePath();
-    kite = new THREE.Mesh(new THREE.ShapeGeometry(shape), new THREE.MeshBasicMaterial({ color: 0xe87961, side: THREE.DoubleSide, transparent: true, opacity: 0.92 }));
+    kite = vehicleAssets?.createKite?.() ?? null;
+    if (!kite) {
+      const shape = new THREE.Shape();
+      shape.moveTo(0, 0.7); shape.lineTo(0.55, 0); shape.lineTo(0, -0.7); shape.lineTo(-0.55, 0); shape.closePath();
+      kite = new THREE.Mesh(new THREE.ShapeGeometry(shape), new THREE.MeshBasicMaterial({ color: 0xe87961, side: THREE.DoubleSide, transparent: true, opacity: 0.92 }));
+    }
     kite.visible = false; scene.add(kite);
     const lg = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
-    kiteLine = new THREE.Line(lg, new THREE.LineBasicMaterial({ color: 0xf5e8ca, transparent: true, opacity: 0.8 }));
+    kiteLine = new THREE.Line(lg, new THREE.LineBasicMaterial({ color: 0xf5e8ca, transparent: true, opacity: 0.85 }));
     kiteLine.visible = false; scene.add(kiteLine);
   }
 
@@ -535,8 +543,9 @@ export function createActions({ rig = null, whale, mover, cam, game, hud, woods,
       const water = mode === 'ground' ? waterAhead() : null;
       const raining = weather && (weather.info.rain > 0.2 || weather.info.snow > 0.3);
       return [
+        { id: 'fastWalk', key: 'Z', label: mover.fastWalk ? '快走：开' : '快走', on: mode === 'ground' },
         { id: 'run', key: 'Shift', label: '跑', on: mode === 'ground' && st.stamina > 15 },
-        { id: 'jump', key: 'Space', label: mode === 'dive' ? '上浮' : mode === 'climb' ? '跳下' : '跳', on: (mode === 'ground' && !air) || mode === 'dive' || mode === 'climb' || mode === 'swim' },
+        { id: 'jump', key: 'Space', label: mode === 'dive' ? '上浮' : mode === 'climb' ? '跳下' : air && jumpCount < 2 ? '二段跳' : '跳', on: (mode === 'ground' && (!air || jumpCount < 2)) || mode === 'dive' || mode === 'climb' || mode === 'swim' },
         { id: 'climb', key: 'F', label: mode === 'climb' ? '下树' : '爬树', on: !!t || mode === 'climb' },
         { id: 'dive', key: 'C', label: mode === 'dive' ? '上浮' : '潜水', on: mode === 'swim' || mode === 'dive' },
         { id: 'fish', key: 'E', label: '钓鱼', on: !!water && !raining },
@@ -574,6 +583,11 @@ export function createActions({ rig = null, whale, mover, cam, game, hud, woods,
           if (mode === 'ground' && !air && onSkiRun()) return startSki() || true;
           if (mode === 'swim' && plan.waterKind(s.x, s.z) === 'sea') return startSurf() || true;
           return false;
+        case 'fastWalk': {
+          const on = mover.toggleFastWalk?.();
+          hud.toast(on ? '快速行走：开（再按 Z 切回漫步）' : '切回正常行走');
+          return true;
+        }
         case 'jump':
           if (mode === 'surf') {
             if (surf.h > 0 || surf.v < 4) return true;
@@ -582,16 +596,43 @@ export function createActions({ rig = null, whale, mover, cam, game, hud, woods,
             return true;
           }
           if (mode === 'ski' || aboard) return true;
-          if (mode === 'ground' && !air) {
+          if ((mode === 'ground' || mode === 'kite') && !air) {
             air = true;
+            jumpCount = 1;
+            doubleJumpTimer = 0;
             s.vy = JUMP;
-            particles.dust(s.x, s.y, s.z, 3);
+            particles.dust(s.x, s.y, s.z, 4);
+            return true;
+          }
+          if ((mode === 'ground' || mode === 'kite') && air && jumpCount < 2) {
+            // 二段跳：空中轻盈旋身再跃一次 + 一圈清风微光粒子
+            jumpCount = 2;
+            doubleJumpTimer = 0.56;
+            s.vy = JUMP_DOUBLE;
+            for (let i = 0; i < 12; i++) {
+              const a = (i / 12) * Math.PI * 2;
+              particles.emit({
+                x: s.x + Math.cos(a) * 0.28,
+                y: s.y + 0.16,
+                z: s.z + Math.sin(a) * 0.28,
+                vx: Math.cos(a) * 2.1,
+                vy: -0.3 + Math.random() * 0.6,
+                vz: Math.sin(a) * 2.1,
+                life: 0.48,
+                size: 0.09,
+                color: i % 2 ? [0.76, 0.92, 1.0] : [1.0, 0.96, 0.84],
+                alpha: 0.88,
+                gravity: 1.5,
+                drag: 2.2,
+              });
+            }
             return true;
           }
           if (mode === 'climb') {
             const [fx, fz] = forward();
             mode = 'ground';
             air = true;
+            jumpCount = 1;
             s.vy = 2.5;
             s.x -= fx * 0.8;
             s.z -= fz * 0.8;
@@ -667,6 +708,7 @@ export function createActions({ rig = null, whale, mover, cam, game, hud, woods,
           const x = s.x + fx * 2.2;
           const z = s.z + fz * 2.2;
           const lit = field.ignite(x, z, 0.7);
+          whale.trigger?.('fire', 0.95);
           if (lit) {
             hud.toast('草烧起来了！顺着风在蔓延——离远一点');
             for (let i = 0; i < 10; i++) particles.emit({ x, y: plan.heightAt(x, z) + 0.2, z, vx: (Math.random() - 0.5) * 2, vy: 1 + Math.random() * 2, vz: (Math.random() - 0.5) * 2, life: 0.8, size: 0.06, color: [4, 2.4, 1], alpha: 1, gravity: 2 });
@@ -698,6 +740,7 @@ export function createActions({ rig = null, whale, mover, cam, game, hud, woods,
     /** 按键 → 动作 */
     handleKey(code) {
       if (code === 'Space') return actions.act('jump');
+      if (code === 'KeyZ') return actions.act('fastWalk');
       if (code === 'KeyF') return actions.act('climb');
       if (code === 'KeyC' || code === 'ControlLeft') return actions.act('dive');
       if (code === 'KeyR') return actions.act('lie');
@@ -718,6 +761,7 @@ export function createActions({ rig = null, whale, mover, cam, game, hud, woods,
       if (fishing && !wasFishing) {
         mode = 'fish';
         if (!floatAt) floatAt = waterAhead();
+        whale.trigger?.('fish_cast', 0.68);
       }
       if (!fishing && wasFishing) {
         mode = aboard ? 'boat' : 'ground';
@@ -735,12 +779,33 @@ export function createActions({ rig = null, whale, mover, cam, game, hud, woods,
       let moving = false;
       let pose = null;
       let eye = 1.35;
+      let animCtx = {};
       const running = (keyDown('ShiftLeft') || keyDown('ShiftRight')) && st.stamina > 15;
+      if (doubleJumpTimer > 0) doubleJumpTimer = Math.max(0, doubleJumpTimer - dt);
 
       if (mode === 'ground' || mode === 'kite') {
-        // 乘坐交通工具时提高巡航速度，同时不再因体力下降而突然变慢。
-        const rideBoost = game.state.riding ? (game.state.riding.vehicle?.includes('boat') || game.state.riding.vehicle?.includes('canoe') || game.state.riding.vehicle?.includes('kayak') ? 1.3 : 1.65) : 1;
-        const moved = mover.step(dt, s, cam, (st.stamina > 15 ? 1 : 0.72) * rideBoost, true);
+        // 乘坐交通工具时按车型决定巡航速度与动作，不再因体力下降而突然变慢。
+        const rv = game.state.riding?.vehicle ?? '';
+        const isMotor = /^(car|truck|bus)$/.test(rv);
+        const isPush = /wheelbarrow|handcart/.test(rv);
+        const rideBoost = !game.state.riding
+          ? 1
+          : rv === 'car'
+            ? 2.45
+            : rv === 'bus'
+              ? 2.2
+              : rv === 'truck'
+                ? 2.05
+                : /scooter/.test(rv)
+                  ? 2.0
+                  : /oxcart|ox-cart/.test(rv)
+                    ? 1.35
+                    : isPush
+                      ? 1.15
+                      : /boat|canoe|kayak/.test(rv)
+                        ? 1.3
+                        : 1.85;
+        const moved = mover.step(dt, s, cam, (st.stamina > 15 ? 1 : 0.72) * rideBoost, true, st.stamina > 15);
         moving = moved.moved > 0.004;
         // 脚下：地面，或者踩得到的东西的顶（箱子、长椅、栈桥、台阶……）
         const terr = ground(s.x, s.z);
@@ -750,6 +815,7 @@ export function createActions({ rig = null, whale, mover, cam, game, hud, woods,
         // 走出了边：脚下空了就往下掉（小落差直接跟着地面走）
         if (!air && s.y > g + 0.5) {
           air = true;
+          jumpCount = Math.max(jumpCount, 1);
           s.vy = 0;
         }
         if (air) {
@@ -762,16 +828,22 @@ export function createActions({ rig = null, whale, mover, cam, game, hud, woods,
             if (s.y <= g) {
               s.y = g;
               air = false;
+              jumpCount = 0;
+              doubleJumpTimer = 0;
               const w = depthHere();
               if (w && w.depth > 0.3) particles.splash(s.x, w.level, s.z, 1);
               else particles.dust(s.x, g, s.z, 5);
             }
           }
-        } else s.y = g;
+        } else {
+          s.y = g;
+          jumpCount = 0;
+        }
         // 走进深水 → 游泳
         const w = onThing ? null : depthHere();
+        const wading = !!(w && w.depth > 0.15 && w.depth <= 1.0 && !air);
         if (w && w.depth > 1.0 && !air) enterSwim(w.level);
-        else if (w && w.depth > 0.15) {
+        else if (wading) {
           // 蹚水：脚下一圈圈涟漪
           rippleAcc += dt * (moving ? 6 : 0.8);
           if (rippleAcc > 1) {
@@ -779,7 +851,19 @@ export function createActions({ rig = null, whale, mover, cam, game, hud, woods,
             particles.ripple(s.x, w.level, s.z, 0.3, 1.2);
           }
         }
-        if (moving && running && !air) {
+        const [fx, fz] = forward();
+        const aheadG = Math.max(ground(s.x + fx * 0.42, s.z + fz * 0.42), mover.floorAt?.(s.x + fx * 0.42, s.z + fz * 0.42, s.y + 0.4) ?? -Infinity);
+        const onStairs = !air && moving && (Math.abs(aheadG - g) > 0.09 || (onThing && Math.abs(g - prevGroundY) > 0.015));
+        prevGroundY = g;
+
+        if (game.state.riding) {
+          const rv = game.state.riding.vehicle ?? '';
+          pose = /^(car|truck|bus)$/.test(rv) ? 'drive' : /wheelbarrow|handcart/.test(rv) ? 'push' : 'ride';
+        } else if (air) {
+          pose = doubleJumpTimer > 0 ? 'doubleJump' : s.vy > 0.4 ? 'jump' : 'fall';
+        } else if (onStairs) {
+          pose = 'stairs';
+        } else if (moving && running) {
           st.stamina = Math.max(0, st.stamina - dt * 7);
           dustAcc += dt;
           if (dustAcc > 0.14) {
@@ -787,8 +871,12 @@ export function createActions({ rig = null, whale, mover, cam, game, hud, woods,
             particles.dust(s.x, g, s.z, 2, plan.pavedAt?.(s.x, s.z) > 0.5 ? [0.8, 0.78, 0.72] : [0.62, 0.7, 0.42]);
           }
           pose = 'run';
+        } else if (moving && wading) {
+          pose = 'wade';
+        } else if (moving) {
+          pose = moved.gait === 'fastWalk' ? 'fastWalk' : 'walk';
         }
-        if (air) pose = 'air';
+        animCtx = { speed: moved.speed, air };
         if (mode === 'kite') {
           kitePhase += dt;
           const fx = Math.sin(s.yaw), fz = Math.cos(s.yaw);
@@ -796,8 +884,12 @@ export function createActions({ rig = null, whale, mover, cam, game, hud, woods,
           kite.position.set(s.x + fx * reach, s.y + 4.2 + Math.sin(kitePhase * 2.1) * 0.45, s.z + fz * reach);
           kite.rotation.set(0.25 * Math.sin(kitePhase), s.yaw, Math.sin(kitePhase * 1.7) * 0.18);
           const lp = kiteLine.geometry.attributes.position;
-          lp.setXYZ(0, s.x, s.y + 1.0, s.z); lp.setXYZ(1, kite.position.x, kite.position.y, kite.position.z); lp.needsUpdate = true;
-          pose = moving ? 'run' : null;
+          const hp = whale.getHandWorldPos?.('right', handPos);
+          if (hp) lp.setXYZ(0, hp.x, hp.y, hp.z);
+          else lp.setXYZ(0, s.x, s.y + 1.0, s.z);
+          lp.setXYZ(1, kite.position.x, kite.position.y, kite.position.z);
+          lp.needsUpdate = true;
+          if (!air) pose = 'kite';
         }
       } else if (mode === 'climb') {
         let dy = 0;
@@ -899,7 +991,9 @@ export function createActions({ rig = null, whale, mover, cam, game, hud, woods,
         }
         if (k.timed) k.time += dt;
         followCam(dt, 1.8);
-        moving = false;
+        moving = k.v > 0.5;
+        pose = 'ski';
+        animCtx = { speed: k.v, steer: turn, brake };
         eye = 1.3;
         if (along < SKI_COURSE.finishAlong) {
           if (k.timed) finishSki();
@@ -936,8 +1030,9 @@ export function createActions({ rig = null, whale, mover, cam, game, hud, woods,
           particles.ripple(s.x - fx * 0.9, a.level, s.z - fz * 0.9, 0.5, 1.7);
         }
         if (Math.abs(a.v) > 0.6) followCam(dt, 0.9);
-        moving = false;
-        pose = 'sit';
+        moving = Math.abs(row) > 0;
+        pose = 'boat';
+        animCtx = { speed: Math.abs(a.v), steer: turn };
         eye = 1.0;
       } else if (mode === 'surf') {
         // 冲浪：浪往岸上推，斜着走最快；背着浪走会慢下来，太慢就掉下去
@@ -1000,7 +1095,9 @@ export function createActions({ rig = null, whale, mover, cam, game, hud, woods,
           }
         }
         followCam(dt, 1.5);
-        moving = false;
+        moving = f.v > 0.5;
+        pose = 'surf';
+        animCtx = { speed: f.v, steer: turn, trick: f.h > 0 };
         eye = 1.3;
         const w = depthHere();
         if (!w || w.depth < 0.45) endSurf('beach');
@@ -1027,17 +1124,19 @@ export function createActions({ rig = null, whale, mover, cam, game, hud, woods,
       } else if (mode === 'fish') {
         if (aboard) drawBoat(dt);
         else s.groundY = s.y = ground(s.x, s.z);
-        pose = 'fish';
+        const bite = game.fishing?.phase === 'bite';
+        pose = bite ? 'fish_bite' : 'fish';
         if (floatAt) {
-          // 竿子从她手里斜着伸向水面，线垂到浮漂上；上钩的时候浮漂往下一沉一沉
+          // 竿子直接握在她 3D 右手骨骼上斜伸向水面，线垂到浮漂；上钩时连人带竿一起拉扯
           const [fx, fz] = forward();
-          rod.position.set(s.x + fx * 0.25, s.y + 0.55, s.z + fz * 0.25);
+          const hp = whale.getHandWorldPos?.('right', handPos);
+          if (hp) rod.position.copy(hp);
+          else rod.position.set(s.x + fx * 0.25, s.y + 0.55, s.z + fz * 0.25);
           const dir = new THREE.Vector3(floatAt.x - rod.position.x, 0, floatAt.z - rod.position.z).normalize();
-          dir.y = 0.75;
+          dir.y = bite ? 1.08 + Math.sin(performance.now() * 0.022) * 0.12 : 0.78;
           rod.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
           rod.updateMatrixWorld(true);
           const tip = new THREE.Vector3(0, 2.2, 0).applyMatrix4(rod.matrixWorld);
-          const bite = game.fishing?.phase === 'bite';
           const t = performance.now() * 0.001;
           const dip = bite ? -0.09 + Math.sin(t * 22) * 0.05 : Math.sin(t * 1.6) * 0.012;
           float.position.set(floatAt.x, floatAt.y + dip, floatAt.z);
@@ -1075,7 +1174,7 @@ export function createActions({ rig = null, whale, mover, cam, game, hud, woods,
           sc.at.needsUpdate = true;
         }
       }
-      return { moving, pose, eye };
+      return { moving, pose, eye, animCtx };
     },
     /** 出门/进门的时候把状态归零 */
     reset() {
@@ -1087,6 +1186,8 @@ export function createActions({ rig = null, whale, mover, cam, game, hud, woods,
       hideBoats();
       kite.visible = kiteLine.visible = false;
       air = false;
+      jumpCount = 0;
+      doubleJumpTimer = 0;
       tree = null;
       towel.visible = false;
       rod.visible = line.visible = float.visible = false;

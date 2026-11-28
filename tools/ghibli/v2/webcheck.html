@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>models2 网页端验收</title>
+    <style>
+      body { margin: 0; background: #1b2430; color: #d8e2ea; font: 13px/1.6 ui-monospace, monospace; }
+      canvas { display: block; }
+      #log { position: fixed; left: 12px; top: 12px; white-space: pre; }
+    </style>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "/node_modules/three/build/three.module.js",
+          "three/addons/": "/node_modules/three/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="log">loading…</div>
+    <script type="module">
+      import * as THREE from 'three';
+      import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+      const log = (s) => { document.getElementById('log').textContent = s; };
+      const renderer = new THREE.WebGLRenderer({ antialias: false });
+      renderer.setSize(320, 200);
+      document.body.appendChild(renderer.domElement);
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(50, 1.6, 0.1, 2000);
+      camera.position.set(0, 6, 12);
+      scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1));
+
+      const loader = new GLTFLoader();
+      const out = [];
+      let done = 0;
+      const q = new URLSearchParams(location.search);
+      const manPath = q.get('manifest') || '/public/models2/_manifest.json';
+      const base = q.get('base') || '/public/';
+
+      const manifest = await (await fetch(manPath)).json();
+      for (const it of manifest.items) {
+        if (!it.glb) continue;
+        const url = base + it.glb;
+        const rec = { id: it.id, cat: it.cat };
+        try {
+          const gltf = await loader.loadAsync(url);
+          let meshes = 0, tris = 0, mats = new Set();
+          const box = new THREE.Box3();
+          gltf.scene.updateMatrixWorld(true);
+          gltf.scene.traverse((o) => {
+            if (o.isMesh) {
+              meshes++;
+              const g = o.geometry;
+              tris += g.index ? g.index.count / 3 : g.attributes.position.count / 3;
+              mats.add(o.material.name || '(unnamed)');
+              if (!g.attributes.uv) rec.no_uv = true;
+              box.expandByObject(o);
+            }
+          });
+          const size = new THREE.Vector3();
+          box.getSize(size);
+          rec.meshes = meshes;
+          rec.tris = Math.round(tris);
+          rec.materials = mats.size;
+          rec.size = [size.x, size.y, size.z].map((v) => Math.round(v * 100) / 100);
+          rec.ok = meshes > 0 && tris > 0;
+          scene.clear();
+          scene.add(gltf.scene);
+          gltf.scene.rotation.y = Math.PI * 0.25;
+          renderer.render(scene, camera);
+          rec.gl_error = renderer.getContext().getError();
+          rec.ok = rec.ok && rec.gl_error === 0;
+        } catch (e) {
+          rec.ok = false;
+          rec.error = String(e && e.message ? e.message : e).slice(0, 300);
+        }
+        out.push(rec);
+        done++;
+        if (done % 50 === 0) log(`${done}/${manifest.items.length}  ${rec.ok ? 'OK ' : 'ERR'} ${rec.id}`);
+      }
+      window.__results = out;
+      window.__done = true;
+      log(`DONE ${done}`);
+    </script>
+  </body>
+</html>

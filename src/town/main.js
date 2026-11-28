@@ -10,6 +10,8 @@ import { loadTownModels } from './models.js';
 import { loadKitManifest, createKitHouses } from './kit.js';
 import { createInterior } from './interior.js';
 import { loadWhalechan, createWhalechan, createCamera, createMover } from './player.js';
+import { PET_EMOTES } from './whale_anim.js';
+import { loadVehicleAssets } from './vehicles.js';
 import { createHud, bakeMinimap, createMinimap } from './ui.js';
 import { createGame } from './interactions.js';
 import { createFarGround } from './props.js';
@@ -125,13 +127,8 @@ if (TIERS.includes(asked)) {
   const saved = safeStore.get('tg-quality');
   quality = TIERS.includes(saved) ? saved : gpu.quality;
   qualityFrom = TIERS.includes(saved) ? '上次选的' : '自动';
-  // 上次启动到一半就没了下文：降一档再来
-  const crashed = safeStore.get('tg-starting');
-  if (TIERS.includes(crashed) && TIERS.indexOf(crashed) <= TIERS.indexOf(quality) && quality !== 'low') {
-    quality = TIERS[Math.max(0, TIERS.indexOf(crashed) - 1)];
-    qualityFrom = '上次没启动成功，自动降档';
-    safeStore.set('tg-quality', null);
-  }
+  // 清理旧的加载中断标记，避免刷新页面时被误降到无抗锯齿的 low 档导致画面闪烁发糊
+  safeStore.set('tg-starting', null);
 }
 safeStore.set('tg-starting', quality);
 const lite = quality === 'low';
@@ -407,6 +404,8 @@ if (!lite && params.get('kit') !== '0') {
     console.warn('房屋套件读不到，照旧画', e);
   }
 }
+await setProgress(0.49, '正在打磨载具与高铁…');
+const vehicleAssets = await loadVehicleAssets(field.uniforms, './vehicles/');
 const city = createCity(field.uniforms, field, {
   plants,
   kit,
@@ -417,6 +416,7 @@ const city = createCity(field.uniforms, field, {
   treeNear: high ? 150 : medium ? 110 : 70,
   treeFar: high ? 760 : medium ? 560 : 340,
   density: high ? 1 : medium ? 0.85 : 0.6,
+  vehicleAssets,
 });
 scene.add(city.group);
 if (city.modelSlots.length) {
@@ -429,7 +429,8 @@ if (city.modelSlots.length) {
   }
 }
 let rig = null; // 会动的模型（车、船）
-let ridden = null; // 正骑着的那一件 { model, it }
+let ridden = null; // 正骑着的那一件 { model, it, mesh }
+let railTrip = null; // 高铁乘车状态 { phase: 'waiting' | 'riding', from, to, train, arrivedAt }
 if (kit && city.kitHouses.length) {
   try {
     const houses = await timed('kit', createKitHouses(field.uniforms, kit, city.kitHouses, plan.heightAt));
@@ -561,32 +562,72 @@ const game = createGame({
     if (st.exit) whale.setPos(st.exit[0], st.exit[1]);
     else whale.setPos(st.x + 1, st.z - 3);
   },
+  onBookRail(from, to) {
+    if (!from || !to || !city.train) {
+      if (to?.exit) whale.setPos(to.exit[0], to.exit[1]);
+      return;
+    }
+    if (game.state.riding) {
+      game.state.riding = null;
+      game.interact({ kind: 'vehicle', id: ridden?.it?.id, name: ridden?.it?.name, model: ridden?.model });
+    }
+    actions?.reset();
+    // 站到候车展台（若还在地面售票厅，自动扶上站台）
+    if (from.platform) {
+      const dx = whale.state.x - from.platform[0];
+      const dz = whale.state.z - from.platform[2];
+      if (Math.hypot(dx, dz) > 16 || Math.abs(whale.state.y - from.platform[1]) > 1.5) {
+        whale.setPos(from.platform[0], from.platform[2]);
+        whale.state.y = whale.state.groundY = from.platform[1];
+      }
+    }
+    city.train.approachStop(from.stopMidS, 105);
+    railTrip = { phase: 'waiting', from, to, train: city.train, arrivedAt: 0 };
+    hud.toast(`已购前往 ${to.name} 的车票！可在站台长椅坐下休息，高铁即将进站…`, 4200);
+  },
   onRide(vehicle, it) {
-    // 交通工具状态保存在 game.state 中；这里让相机轻微拉远，保证骑乘时画面舒展。
-    cam.want = vehicle ? Math.max(cam.want, 9.5) : Math.min(cam.want, 7.5);
-    // 骑的是地上那一件模型：上车时它的碰撞盒让开，跟着人走；下车时停在脚边，人站到旁边
+    // 交通工具状态保存在 game.state 中；这里让相机轻微拉远，保证骑乘/驾驶时画面舒展。
+    const rv = it?.vehicle ?? '';
+    const isBig = /^(car|truck|bus)$/.test(rv);
+    cam.want = vehicle ? Math.max(cam.want, isBig ? 10.8 : 9.5) : Math.min(cam.want, 7.5);
     const model = it?.model;
-    if (!rig || !model?.slot) return;
     const st = whale.state;
     if (vehicle) {
-      ridden = { model, it };
-      if (model.col) model.col.off = true;
-      st.lift = /bicycle|bike|scooter/.test(it.vehicle) ? 0.42 : 0.5;
+      if (seated) {
+        seated = null;
+        whale.group.visible = true;
+      }
+      // 隐藏原本的静态实例，换成 Blender 精细载具模型跟着主角移动
+      if (rig && model?.slot) {
+        rig.move(model, 0, -999, 0, 0);
+        if (model.col) model.col.off = true;
+      }
+      const mesh = vehicleAssets.createVehicle(rv, it?.accent ?? null);
+      if (mesh) scene.add(mesh);
+      ridden = { model, it, mesh };
+      // 按 Blender 精模座椅高度精确匹配（零穿模）
+      st.lift = rv === 'bus' ? 0.98 : rv === 'truck' ? 0.50 : rv === 'car' ? 0.45 : /oxcart|ox-cart/.test(rv) ? 0.52 : /wheelbarrow|handcart/.test(rv) ? 0 : /bicycle|bike|scooter/.test(rv) ? 0.44 : 0.45;
     } else {
+      if (ridden?.mesh) scene.remove(ridden.mesh);
       ridden = null;
       st.lift = 0;
       const gy = Math.max(plan.walkAt(st.x, st.z), mover.floorAt(st.x, st.z, st.y));
-      rig.move(model, st.x, gy, st.z, st.yaw);
-      it.x = st.x;
-      it.z = st.z;
-      if (model.col) Object.assign(model.col, { x: st.x, z: st.z, c: Math.cos(st.yaw), s: Math.sin(st.yaw), ty: undefined, base: gy, off: false });
-      mover.dirty();
-      st.x += Math.cos(st.yaw) * 0.95;
-      st.z -= Math.sin(st.yaw) * 0.95;
+      if (rig && model?.slot) {
+        rig.move(model, st.x, gy, st.z, st.yaw);
+        it.x = st.x;
+        it.z = st.z;
+        if (model.col) Object.assign(model.col, { x: st.x, z: st.z, c: Math.cos(st.yaw), s: Math.sin(st.yaw), ty: undefined, base: gy, off: false });
+        mover.dirty();
+      }
+      st.x += Math.cos(st.yaw) * 1.1;
+      st.z -= Math.sin(st.yaw) * 1.1;
     }
   },
   onMap() {
     showMap(1);
+  },
+  onAnimate(name, dur) {
+    whale.trigger?.(name, dur);
   },
   onDoor(enter) {
     actions?.reset();
@@ -599,6 +640,7 @@ const game = createGame({
       seated = null;
       scene.remove(whale.group);
       indoorScene.add(whale.group);
+      whale.setIndoor?.(true);
       // 站在玄关，面朝屋里（不是站在客厅中间）
       whale.setPos(interior.spawn.x, interior.spawn.z);
       whale.state.y = 0;
@@ -613,6 +655,7 @@ const game = createGame({
       game.state.indoor = false;
       indoorScene.remove(whale.group);
       scene.add(whale.group);
+      whale.setIndoor?.(false);
       // 出门站在门口，不在屋子正中间
       whale.setPos(outdoorDoor.x, outdoorDoor.z);
       whale.state.yaw = 0;
@@ -624,18 +667,20 @@ const game = createGame({
     whale.group.visible = true;
     minimap.setInteractables(indoor ? interior.interactables : city.interactables);
   },
-  // 坐下：人挪到座位上（镜头还是那个俯看的镜头）
+  // 坐下：人挪到座位上（支持室内家具与室外/站台长椅）
   onSit(it) {
     if (!it?.seat) return;
     const seat = it.seat;
-    seated = { x: seat.x, z: seat.z, yaw: seat.yaw, kind: it.kind };
+    const sy = seat.y ?? (indoor ? (it.kind === 'sofa' ? 0.42 : it.kind === 'bed' ? 0.55 : 0.4) : plan.walkAt(seat.x, seat.z) + 0.44);
+    seated = { x: seat.x, y: sy, z: seat.z, yaw: seat.yaw, kind: it.kind, indoor };
     whale.setPos(seat.x, seat.z);
-    whale.state.y = 0;
+    whale.state.y = sy;
     whale.state.yaw = seat.yaw;
+    whale.state.visualYaw = seat.yaw;
     if (it.kind === 'sofa') {
       interior.tv.set(true);
       hud.toast('坐下了。电视开着——E 起身');
-    } else hud.toast('坐下了。E 起身');
+    } else hud.toast(railTrip?.phase === 'waiting' ? '坐在站台长椅上候车……（移动或按 E 起身）' : '坐下了。E 起身');
   },
   // 电视：开 / 关
   onTv() {
@@ -697,10 +742,20 @@ scene.add(glow.group);
 /** 从座位上站起来 */
 const standUp = () => {
   if (!seated) return false;
+  const was = seated;
   seated = null;
   whale.group.visible = true;
-  // 往座位后面让一点，别卡在沙发里
-  whale.setPos(whale.state.x, whale.state.z - 0.6);
+  if (was.indoor) {
+    whale.setPos(whale.state.x, whale.state.z - 0.6);
+    whale.state.y = 0;
+  } else {
+    // 室外长椅：往前迈一步站到地面/站台上
+    const nx = was.x + Math.sin(was.yaw) * 0.65;
+    const nz = was.z + Math.cos(was.yaw) * 0.65;
+    whale.state.x = nx;
+    whale.state.z = nz;
+    whale.state.y = Math.max(plan.walkAt(nx, nz), mover.floorAt(nx, nz, was.y) ?? -Infinity);
+  }
   hud.toast('起身了');
   return true;
 };
@@ -883,7 +938,7 @@ const findNearest = () => {
 }
 
 // ---- 动作 ------------------------------------------------------------------------------------------------------
-actions = createActions({ rig, whale, mover, cam, game, hud, woods: city.woods, particles, field, plan, weather, plants, shared: field.uniforms, scene });
+actions = createActions({ rig, whale, mover, cam, game, hud, woods: city.woods, particles, field, plan, weather, plants, shared: field.uniforms, scene, vehicleAssets });
 const panels = createPanels({
   fishSprites,
   actions,
@@ -938,10 +993,40 @@ const photo = createPhoto({
   },
 });
 
+const boardRail = () => {
+  if (!railTrip || railTrip.phase !== 'waiting') return false;
+  if (!railTrip.train.isStoppedAt(railTrip.from.stopMidS)) {
+    hud.toast('高铁还在进站途中，请稍候…');
+    return true;
+  }
+  if (seated) {
+    seated = null;
+    whale.group.visible = true;
+  }
+  railTrip.phase = 'riding';
+  railTrip.arrivedAt = 0;
+  railTrip.train.departToward(railTrip.to.stopMidS);
+  cam.want = 5.2;
+  hud.toast(`已登上前往 ${railTrip.to.name} 的高铁！坐在窗边欣赏风景吧（X 可快进到站）`, 4200);
+  return true;
+};
+
 const doInteract = () => {
+  // 正在站台候车且列车已停稳开门：优先按 E 上车！
+  if (railTrip?.phase === 'waiting' && railTrip.train.isStoppedAt(railTrip.from.stopMidS) && (!nearest || nearest.kind === 'station' || nearest.kind === 'chair')) {
+    if (!seated || nearest?.kind !== 'chair') {
+      boardRail();
+      return;
+    }
+  }
   // 坐着的时候，E 就是起身
   if (seated) {
     standUp();
+    return;
+  }
+  // 正在骑乘/驾驶载具时，按 E 随时下车（不必回到原地）
+  if (ridden && !hud.isOpen) {
+    game.interact(ridden.it);
     return;
   }
   if (hud.isOpen) {
@@ -1002,6 +1087,24 @@ window.addEventListener('keydown', (e) => {
     if (hud.isOpen) hud.close();
     else panels.openWeather();
   }
+  if (e.code === 'KeyX' && railTrip?.phase === 'riding') {
+    railTrip.train.approachStop(railTrip.to.stopMidS, 38);
+    railTrip.train.setHoldDoors(false);
+    hud.toast('列车即将进站…');
+    return;
+  }
+  if (e.code === 'KeyZ' && indoor && !hud.isOpen && !seated) {
+    actions.act('fastWalk');
+    return;
+  }
+  if (!hud.isOpen && !seated && !railTrip && /^Digit[1-9]$/.test(e.code)) {
+    const em = PET_EMOTES[Number(e.code.slice(5)) - 1];
+    if (em) {
+      whale.trigger(em.id, em.dur);
+      hud.toast(`动作：${em.label}`, 1200);
+      return;
+    }
+  }
   if (!indoor && !hud.isOpen && !seated && actions.handleKey(e.code)) e.preventDefault();
   if (e.code === 'Space') e.preventDefault();
   if (e.code === 'KeyP') {
@@ -1027,34 +1130,71 @@ function hintOf(it) {
 // ---- 主循环 ----------------------------------------------------------------------------------------------------
 let last = performance.now();
 let mapAccum = 0;
+const _railSeatPos = new THREE.Vector3();
+const _railSeatYaw = { value: 0 };
 
 function tick(dt) {
   const ground = indoor ? interior.groundAt : plan.walkAt;
 
-  if (seated) {
-    // 坐着：人不动，坐下去一点
+  if (railTrip?.phase === 'riding') {
+    // 坐在高铁车厢内部靠窗座位，随着列车沿高架行驶
+    const tr = railTrip.train;
+    tr.seatWorld(1, _railSeatPos, _railSeatYaw);
+    whale.state.x = _railSeatPos.x;
+    whale.state.y = _railSeatPos.y;
+    whale.state.groundY = _railSeatPos.y;
+    whale.state.z = _railSeatPos.z;
+    whale.state.yaw = _railSeatYaw.value;
+    whale.state.visualYaw = _railSeatYaw.value;
+    whale.update(dt, camera, false, 'sit');
+    cam.update(dt, whale.state, () => _railSeatPos.y - 0.5, 0.85);
+    if (tr.isStoppedAt(railTrip.to.stopMidS)) {
+      railTrip.arrivedAt += dt;
+      if (railTrip.arrivedAt > 0.7) {
+        const dest = railTrip.to;
+        railTrip = null;
+        if (dest.platform) {
+          whale.state.x = dest.platform[0];
+          whale.state.z = dest.platform[2];
+          whale.state.y = whale.state.groundY = dest.platform[1];
+        } else if (dest.exit) {
+          whale.setPos(dest.exit[0], dest.exit[1]);
+        }
+        cam.want = 7.5;
+        game.state.minutes += 8;
+        game.syncStats?.();
+        hud.toast(`高铁已抵达 ${dest.name}，欢迎下车！`, 3500);
+      }
+    }
+  } else if (seated) {
+    // 坐着：人不动，按座位实际高度落座
     whale.state.x = seated.x;
     whale.state.z = seated.z;
-    whale.state.y = seated.kind === 'sofa' ? 0.42 : seated.kind === 'bed' ? 0.55 : 0.4;
-    whale.update(dt, camera, false, 'sit');
+    whale.state.y = seated.y;
+    whale.state.groundY = seated.y - 0.4;
+    whale.update(dt, camera, false, seated.kind === 'bed' ? 'sleep' : 'sit');
     cam.update(dt, whale.state, ground, 1.3);
   } else {
     let moving;
     let pose = null;
     let eye = indoor ? 0.9 : 1.35;
+    let animCtx = {};
     if (indoor) {
-      const moved = mover.step(dt, whale.state, cam, game.state.stamina > 15 ? 1 : 0.62);
+      const moved = mover.step(dt, whale.state, cam, game.state.stamina > 15 ? 1 : 0.62, false, game.state.stamina > 15);
       whale.state.y = whale.state.groundY = ground(whale.state.x, whale.state.z);
       moving = moved.moved > 0.004;
+      pose = moving ? moved.gait : null;
+      animCtx = { speed: moved.speed };
     } else {
-      // 室外：交给动作系统（跑、跳、爬树、游泳、潜水、钓鱼、晒太阳）
+      // 室外：交给动作系统（走、快走、跑、跳、二段跳、爬树、游泳、潜水、钓鱼、滑雪、划船、冲浪、放风筝、晒太阳）
       const r = actions.step(dt, ground);
       moving = r.moving;
       pose = r.pose;
       eye = r.eye;
+      animCtx = r.animCtx ?? {};
     }
     // 朝向跟着走的方向（爬树、钓鱼、躺着的时候不转）
-    const turn = indoor || ['ground', 'swim', 'dive'].includes(actions.mode);
+    const turn = indoor || ['ground', 'kite', 'swim', 'dive'].includes(actions.mode);
     if (turn && moving) {
       const f = cam.forward;
       const rxp = -f.y;
@@ -1067,9 +1207,28 @@ function tick(dt) {
       if (mover.keys.has('KeyA') || mover.keys.has('ArrowLeft')) mx -= 1;
       if (mx || mz) whale.state.yaw = Math.atan2(f.x * mz + rxp * mx, f.y * mz + rzp * mx);
     }
-    // 骑着的车跟着人走
-    if (ridden && rig) rig.move(ridden.model, whale.state.x, whale.state.y, whale.state.z, whale.state.yaw);
-    whale.update(dt, camera, moving || window.__tg?.forceMoving, window.__tg?.forcePose ?? pose);
+    // 骑着/开着的载具跟着人走（Blender 精模；推车放在身前把手处）
+    if (ridden?.mesh) {
+      const rv = ridden.it?.vehicle ?? '';
+      const pushOff = /wheelbarrow|handcart/.test(rv) ? 0.88 : 0;
+      ridden.mesh.position.set(
+        whale.state.x + Math.sin(whale.state.visualYaw) * pushOff,
+        whale.state.y,
+        whale.state.z + Math.cos(whale.state.visualYaw) * pushOff,
+      );
+      ridden.mesh.rotation.set(0, whale.state.visualYaw, 0);
+    } else if (ridden && rig) {
+      rig.move(ridden.model, whale.state.x, whale.state.y, whale.state.z, whale.state.yaw);
+    }
+    // 若在站台候车且列车已停稳开门，走近车门自动登车！
+    if (railTrip?.phase === 'waiting' && railTrip.train.isStoppedAt(railTrip.from.stopMidS)) {
+      const car = railTrip.train.cars?.[1] ?? railTrip.train.cars?.[0];
+      if (car && Math.hypot(car.position.x - whale.state.x, car.position.z - whale.state.z) < 4.2) {
+        boardRail();
+      }
+    }
+    const finalPose = window.__tg?.forcePose ?? (photo.on && !moving && !pose ? 'photo' : pose);
+    whale.update(dt, camera, moving || window.__tg?.forceMoving, finalPose, animCtx);
     cam.update(dt, whale.state, ground, eye);
   }
   // 相机拿在手上：焦距、歪镜头、她眼睛的机位
@@ -1095,8 +1254,29 @@ function tick(dt) {
   if (frame.paint !== wantPaint) frame.paint = wantPaint;
   frame.render(indoor ? indoorScene : scene, camera);
 
-  nearest = seated ? null : findNearest();
-  if (!hud.isOpen) hud.prompt(seated ? '站起身' : nearest ? hintOf(nearest) : !indoor && actions.canFish() ? 'E 钓鱼' : null);
+  nearest = seated || railTrip?.phase === 'riding' ? null : findNearest();
+  if (!hud.isOpen) {
+    const railWaitReady = railTrip?.phase === 'waiting' && railTrip.train.isStoppedAt(railTrip.from.stopMidS);
+    hud.prompt(
+      railTrip?.phase === 'riding'
+        ? `🚄 前往 ${railTrip.to.name} 中…（X 快进到站）`
+        : seated
+          ? railWaitReady
+            ? `起身 · 或下椅按 E 登车`
+            : 'E 站起身'
+          : ridden
+            ? `E 下车（${ridden.it?.name ?? '载具'}）`
+            : railWaitReady
+            ? `E 登上高铁（前往 ${railTrip.to.name}）`
+            : nearest
+              ? hintOf(nearest)
+              : !indoor && actions.canFish()
+                ? 'E 钓鱼'
+                : railTrip?.phase === 'waiting'
+                  ? `🚄 等候前往 ${railTrip.to.name} 的高铁进站…`
+                  : null,
+    );
+  }
 
   mapAccum += dt;
   if (mapAccum > 0.1) {

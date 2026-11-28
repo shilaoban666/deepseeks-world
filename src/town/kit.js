@@ -107,15 +107,19 @@ void main() {
     soft = 1.0;
     paint *= 1.0 + dabs * 0.3;
   }
-  // 两阶：在光里，或者不在；叶子的转折软一点
+  // 两阶：在光里，或者不在；叶子的转折软一点。用 skyOpenAt（云影+树影）免得建筑底面投影误伤自己向阳面
   float ndl = dot(N, uSunDir);
-  float lit = mix(smoothstep(-0.02, 0.12, ndl + 0.1), smoothstep(-0.6, 0.7, ndl), soft) * smoothstep(0.35, 0.75, cloudAt(vWorld.xz));
+  float lit = mix(smoothstep(-0.02, 0.12, ndl + 0.1), smoothstep(-0.6, 0.7, ndl), soft) * smoothstep(0.35, 0.75, skyOpenAt(vWorld.xz));
   vec3 sun = uSunColor * 0.42 + uSkyColor * 0.32;
   float grey = dot(uSkyColor, vec3(0.333));
   vec3 sky = mix(uSkyColor, vec3(grey), 0.72) * 1.1 + 0.16;
   // 背光那一面是调出来的蓝紫，不是压灰；瓦在背光里留着它的红
   vec3 shade = paint * mix(vec3(0.72, 0.76, 0.92), vec3(0.86, 0.74, 0.8), step(0.5, vPart) * step(vPart, 1.5));
   vec3 col = mix(shade * sky, paint * sun, lit);
+  // 墙根接触暗部：贴近地面 1.4 m 内自然沉一点蓝紫调，让房子与街道咬合落地
+  float hag = vWorld.y - groundAt(vWorld.xz);
+  float footAO = (1.0 - smoothstep(-0.1, 1.45, hag)) * (1.0 - smoothstep(0.65, 0.95, abs(N.y)));
+  col = mix(col, col * vec3(0.78, 0.8, 0.88), footAO * 0.42);
   // 天气：雨后深一点；霜和雪落在朝上的面上
   col = mix(col, col * vec3(0.76, 0.8, 0.86), uWetness * 0.35);
   float up = smoothstep(0.3, 0.8, N.y);
@@ -123,8 +127,8 @@ void main() {
   col = mix(col, snow, uFrost * up * 0.9);
   col = mix(col, vec3(3.2, 2.2, 0.95) * (0.8 + 0.4 * fract(vWin * 3.7)), glow * uNight);
   col = mix(col, vPaint * mix(0.9, 3.4, uNight), lampOn);
-  // 近处：每种部件一个 alpha，收尾时在它们相接的地方描线；远处：都一样，不描
-  float a = mix(0.21 - vPart * 0.02, 0.4, smoothstep(55.0, 120.0, dist));
+  // 近处（<58m）：每种部件一个稳定 alpha，配合 frame.js 部件+深度描线；远处收拢到 0.4 干净退场，避免过渡带闪烁
+  float a = mix(0.21 - vPart * 0.02, 0.4, smoothstep(56.0, 68.0, dist));
   outC = vec4(applyFog(col, vWorld), a);
 }
 `;

@@ -144,18 +144,70 @@ uniform samplerCube tClouds;
 uniform sampler2D tBack0, tBack1, tBack2;
 uniform vec3 uBankLit, uBankShade;
 uniform vec2 uBackdropEl;
+uniform float uNight;
+uniform float uMorning;
+uniform vec3 uMoonDir;
+
+float starLayer(vec2 uv, float scale, float density, float t) {
+  vec2 g = uv * scale;
+  vec2 id = floor(g);
+  vec2 f = fract(g) - 0.5;
+  vec4 h = hash42(id);
+  if (h.x < density) return 0.0;
+  vec2 p = f - (h.yz - 0.5) * 0.62;
+  float r = length(p);
+  float sz = mix(0.035, 0.095, h.w);
+  float core = smoothstep(sz, 0.0, r);
+  float twinkle = 0.68 + 0.32 * sin(t * (1.2 + h.w * 2.4) + h.y * 40.0);
+  return core * core * twinkle * (0.65 + 0.75 * h.w);
+}
 
 void main() {
   vec3 d = normalize(vDir);
   float h = max(d.y, 0.0);
   vec3 col = mix(uHorizon, uMid, smoothstep(0.0, 0.3, pow(h, 0.8)));
   col = mix(col, uZenith, smoothstep(0.18, 0.85, h));
+  // 清晨氛围：早间地平线轻染一层清透淡粉青朝霞，与傍晚暖金黄昏拉开情绪层次
+  if (uMorning > 0.001) {
+    float low = 1.0 - smoothstep(0.0, 0.36, h);
+    col = mix(col, mix(vec3(0.95, 0.84, 0.86), vec3(0.68, 0.86, 0.96), smoothstep(0.06, 0.32, h)), uMorning * low * 0.24);
+  }
   float sd = max(dot(d, uSunDir), 0.0);
-  col += uGlow * (pow(sd, 6.0) * 0.05 + pow(sd, 90.0) * 0.3 + pow(sd, 1400.0) * 1.4) + uSunColor * smoothstep(0.99988, 0.99996, sd) * 8.0;
+  float daySun = 1.0 - smoothstep(0.1, 0.75, uNight);
+  col += (uGlow * (pow(sd, 6.0) * 0.05 + pow(sd, 90.0) * 0.3 + pow(sd, 1400.0) * 1.4) + uSunColor * smoothstep(0.99988, 0.99996, sd) * 8.0) * daySun;
+  // 夜空：深邃清澈的吉卜力夜蓝 + 两层柔和星点 + 穿云皎月
+  float nightVis = smoothstep(0.08, 0.75, uNight);
+  vec3 moonCol = vec3(0.0);
+  vec3 starCol = vec3(0.0);
+  if (nightVis > 0.001) {
+    col = mix(col, mix(vec3(0.09, 0.14, 0.3), vec3(0.025, 0.045, 0.14), smoothstep(0.0, 0.72, h)), nightVis * 0.72);
+    if (d.y > 0.03) {
+      vec2 skyUv = d.xz / (d.y + 0.55);
+      float s1 = starLayer(skyUv, 24.0, 0.945, uTime);
+      float s2 = starLayer(skyUv + vec2(3.7, 1.9), 52.0, 0.965, uTime * 1.15);
+      float elevFade = smoothstep(0.03, 0.2, d.y);
+      starCol = (vec3(3.2, 3.5, 4.2) * s1 + vec3(3.8, 3.3, 2.5) * s2 * 0.85) * elevFade * nightVis;
+    }
+    vec3 md = normalize(uMoonDir);
+    float mdot = dot(d, md);
+    float moonDisk = smoothstep(0.9989, 0.99918, mdot);
+    // 淡淡的月面水彩明暗
+    vec3 mUp = normalize(cross(md, vec3(0.0, 1.0, 0.0)));
+    vec3 mSide = cross(mUp, md);
+    vec2 mUv = vec2(dot(d - md, mUp), dot(d - md, mSide)) * 22.0;
+    float maria = 0.88 + 0.12 * texture(tNoise, mUv * 0.65 + 0.3).r;
+    float halo = pow(max(mdot, 0.0), 18.0) * 0.16 + pow(max(mdot, 0.0), 130.0) * 0.6;
+    moonCol = (vec3(3.4, 3.25, 2.7) * moonDisk * maria + vec3(1.2, 1.4, 1.95) * halo) * nightVis;
+  }
   vec4 c = texture(tClouds, d);
   // towards the sun a cloud's edge is lit through
-  c.rgb += uGlow * pow(sd, 40.0) * 0.5 * c.a * (1.0 - c.a) * 4.0;
-  col = col * (1.0 - c.a) + c.rgb;
+  c.rgb += uGlow * pow(sd, 40.0) * 0.5 * c.a * (1.0 - c.a) * 4.0 * daySun;
+  if (nightVis > 0.001) {
+    // 月光照亮附近云缘
+    float mEdge = pow(max(dot(d, normalize(uMoonDir)), 0.0), 14.0) * c.a * (1.0 - c.a) * 2.2;
+    c.rgb += vec3(0.9, 1.05, 1.35) * mEdge * nightVis;
+  }
+  col = (col + starCol) * (1.0 - c.a) + c.rgb + moonCol * (1.0 - c.a * 0.78);
   // the far country stands in front of the clouds, mixed from its paint with this hour's light
   float v = (asin(clamp(d.y, -1.0, 1.0)) - uBackdropEl.x) / (uBackdropEl.y - uBackdropEl.x);
   float done = 0.0;
@@ -241,6 +293,9 @@ export function createSky(renderer, field, { parts = null, ...options } = {}) {
     uBackdropEl: { value: new THREE.Vector2(backdrop.el[0], backdrop.el[1]) },
     uBankLit: { value: new THREE.Color() },
     uBankShade: { value: new THREE.Color() },
+    uNight: field.uniforms.uNight ?? { value: 0 },
+    uMorning: { value: 0 },
+    uMoonDir: { value: new THREE.Vector3(-0.22, 0.26, -0.94).normalize() },
   };
   const material = new THREE.ShaderMaterial({ glslVersion: THREE.GLSL3, vertexShader: vertex, fragmentShader: fragment, uniforms, side: THREE.BackSide, depthWrite: false, depthTest: true });
   const mesh = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 4), material);

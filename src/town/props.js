@@ -201,6 +201,7 @@ in vec3 vWorld;
 uniform vec3 uZenith, uMid, uHorizon, uGlow;
 uniform samplerCube tClouds;
 uniform vec4 uLake;   // 湖心 x, z，半径 x, z
+uniform float uNight;
 #ifdef RIVER
 in vec2 vFlow;
 #endif
@@ -268,8 +269,14 @@ void main() {
   vec3 bed = mix(vec3(0.42, 0.46, 0.3), vec3(0.06, 0.3, 0.3), smoothstep(0.0, 1.1, depth));
   bed = mix(bed, vec3(0.012, 0.07, 0.12), smoothstep(0.8, 5.0, depth)) * (uSkyColor + uSunColor * 0.3 * shade);
   vec3 col = mix(bed, mirror, clamp(fres * 1.15 + 0.12, 0.0, 1.0));
-  float glint = pow(max(dot(R, uSunDir), 0.0), 420.0) * shade;
+  float glint = pow(max(dot(R, uSunDir), 0.0), 420.0) * shade * (1.0 - smoothstep(0.15, 0.7, uNight));
   col += uSunColor * glint * 2.5;
+  // 夜里水面映出月亮碎银（和 sky.js 的 uMoonDir 同一方向）
+  if (uNight > 0.05) {
+    vec3 moonDir = normalize(vec3(-0.22, 0.26, -0.94));
+    float mGlint = pow(max(dot(R, moonDir), 0.0), 180.0) * 1.4 + pow(max(dot(R, moonDir), 0.0), 32.0) * 0.16;
+    col += vec3(1.85, 2.05, 2.45) * mGlint * smoothstep(0.1, 0.75, uNight);
+  }
   // 水纹：暗的一笔压下去，亮的一笔提起来（都是画上去的线，不是高光）
   col = mix(col, col * vec3(0.72, 0.82, 0.9), st.y * 0.5 * stFade);
   col = mix(col, vec3(0.9, 0.96, 1.0) * (uSkyColor * 0.85 + uSunColor * 0.35), st.x * 0.46 * stFade * (0.55 + 0.45 * shade));
@@ -305,6 +312,7 @@ export function createLake(shared) {
       uGlow: { value: new THREE.Color(1, 1, 1) },
       tClouds: { value: blank },
       uLake: { value: new THREE.Vector4(LAKE.x, LAKE.z, LAKE.rx, LAKE.rz) },
+      uNight: shared.uNight ?? { value: 0 },
     },
     transparent: true,
     depthWrite: false,
@@ -634,17 +642,23 @@ export function createFlowerClumps(shared, places) {
 }
 
 // ---- 鸽子 ------------------------------------------------------------------------------------------------------
-/** 广场上的鸽子：会蹦、会换方向、玩家靠近会散开。 */
+/** 广场上的鸽子：圆润手绘造型（带双翼、圆胸、尾羽），会蹦、会换方向、玩家靠近会散开。 */
 export function createPigeons(shared, count, centre) {
   const group = new THREE.Group();
-  const bodyGeo = new THREE.IcosahedronGeometry(0.14, 0);
-  bodyGeo.scale(1.35, 1.0, 1);
-  const headGeo = new THREE.IcosahedronGeometry(0.075, 0);
-  const tailGeo = new THREE.ConeGeometry(0.07, 0.22, 4);
-  tailGeo.rotateX(Math.PI / 2);
-  const bodyMat = paintMaterial(shared, { lit: [0.82, 0.84, 0.88], shade: [0.42, 0.46, 0.56], kind: 'flat' });
-  const headMat = paintMaterial(shared, { lit: [0.56, 0.66, 0.8], shade: [0.28, 0.34, 0.46], kind: 'flat' });
-  const beakMat = paintMaterial(shared, { lit: [0.9, 0.6, 0.2], shade: [0.5, 0.3, 0.1], kind: 'flat' });
+  const bodyGeo = new THREE.SphereGeometry(0.135, 10, 8);
+  bodyGeo.scale(1.42, 0.94, 0.92);
+  const wingGeo = new THREE.SphereGeometry(0.11, 8, 6);
+  wingGeo.scale(1.25, 0.52, 0.28);
+  const headGeo = new THREE.SphereGeometry(0.072, 10, 8);
+  const tailGeo = new THREE.ConeGeometry(0.055, 0.2, 6);
+  tailGeo.scale(1.0, 1.0, 0.35);
+  tailGeo.rotateZ(Math.PI / 2 - 0.18);
+  const beakGeo = new THREE.ConeGeometry(0.022, 0.085, 6);
+  beakGeo.rotateZ(-Math.PI / 2);
+  const bodyMat = paintMaterial(shared, { lit: [0.84, 0.85, 0.88], shade: [0.46, 0.5, 0.62], kind: 'flat' });
+  const wingMat = paintMaterial(shared, { lit: [0.64, 0.68, 0.76], shade: [0.34, 0.39, 0.52], kind: 'flat' });
+  const headMat = paintMaterial(shared, { lit: [0.48, 0.58, 0.72], shade: [0.24, 0.32, 0.46], kind: 'flat' });
+  const beakMat = paintMaterial(shared, { lit: [0.92, 0.64, 0.24], shade: [0.54, 0.34, 0.16], kind: 'flat' });
   const birds = [];
   const rnd = (i, s) => {
     const v = Math.sin(i * 12.9898 + s * 78.233) * 43758.5453;
@@ -657,19 +671,22 @@ export function createPigeons(shared, count, centre) {
     const z = centre[1] + Math.sin(a) * r;
     const b = new THREE.Group();
     const body = new THREE.Mesh(bodyGeo, bodyMat);
-    body.position.y = 0.14;
+    body.position.y = 0.16;
     const head = new THREE.Mesh(headGeo, headMat);
-    head.position.set(0.16, 0.26, 0);
-    const beak = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.09, 4), beakMat);
-    beak.rotation.z = -Math.PI / 2;
-    beak.position.set(0.24, 0.26, 0);
-    const tail = new THREE.Mesh(tailGeo, headMat);
-    tail.position.set(-0.19, 0.16, 0);
-    b.add(body, head, beak, tail);
+    head.position.set(0.15, 0.27, 0);
+    const beak = new THREE.Mesh(beakGeo, beakMat);
+    beak.position.set(0.23, 0.26, 0);
+    const tail = new THREE.Mesh(tailGeo, wingMat);
+    tail.position.set(-0.2, 0.17, 0);
+    const wingL = new THREE.Mesh(wingGeo, wingMat);
+    wingL.position.set(-0.02, 0.18, 0.1);
+    const wingR = new THREE.Mesh(wingGeo, wingMat);
+    wingR.position.set(-0.02, 0.18, -0.1);
+    b.add(body, head, beak, tail, wingL, wingR);
     b.position.set(x, heightAt(x, z), z);
     b.rotation.y = rnd(i, 3) * Math.PI * 2;
     group.add(b);
-    birds.push({ obj: b, home: [x, z], dir: rnd(i, 4) * Math.PI * 2, phase: rnd(i, 5) * 6.28, speed: 0, fly: 0 });
+    birds.push({ obj: b, wingL, wingR, home: [x, z], dir: rnd(i, 4) * Math.PI * 2, phase: rnd(i, 5) * 6.28, speed: 0, fly: 0 });
   }
   group.userData.update = (dt, playerPos) => {
     for (const b of birds) {
@@ -700,6 +717,9 @@ export function createPigeons(shared, count, centre) {
       b.obj.position.y += hop;
       if (b.speed > 0) b.obj.rotation.y = -b.dir + Math.PI / 2;
       b.obj.rotation.z = Math.sin(b.phase * 14) * 0.2 * b.fly;
+      const flap = b.fly > 0.05 ? Math.sin(b.phase * 22) * 0.75 * b.fly : 0;
+      b.wingL.rotation.x = 0.2 + flap;
+      b.wingR.rotation.x = -0.2 - flap;
     }
   };
   group.userData.birds = birds;
@@ -709,33 +729,56 @@ export function createPigeons(shared, count, centre) {
 // ---- 小动物：兔子／猫 ------------------------------------------------------------------------------------------
 export function createCritters(shared, places) {
   const group = new THREE.Group();
-  const bodyGeo = new THREE.IcosahedronGeometry(0.22, 0);
-  bodyGeo.scale(1.5, 1, 1);
-  const earGeo = new THREE.ConeGeometry(0.05, 0.26, 4);
-  const furMat = paintMaterial(shared, { lit: [0.94, 0.92, 0.88], shade: [0.6, 0.62, 0.68], kind: 'flat' });
-  const catMat = paintMaterial(shared, { lit: [0.86, 0.62, 0.34], shade: [0.44, 0.3, 0.18], kind: 'flat' });
+  const bodyGeo = new THREE.SphereGeometry(0.2, 10, 8);
+  bodyGeo.scale(1.45, 0.92, 0.96);
+  const rabbitHeadGeo = new THREE.SphereGeometry(0.13, 10, 8);
+  const rabbitEarGeo = new THREE.SphereGeometry(0.045, 8, 6);
+  rabbitEarGeo.scale(0.8, 3.2, 0.55);
+  const rabbitTailGeo = new THREE.SphereGeometry(0.07, 8, 6);
+  const catHeadGeo = new THREE.SphereGeometry(0.14, 10, 8);
+  const catEarGeo = new THREE.ConeGeometry(0.045, 0.1, 6);
+  const catTailGeo = new THREE.CylinderGeometry(0.028, 0.036, 0.36, 7);
+  const furMat = paintMaterial(shared, { lit: [0.95, 0.93, 0.89], shade: [0.64, 0.66, 0.76], kind: 'flat' });
+  const earInnerMat = paintMaterial(shared, { lit: [0.95, 0.72, 0.74], shade: [0.68, 0.52, 0.62], kind: 'flat' });
+  const catMat = paintMaterial(shared, { lit: [0.88, 0.62, 0.34], shade: [0.5, 0.36, 0.26], kind: 'flat' });
+  const catBellMat = paintMaterial(shared, { lit: [0.96, 0.92, 0.84], shade: [0.66, 0.66, 0.72], kind: 'flat' });
   const critters = [];
   places.forEach((p, i) => {
     const g = new THREE.Group();
     const cat = p.kind === 'cat';
     const body = new THREE.Mesh(bodyGeo, cat ? catMat : furMat);
-    body.position.y = 0.22;
+    body.position.y = 0.21;
     g.add(body);
     if (!cat) {
-      for (const dz of [-0.08, 0.08]) {
-        const ear = new THREE.Mesh(earGeo, furMat);
-        ear.position.set(0.24, 0.44, dz);
-        ear.rotation.z = -0.2;
+      const head = new THREE.Mesh(rabbitHeadGeo, furMat);
+      head.position.set(0.22, 0.31, 0);
+      g.add(head);
+      for (const dz of [-0.06, 0.06]) {
+        const ear = new THREE.Mesh(rabbitEarGeo, furMat);
+        ear.position.set(0.19, 0.49, dz);
+        ear.rotation.z = 0.18;
         g.add(ear);
       }
-    } else {
-      const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.02, 0.4, 4), catMat);
-      tail.position.set(-0.32, 0.3, 0);
-      tail.rotation.z = 0.9;
+      const tail = new THREE.Mesh(rabbitTailGeo, earInnerMat);
+      tail.position.set(-0.28, 0.2, 0);
       g.add(tail);
-      const head = new THREE.Mesh(new THREE.IcosahedronGeometry(0.16, 0), catMat);
-      head.position.set(0.26, 0.3, 0);
+    } else {
+      const tail = new THREE.Mesh(catTailGeo, catMat);
+      tail.position.set(-0.31, 0.32, 0);
+      tail.rotation.z = 0.75;
+      g.add(tail);
+      const head = new THREE.Mesh(catHeadGeo, catMat);
+      head.position.set(0.24, 0.32, 0);
       g.add(head);
+      const chest = new THREE.Mesh(rabbitTailGeo, catBellMat);
+      chest.position.set(0.2, 0.2, 0);
+      g.add(chest);
+      for (const dz of [-0.075, 0.075]) {
+        const ear = new THREE.Mesh(catEarGeo, catMat);
+        ear.position.set(0.24, 0.45, dz);
+        ear.rotation.x = dz > 0 ? 0.2 : -0.2;
+        g.add(ear);
+      }
     }
     g.position.set(p.x, heightAt(p.x, p.z), p.z);
     group.add(g);

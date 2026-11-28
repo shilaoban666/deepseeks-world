@@ -277,9 +277,9 @@ export class Builder {
       mesh.matrixAutoUpdate = false;
       group.add(mesh);
       meshes.push(mesh);
-      // 描边：同一份几何体的倒壳
-      const ik = b.kind === 'roof' ? 0.07 : 0.05;
-      if (!inks.has(ik)) inks.set(ik, outlineMaterial(this.shared, [0.04, 0.05, 0.11], ik));
+      // 描边：同一份几何体的倒壳（暖暗褐蓝墨色，粗细向 kit.js 的后处理细墨线靠拢）
+      const ik = b.kind === 'roof' ? 0.048 : 0.036;
+      if (!inks.has(ik)) inks.set(ik, outlineMaterial(this.shared, [0.06, 0.048, 0.068], ik));
       const ink = new THREE.Mesh(geo, inks.get(ik));
       ink.matrixAutoUpdate = false;
       ink.userData.ink = true;

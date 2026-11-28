@@ -710,10 +710,10 @@ export function createGrove(field, places, { cards = 1, heightAt: groundAt = hei
     group.add(c.near, c.far);
   }
 
-  // ---- 树影：烘进一张图给草地读 ----
+  // ---- 树影与建筑投影：R 通道是树冠影（带斑驳叶光），G 通道是建筑定向投影 + 墙脚接触 AO ----
   const RES = 1024;
-  const data = new Uint8Array(RES * RES);
-  const shade = new THREE.DataTexture(data, RES, RES, THREE.RedFormat, THREE.UnsignedByteType);
+  const data = new Uint8Array(RES * RES * 2);
+  const shade = new THREE.DataTexture(data, RES, RES, THREE.RGFormat, THREE.UnsignedByteType);
   shade.minFilter = shade.magFilter = THREE.LinearFilter;
   shade.unpackAlignment = 1;
   const extentMin = field.uniforms.uExtentMin.value;
@@ -737,7 +737,7 @@ export function createGrove(field, places, { cards = 1, heightAt: groundAt = hei
         c.far.visible = !isNear && d < far;
       }
     },
-    cast(sunDir) {
+    cast(sunDir, casters = null) {
       data.fill(0);
       const flat = Math.hypot(sunDir.x, sunDir.z) || 1e-3;
       const sx = sunDir.x / flat;
@@ -766,8 +766,103 @@ export function createGrove(field, places, { cards = 1, heightAt: groundAt = hei
             const ang = Math.atan2(ac, al);
             const edge = 0.9 + 0.09 * Math.sin(ang * 5 + x) + 0.06 * Math.sin(ang * 9 + z);
             const v = 255 * (1 - THREE.MathUtils.smoothstep(d, edge - 0.16, edge + 0.04));
-            const at = i + j * RES;
+            const at = (i + j * RES) * 2;
             if (v > data[at]) data[at] = v;
+          }
+        }
+      }
+      // 建筑定向太阳投影 + 墙脚接触 AO → G 通道（无树叶斑点，边缘干净柔和）
+      if (casters && casters.length) {
+        const bSlope = Math.min(2.1, flat / Math.max(sunDir.y, 0.2));
+        const aoPad = 1.8;
+        const softEdge = Math.max(1.1, texel * 0.72);
+        for (const b of casters) {
+          if (b.off) continue;
+          const hw = b.hw;
+          const hd = b.hd;
+          const h = Math.min(26, b.top ?? 8);
+          if (h < 2.0 || hw < 0.85 || hd < 0.85) continue;
+          const cc = b.c ?? 1;
+          const cs = b.s ?? 0;
+          const L = Math.min(26, h * bSlope * 0.78);
+          // 建筑四个角和投影远端四个角的包围盒
+          const ex = Math.abs(cc) * hw + Math.abs(cs) * hd;
+          const ez = Math.abs(cs) * hw + Math.abs(cc) * hd;
+          const shX = -sx * L;
+          const shZ = -sz * L;
+          const minX = b.x - ex + Math.min(0, shX) - aoPad;
+          const maxX = b.x + ex + Math.max(0, shX) + aoPad;
+          const minZ = b.z - ez + Math.min(0, shZ) - aoPad;
+          const maxZ = b.z + ez + Math.max(0, shZ) + aoPad;
+          const i0 = Math.max(0, Math.floor((minX - extentMin.x) / texel));
+          const i1 = Math.min(RES - 1, Math.ceil((maxX - extentMin.x) / texel));
+          const j0 = Math.max(0, Math.floor((minZ - extentMin.y) / texel));
+          const j1 = Math.min(RES - 1, Math.ceil((maxZ - extentMin.y) / texel));
+          // 太阳方向转进建筑局部坐标：点沿 +ls 往太阳走 t∈[0, L] 若能命中 [-hw, hw]×[-hd, hd] 则在影中
+          const lsx = sx * cc - sz * cs;
+          const lsz = sx * cs + sz * cc;
+          const absX = Math.abs(lsx);
+          const absZ = Math.abs(lsz);
+          const hwE = hw + softEdge;
+          const hdE = hd + softEdge;
+          for (let j = j0; j <= j1; j++) {
+            const wz = extentMin.y + (j + 0.5) * texel - b.z;
+            for (let i = i0; i <= i1; i++) {
+              const wx = extentMin.x + (i + 0.5) * texel - b.x;
+              const lx = wx * cc - wz * cs;
+              const lz = wx * cs + wz * cc;
+              // 1) 墙脚接触 AO（距离矩形外缘 aoPad 内渐暗）
+              const qx = Math.abs(lx) - hw;
+              const qz = Math.abs(lz) - hd;
+              const outDist = Math.hypot(Math.max(qx, 0), Math.max(qz, 0));
+              let val = 0;
+              if (outDist <= 0) {
+                val = 0.88;
+              } else if (outDist < aoPad) {
+                const k = 1 - outDist / aoPad;
+                val = k * k * 0.56;
+              }
+              // 2) 定向投影：沿太阳射线 (lx + lsx*t, lz + lsz*t), t∈[0, L] 与外扩矩形做 Slab 求交
+              if (val < 0.85 && L > 0.2) {
+                let t0 = 0;
+                let t1 = L;
+                let hit = true;
+                if (absX < 1e-5) {
+                  if (Math.abs(lx) > hwE) hit = false;
+                } else {
+                  const a = (-hwE - lx) / lsx;
+                  const c2 = (hwE - lx) / lsx;
+                  t0 = Math.max(t0, Math.min(a, c2));
+                  t1 = Math.min(t1, Math.max(a, c2));
+                }
+                if (hit) {
+                  if (absZ < 1e-5) {
+                    if (Math.abs(lz) > hdE) hit = false;
+                  } else {
+                    const a = (-hdE - lz) / lsz;
+                    const c2 = (hdE - lz) / lsz;
+                    t0 = Math.max(t0, Math.min(a, c2));
+                    t1 = Math.min(t1, Math.max(a, c2));
+                  }
+                }
+                if (hit && t1 >= t0) {
+                  // 在命中段中点量一次到真实矩形外缘的距离，做干净柔边
+                  const tm = (t0 + t1) * 0.5;
+                  const rx = Math.max(Math.abs(lx + lsx * tm) - hw, 0);
+                  const rz = Math.max(Math.abs(lz + lsz * tm) - hd, 0);
+                  const sd = Math.hypot(rx, rz);
+                  const cov = 1 - THREE.MathUtils.smoothstep(sd, 0, softEdge);
+                  const fade = 1 - 0.18 * (tm / L);
+                  const sv = cov * fade * 0.86;
+                  if (sv > val) val = sv;
+                }
+              }
+              if (val > 0) {
+                const v = (val * 255) | 0;
+                const at = (i + j * RES) * 2 + 1;
+                if (v > data[at]) data[at] = v;
+              }
+            }
           }
         }
       }

@@ -109,19 +109,28 @@ float gustAt(vec2 xz) {
   return smoothstep(0.26, 0.78, g);
 }
 
-// 1 in the open, less under a cloud or a tree. The clouds drift with the wind, slowly.
-float openAt(vec2 xz) {
-  // (summer cumulus: shadows the size of fields, crossing the valley at the wind's pace)
+// 1 in the open, less under a cloud or a tree (excludes building footprint shade so buildings don't self-darken).
+float skyOpenAt(vec2 xz) {
   vec2 p = (xz - uWindScroll * 2.6) / 3400.0;
   float c = texture(tNoiseHi, p).b * 0.7 + texture(tNoiseHi, p * 2.7 + 0.19).a * 0.3;
   float open = 1.0 - uCloudShade * smoothstep(0.47, 0.6, c);
   float tree = texture(tShade, extentUv(xz)).r;
   if (tree > 0.004) {
-    // under a tree the light comes through the leaves in spots, and the spots move as the leaves do
     float s1 = texture(tNoise, xz / 2.7 + uTime * vec2(0.011, 0.008)).g;
     float s2 = texture(tNoise, xz / 0.9 - uTime * vec2(0.013, 0.017)).a;
     float spot = mix(smoothstep(0.53, 0.66, s1 * 0.62 + s2 * 0.38), 0.3, smoothstep(50.0, 150.0, distance(xz, uCamPos.xz)));
     open *= 1.0 - tree * (0.88 - 0.8 * spot);
+  }
+  return open;
+}
+
+// 1 in the open, less under a cloud, a tree, or a building. The clouds drift with the wind, slowly.
+float openAt(vec2 xz) {
+  float open = skyOpenAt(xz);
+  // buildings and ground contact AO (clean painted shadow without leaf dapples)
+  float bldg = texture(tShade, extentUv(xz)).g;
+  if (bldg > 0.004) {
+    open *= 1.0 - bldg * 0.74;
   }
   return open;
 }

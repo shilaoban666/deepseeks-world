@@ -1644,32 +1644,1015 @@
         box-shadow: 0 3px 0 rgba(74, 59, 44, 0.6), 0 10px 22px rgba(40, 30, 18, 0.2);
         color: #3a2d20;
       }
+
+      /* ============================================================================
+         《煤炭镇的小白》昭和手账绘本 UI 主题（无重叠、高可读、温暖和纸质感）
+         ============================================================================ */
+      #minimap-wrap {
+        left: 14px;
+        top: 14px;
+        width: 178px;
+        padding: 7px;
+        border-radius: 16px 18px 15px 17px / 17px 15px 18px 16px;
+        background: #fbf3df;
+        border: 2px solid #4a3928;
+        box-shadow: 0 3px 0 rgba(74, 57, 40, 0.65), 0 10px 24px rgba(42, 30, 18, 0.22);
+        transform: rotate(-0.5deg);
+      }
+      #minimap {
+        width: 160px;
+        height: 160px;
+        border-radius: 10px;
+        border: 2px solid #e6d6b5;
+      }
+      #minimap-label {
+        color: #4a3928;
+        font-size: 11px;
+        margin-top: 4px;
+      }
+
+      /* 左上角小地图右侧：统一 256px 宽垂直对齐栈（天气 → 状态 → 快捷物品，严丝合缝零重叠） */
+      #hud-stack {
+        position: absolute;
+        left: 204px;
+        top: 14px;
+        width: 264px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        pointer-events: none;
+      }
+      #hud-stack > * {
+        position: static !important;
+        left: auto !important;
+        top: auto !important;
+        transform: none !important;
+        width: 100% !important;
+        max-width: none !important;
+      }
+
+      /* 第 1 行：天气小牌 */
+      #weather-chip {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 6px 13px;
+        border-radius: 12px;
+        background: rgba(251, 243, 223, 0.95);
+        border: 2px solid #4a3928;
+        box-shadow: 0 3px 0 rgba(74, 57, 40, 0.58), 0 8px 18px rgba(42, 30, 18, 0.16);
+        color: #3a2b1c;
+        pointer-events: auto;
+        cursor: pointer;
+        transition: transform 0.12s;
+        font-size: 12.5px;
+      }
+      #weather-chip:hover {
+        transform: translateY(-1px) !important;
+      }
+
+      /* 第 2 行：一体化昭和手账状态带 */
+      #status {
+        min-width: 0;
+        padding: 8px 13px 9px;
+        border-radius: 14px;
+        background: rgba(251, 243, 223, 0.95);
+        border: 2px solid #4a3928;
+        box-shadow: 0 3px 0 rgba(74, 57, 40, 0.6), 0 8px 20px rgba(42, 30, 18, 0.16);
+        font-size: 12px;
+      }
+      #status .status-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 5px;
+      }
+      #status .status-place {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-weight: 700;
+        color: #3a2b1c;
+        font-size: 13px;
+      }
+      #status .status-clock {
+        color: #6d5840;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+      }
+      #status .status-mid {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      #status .coin-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 9px;
+        border-radius: 999px;
+        background: #f3df9e;
+        border: 1.5px solid #8a6420;
+        color: #5b3f10;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+      #status .meters-col {
+        flex: 1;
+        display: grid;
+        grid-template-columns: auto 1fr;
+        align-items: center;
+        gap: 3px 7px;
+      }
+      #status .meters-col .k {
+        font-size: 11px;
+        color: #6d5840;
+        font-weight: 600;
+      }
+      #status .meter {
+        margin: 0;
+        height: 6px;
+        border-radius: 999px;
+        background: rgba(74, 57, 40, 0.14);
+        border: 1px solid rgba(74, 57, 40, 0.18);
+      }
+
+      /* 第 3 行：快捷物品条，与上面状态卡完美左对齐 */
+      #bag {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .bag-item {
+        background: rgba(251, 243, 223, 0.95);
+        border: 1.5px solid #4a3928;
+        border-radius: 10px;
+        padding: 3px 7px;
+        box-shadow: 0 2px 0 rgba(74, 57, 40, 0.48);
+        font-size: 14px;
+      }
+      .bag-item b {
+        color: #5b452d;
+      }
+
+      /* 右上角：《煤炭镇的小白》风格手账功能菜单栏 */
+      #corner-menu {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        display: flex;
+        gap: 7px;
+        pointer-events: auto;
+      }
+      .cm-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-width: 54px;
+        padding: 6px 8px 5px;
+        border-radius: 14px;
+        border: 2px solid #4a3928;
+        background: #fbf3df;
+        color: #3a2b1c;
+        font: inherit;
+        cursor: pointer;
+        box-shadow: 0 3px 0 rgba(74, 57, 40, 0.68), 0 8px 16px rgba(42, 30, 18, 0.16);
+        transition: transform 0.12s, background 0.12s, box-shadow 0.12s;
+        position: relative;
+      }
+      .cm-btn:hover {
+        background: #fffdf5;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 0 rgba(74, 57, 40, 0.68), 0 10px 20px rgba(42, 30, 18, 0.2);
+      }
+      .cm-btn:active {
+        transform: translateY(2px);
+        box-shadow: 0 1px 0 rgba(74, 57, 40, 0.68);
+      }
+      .cm-btn .cm-ic {
+        font-size: 19px;
+        line-height: 1.1;
+      }
+      .cm-btn .cm-tx {
+        font-size: 11px;
+        font-weight: 700;
+        margin-top: 2px;
+        letter-spacing: 0.04em;
+      }
+      .cm-btn kbd {
+        position: absolute;
+        top: -6px;
+        right: -5px;
+        min-width: 18px;
+        padding: 0 4px;
+        border-radius: 6px;
+        background: #6b9b5e;
+        color: #fffdf4;
+        border: 1.5px solid #35502d;
+        font: 700 10px/15px inherit;
+        text-align: center;
+      }
+      .cm-btn.set kbd {
+        background: #d9a036;
+        border-color: #6b4c14;
+        color: #3a2b1c;
+      }
+
+      /* 底部动作栏：清爽单行胶囊，不与交互提示重叠 */
+      #actionbar {
+        bottom: 42px;
+        max-width: min(860px, calc(100vw - 40px));
+        flex-wrap: nowrap;
+        gap: 6px;
+        padding: 5px 8px;
+        border-radius: 18px;
+        background: rgba(251, 243, 223, 0.86);
+        border: 2px solid rgba(74, 57, 40, 0.72);
+        box-shadow: 0 3px 0 rgba(74, 57, 40, 0.48), 0 8px 20px rgba(42, 30, 18, 0.16);
+        backdrop-filter: blur(6px);
+        pointer-events: auto;
+      }
+      .act {
+        padding: 4px 10px 4px 6px;
+        border-radius: 11px;
+        border: 1.5px solid rgba(74, 57, 40, 0.32);
+        background: #fffaf0;
+        color: #3a2b1c;
+        font-size: 12px;
+        font-weight: 600;
+        box-shadow: 0 2px 0 rgba(74, 57, 40, 0.35);
+        white-space: nowrap;
+      }
+      .act kbd {
+        background: #4d88ad;
+        border-radius: 6px;
+        font-size: 10px;
+        line-height: 16px;
+        padding: 1px 5px;
+      }
+      .act.off {
+        opacity: 0.36;
+      }
+
+      /* 交互提示气泡：明显抬高到 bottom: 106px，彻底告别与快捷栏重叠！ */
+      #prompt {
+        bottom: 106px;
+        padding: 8px 18px 8px 12px;
+        background: #fff9ea;
+        color: #3a2b1c;
+        border: 2.5px solid #4a3928;
+        border-radius: 999px;
+        box-shadow: 0 4px 0 rgba(74, 57, 40, 0.72), 0 12px 24px rgba(40, 28, 16, 0.24);
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        z-index: 16;
+      }
+      #prompt kbd {
+        background: #6b9b5e;
+        color: #fffdf4;
+        border: 1.5px solid #35502d;
+        border-bottom-width: 3px;
+        border-radius: 7px;
+        padding: 1px 7px;
+        margin-right: 8px;
+      }
+
+      /* 底部极简帮助条 */
+      #help {
+        left: 50%;
+        bottom: 8px;
+        transform: translateX(-50%);
+        padding: 3px 12px;
+        border-radius: 999px;
+        background: rgba(251, 243, 223, 0.8);
+        border: 1px solid rgba(74, 57, 40, 0.28);
+        box-shadow: none;
+        font-size: 11px;
+        color: #5e4b36;
+        white-space: nowrap;
+      }
+      #o2 {
+        left: 14px;
+        top: 206px;
+        width: 178px;
+        border: 2px solid #4a3928;
+        background: #fbf3df;
+      }
+
+      /* 宽幅手账面板（背包 / 博物图鉴 / 设置） */
+      #panel.wide .sheet {
+        width: min(820px, 92vw);
+        max-width: 92vw;
+        max-height: 85vh;
+        display: flex;
+        flex-direction: column;
+      }
+      #panel.wide #panel-body {
+        overflow-y: auto;
+        padding-right: 4px;
+      }
+
+      /* ---- 手账双栏背包 ---- */
+      .nb-stats {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 9px 14px;
+        margin-bottom: 12px;
+        border-radius: 12px;
+        background: #f3e7cc;
+        border: 1.5px solid rgba(74, 57, 40, 0.24);
+        flex-wrap: wrap;
+      }
+      .nb-stat-coin {
+        font-weight: 800;
+        color: #7c5210;
+        background: #f8e3a0;
+        border: 1.5px solid #b1812c;
+        border-radius: 999px;
+        padding: 2px 11px;
+        font-size: 13px;
+      }
+      .nb-stat-bar {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: #5a4632;
+        font-weight: 600;
+      }
+      .nb-stat-bar .meter {
+        width: 88px;
+        height: 7px;
+        margin: 0;
+        border-radius: 999px;
+      }
+      .nb-tabs {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+      }
+      .nb-tab {
+        padding: 5px 14px;
+        border-radius: 12px 12px 6px 6px;
+        border: 2px solid #4a3928;
+        background: #efe2c4;
+        color: #5a4632;
+        font: inherit;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.12s;
+      }
+      .nb-tab:hover {
+        background: #fff8e7;
+      }
+      .nb-tab.on {
+        background: #6b9b5e;
+        border-color: #35502d;
+        color: #fffdf4;
+        box-shadow: 0 2px 0 #35502d;
+      }
+      .bag-layout {
+        display: grid;
+        grid-template-columns: 1.35fr 1fr;
+        gap: 14px;
+        min-height: 270px;
+      }
+      .bag-slots {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+        gap: 8px;
+        align-content: start;
+        padding: 10px;
+        border-radius: 14px;
+        background: rgba(235, 220, 189, 0.65);
+        border: 1.5px dashed rgba(74, 57, 40, 0.32);
+        max-height: 360px;
+        overflow-y: auto;
+      }
+      .bag-card {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        padding: 10px 6px 8px;
+        border-radius: 12px;
+        border: 2px solid rgba(74, 57, 40, 0.25);
+        background: #fffaf0;
+        color: #3a2b1c;
+        font: inherit;
+        cursor: pointer;
+        transition: transform 0.1s, border-color 0.12s, box-shadow 0.12s;
+      }
+      .bag-card:hover {
+        transform: translateY(-2px);
+        border-color: #8c6c46;
+      }
+      .bag-card.sel {
+        border-color: #d4942a;
+        background: #fffdf5;
+        box-shadow: 0 0 0 2.5px rgba(212, 148, 42, 0.35), 0 3px 0 rgba(164, 110, 22, 0.5);
+      }
+      .bag-card .ic {
+        font-size: 26px;
+        min-height: 28px;
+        display: flex;
+        align-items: center;
+      }
+      .bag-card b {
+        font-size: 12px;
+        line-height: 1.25;
+        text-align: center;
+      }
+      .bag-card .qty {
+        position: absolute;
+        top: 4px;
+        right: 5px;
+        padding: 0 5px;
+        border-radius: 999px;
+        background: #4a3928;
+        color: #fffaf0;
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 16px;
+      }
+      .bag-detail {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 14px 16px;
+        border-radius: 14px;
+        background: #fffbf1;
+        border: 2px solid rgba(74, 57, 40, 0.35);
+        box-shadow: inset 0 0 0 3px #f6ebd1;
+      }
+      .bag-detail-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding-bottom: 10px;
+        border-bottom: 1.5px dashed rgba(74, 57, 40, 0.22);
+      }
+      .bag-detail-ic {
+        width: 54px;
+        height: 54px;
+        border-radius: 14px;
+        background: #f3e6c8;
+        border: 1.5px solid rgba(74, 57, 40, 0.28);
+        display: grid;
+        place-items: center;
+        font-size: 30px;
+        flex-shrink: 0;
+      }
+      .bag-detail-title {
+        font-size: 17px;
+        font-weight: 800;
+        color: #3a2b1c;
+      }
+      .bag-detail-tag {
+        display: inline-block;
+        margin-top: 2px;
+        padding: 1px 8px;
+        border-radius: 999px;
+        background: #e5f0dd;
+        color: #3d6332;
+        font-size: 11px;
+        font-weight: 700;
+      }
+      .bag-detail-desc {
+        margin: 10px 0;
+        font-size: 13px;
+        line-height: 1.75;
+        color: #4f3f2e;
+      }
+      .bag-detail-eff {
+        padding: 6px 10px;
+        border-radius: 9px;
+        background: #f5ebd4;
+        color: #704f1e;
+        font-size: 12px;
+        font-weight: 700;
+        margin-bottom: 10px;
+      }
+      .bag-use-btn {
+        width: 100%;
+        padding: 9px 14px;
+        border-radius: 12px;
+        border: 2px solid #35502d;
+        background: #6b9b5e;
+        color: #fffdf4;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 3px 0 #35502d;
+      }
+      .bag-use-btn:hover {
+        background: #7ab06c;
+      }
+      .bag-use-btn:disabled {
+        background: #d8ccb3;
+        border-color: #96876f;
+        color: #6b5d49;
+        box-shadow: none;
+        cursor: not-allowed;
+      }
+
+      /* ---- 博物图鉴（5 分类手账） ---- */
+      .dex-head-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 8px 12px;
+        margin-bottom: 10px;
+        border-radius: 12px;
+        background: #f3e7cc;
+        border: 1.5px solid rgba(74, 57, 40, 0.22);
+        font-size: 13px;
+        flex-wrap: wrap;
+      }
+      .dex-prog {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 700;
+        color: #3a2b1c;
+      }
+      .dex-prog .meter {
+        width: 120px;
+        height: 8px;
+        margin: 0;
+      }
+      .dex-prog .meter > i {
+        background: linear-gradient(90deg, #8bbf6b, #548a46);
+      }
+      .dex-subtabs {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 10px;
+      }
+      .dex-subtab {
+        padding: 3px 11px;
+        border-radius: 999px;
+        border: 1.5px solid rgba(74, 57, 40, 0.3);
+        background: #fffaf0;
+        color: #5a4632;
+        font: inherit;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .dex-subtab.on {
+        background: #4d88ad;
+        border-color: #2c5570;
+        color: #fff;
+      }
+      .dex-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+        gap: 9px;
+        max-height: 228px;
+        overflow-y: auto;
+        padding: 4px 2px;
+      }
+      .dex-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        gap: 4px;
+        min-height: 112px;
+        padding: 10px 7px 8px;
+        border-radius: 13px;
+        border: 2px solid rgba(74, 57, 40, 0.24);
+        background: #fffaf0;
+        color: #3a2b1c;
+        font: inherit;
+        cursor: pointer;
+        text-align: center;
+        transition: transform 0.1s, border-color 0.12s;
+      }
+      .dex-card:hover {
+        transform: translateY(-2px);
+        border-color: #8c6c46;
+      }
+      .dex-card.sel {
+        border-color: #d4942a;
+        box-shadow: 0 0 0 2px rgba(212, 148, 42, 0.35);
+      }
+      .dex-card.unknown {
+        background: #f0e6d1;
+        color: #8a7860;
+      }
+      .dex-card.unknown .dex-ic {
+        filter: grayscale(1) opacity(0.32);
+      }
+      .dex-ic {
+        min-height: 46px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 30px;
+      }
+      .dex-card b {
+        font-size: 12px;
+        line-height: 1.25;
+      }
+      .dex-card small {
+        font-size: 11px;
+        color: #7c6850;
+      }
+      .dex-detail-box {
+        margin-top: 10px;
+        padding: 10px 14px;
+        border-radius: 12px;
+        background: #fffbf1;
+        border: 2px solid rgba(74, 57, 40, 0.28);
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .dex-detail-box .dd-ic {
+        font-size: 32px;
+        min-width: 52px;
+        height: 52px;
+        border-radius: 12px;
+        background: #f3e6c8;
+        display: grid;
+        place-items: center;
+      }
+      .dex-detail-box .dd-main {
+        flex: 1;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+      .dex-detail-box .dd-name {
+        font-size: 15px;
+        font-weight: 800;
+        color: #3a2b1c;
+        margin-right: 8px;
+      }
+
+      /* ---- 设置面板 ---- */
+      .set-group {
+        padding: 12px 14px;
+        margin-bottom: 10px;
+        border-radius: 14px;
+        background: #fffbf1;
+        border: 1.5px solid rgba(74, 57, 40, 0.24);
+      }
+      .set-group h4 {
+        margin: 0 0 10px;
+        font-size: 14px;
+        color: #3a2b1c;
+        letter-spacing: 0.06em;
+        border-bottom: 1.5px dashed rgba(74, 57, 40, 0.2);
+        padding-bottom: 5px;
+      }
+      .set-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 6px 0;
+        font-size: 13px;
+      }
+      .set-row .sr-sub {
+        display: block;
+        font-size: 11px;
+        color: #8a7860;
+      }
+      .set-seg {
+        display: inline-flex;
+        gap: 5px;
+      }
+      .set-seg button {
+        padding: 4px 12px;
+        border-radius: 9px;
+        border: 1.5px solid #4a3928;
+        background: #f3e7cc;
+        color: #3a2b1c;
+        font: inherit;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .set-seg button.on {
+        background: #6b9b5e;
+        border-color: #35502d;
+        color: #fffdf4;
+      }
+      .set-range {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .set-range input[type='range'] {
+        accent-color: #6b9b5e;
+        width: 130px;
+        cursor: pointer;
+      }
+      .set-range span {
+        min-width: 36px;
+        text-align: right;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+      }
+      .set-toggle {
+        padding: 4px 13px;
+        border-radius: 999px;
+        border: 2px solid #4a3928;
+        background: #e9ddc3;
+        color: #5a4632;
+        font: inherit;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .set-toggle.on {
+        background: #6b9b5e;
+        border-color: #35502d;
+        color: #fffdf4;
+      }
+      .key-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px 16px;
+        font-size: 12.5px;
+      }
+      .key-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 4px 8px;
+        border-radius: 8px;
+        background: #f5ebd4;
+      }
+
+      /* ---- 表情动作面板（dsh-pet 风格） ---- */
+      .emote-slots {
+        display: grid;
+        grid-template-columns: repeat(9, 1fr);
+        gap: 5px;
+        margin-bottom: 12px;
+        padding: 8px;
+        border-radius: 12px;
+        background: #f3e7cc;
+        border: 1.5px solid rgba(74, 57, 40, 0.24);
+      }
+      .emote-slot {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1px;
+        padding: 5px 2px;
+        border-radius: 9px;
+        border: 1.5px solid rgba(74, 57, 40, 0.25);
+        background: #fffaf0;
+        color: #3a2b1c;
+        font: inherit;
+        cursor: pointer;
+        font-size: 11px;
+      }
+      .emote-slot.sel {
+        border-color: #d4942a;
+        background: #fff4d2;
+        box-shadow: 0 0 0 2px rgba(212, 148, 42, 0.35);
+      }
+      .emote-slot kbd {
+        font-size: 10px;
+        padding: 0 4px;
+        margin: 0;
+      }
+      .emote-slot .es-ic {
+        font-size: 18px;
+        line-height: 1.15;
+      }
+      .emote-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+        gap: 8px;
+        max-height: 270px;
+        overflow-y: auto;
+        padding: 2px;
+      }
+      .emote-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+        padding: 10px 6px 8px;
+        border-radius: 12px;
+        border: 2px solid rgba(74, 57, 40, 0.24);
+        background: #fffaf0;
+        color: #3a2b1c;
+        font: inherit;
+        cursor: pointer;
+        transition: transform 0.1s, border-color 0.12s;
+      }
+      .emote-card:hover {
+        transform: translateY(-2px);
+        border-color: #6b9b5e;
+        background: #fffdf6;
+      }
+      .emote-card .em-ic {
+        font-size: 26px;
+      }
+      .emote-card b {
+        font-size: 12.5px;
+      }
+      .emote-card small {
+        font-size: 10.5px;
+        color: #8a7860;
+      }
+
+      /* ---- 钓鱼小游戏进度条与交互卡片 ---- */
+      #hud.panel-open #prompt {
+        opacity: 0 !important;
+        pointer-events: none;
+      }
+      .fish-box {
+        min-width: 320px;
+      }
+      .fish-status {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 8px;
+        font-size: 14px;
+        font-weight: 700;
+        color: #3a2b1c;
+      }
+      .fish-status.bite {
+        color: #c2422b;
+        animation: fishPulse 0.45s ease-in-out infinite alternate;
+      }
+      @keyframes fishPulse {
+        from { transform: scale(1); }
+        to { transform: scale(1.03); }
+      }
+      .fish-bar {
+        position: relative;
+        height: 22px;
+        border-radius: 999px;
+        background: #e7dbc0;
+        border: 2px solid #4a3928;
+        overflow: visible;
+        margin: 8px 0 6px;
+        box-shadow: inset 0 2px 4px rgba(74, 57, 40, 0.16);
+      }
+      .fish-bar-inner {
+        position: absolute;
+        inset: 0;
+        border-radius: 999px;
+        overflow: hidden;
+      }
+      .fish-zone-early {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        background: linear-gradient(90deg, rgba(111, 168, 200, 0.25), rgba(111, 168, 200, 0.4));
+      }
+      .fish-zone-sweet {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        background: linear-gradient(90deg, #74b865, #a9d468, #74b865);
+        border-left: 2px solid #35502d;
+        border-right: 2px solid #35502d;
+        box-shadow: inset 0 0 8px rgba(255, 248, 196, 0.65);
+      }
+      .fish-zone-late {
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        background: linear-gradient(90deg, rgba(209, 98, 72, 0.3), rgba(209, 98, 72, 0.55));
+      }
+      .fish-bar.in-zone .fish-zone-sweet {
+        background: linear-gradient(90deg, #8cd46e, #f2d15b, #8cd46e);
+        box-shadow: 0 0 12px rgba(242, 209, 91, 0.85), inset 0 0 8px rgba(255, 255, 255, 0.8);
+      }
+      .fish-needle {
+        position: absolute;
+        top: -5px;
+        bottom: -5px;
+        width: 8px;
+        margin-left: -4px;
+        border-radius: 4px;
+        background: #fffdf5;
+        border: 2px solid #4a3928;
+        box-shadow: 0 2px 6px rgba(40, 28, 16, 0.45);
+        z-index: 3;
+      }
+      .fish-bar.in-zone .fish-needle {
+        background: #ffe169;
+        border-color: #8a2c1c;
+        transform: scaleY(1.12);
+      }
+      .fish-legend {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        color: #7c6850;
+        margin-bottom: 8px;
+      }
+      .fish-legend .ok {
+        color: #3d7533;
+      }
+      .fish-legend .no {
+        color: #b4483a;
+      }
+      .fish-keys {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        font-size: 12.5px;
+        color: #6d5840;
+      }
+      .fish-pull-btn {
+        padding: 5px 14px;
+        border-radius: 999px;
+        border: 2px solid #8a2c1c;
+        background: #d85236;
+        color: #fffdf4;
+        font: inherit;
+        font-weight: 800;
+        cursor: pointer;
+        box-shadow: 0 3px 0 #8a2c1c;
+      }
+      .fish-pull-btn:hover {
+        background: #e46347;
+      }
+
+      /* 界面元素开关（由设置面板实时控制） */
+      body.hide-minimap #minimap-wrap { display: none !important; }
+      body.hide-minimap #hud-stack { left: 14px; }
+      body.hide-actionbar #actionbar { display: none !important; }
+      body.hide-actionbar #prompt { bottom: 34px; }
+      body.hide-help #help { display: none !important; }
+      body.hide-quickbag #bag { display: none !important; }
+
+      @media (max-width: 960px) {
+        #status { display: none; }
+        #bag { display: none; }
+        .bag-layout { grid-template-columns: 1fr; }
+        .key-grid { grid-template-columns: 1fr; }
+      }
     </style>
   </head>
   <body>
     <canvas id="view"></canvas>
 
     <div id="hud">
-      <div id="status" class="card">
-        <div class="row"><span class="k">金币</span><span class="v" id="stat-coins">0</span></div>
-        <div class="row"><span class="k">时间</span><span class="v" id="stat-clock">第 1 天 08:20</span></div>
-        <div class="row"><span class="k">所在</span><span class="v" id="stat-place">鱼鱼家</span></div>
-        <div class="k" style="margin-top: 6px">饱食</div>
-        <div class="meter hunger"><i id="stat-hunger"></i></div>
-        <div class="k">体力</div>
-        <div class="meter stamina"><i id="stat-stamina"></i></div>
+      <div id="hud-stack">
+        <div id="weather-chip" class="card"></div>
+        <div id="status" class="card">
+          <div class="status-top">
+            <span class="status-place">📍 <span id="stat-place">鱼鱼家</span></span>
+            <span class="status-clock" id="stat-clock">第 1 天 08:20</span>
+          </div>
+          <div class="status-mid">
+            <span class="coin-pill">🪙 <span id="stat-coins">0</span></span>
+            <div class="meters-col">
+              <span class="k">饱食</span>
+              <div class="meter hunger"><i id="stat-hunger"></i></div>
+              <span class="k">体力</span>
+              <div class="meter stamina"><i id="stat-stamina"></i></div>
+            </div>
+          </div>
+        </div>
+        <div id="bag"></div>
       </div>
 
-      <div id="bag"></div>
+      <div id="corner-menu">
+        <button class="cm-btn" data-menu="bag" title="背包 (B)"><span class="cm-ic">🎒</span><span class="cm-tx">背包</span><kbd>B</kbd></button>
+        <button class="cm-btn" data-menu="dex" title="博物图鉴 (J)"><span class="cm-ic">📖</span><span class="cm-tx">图鉴</span><kbd>J</kbd></button>
+        <button class="cm-btn" data-menu="map" title="大地图 (M)"><span class="cm-ic">🗺️</span><span class="cm-tx">地图</span><kbd>M</kbd></button>
+        <button class="cm-btn" data-menu="camera" title="相机 (V)"><span class="cm-ic">📷</span><span class="cm-tx">相机</span><kbd>V</kbd></button>
+        <button class="cm-btn" data-menu="weather" title="天气 (T)"><span class="cm-ic">🌤️</span><span class="cm-tx">天气</span><kbd>T</kbd></button>
+        <button class="cm-btn" data-menu="emotes" title="表情动作 (U)"><span class="cm-ic">😊</span><span class="cm-tx">表情</span><kbd>U</kbd></button>
+        <button class="cm-btn set" data-menu="settings" title="设置 (O)"><span class="cm-ic">⚙️</span><span class="cm-tx">设置</span><kbd>O</kbd></button>
+      </div>
 
       <div id="prompt"></div>
       <div id="toast"></div>
 
       <div id="help" class="card">
-        <kbd>W A S D</kbd> 走 · <kbd>E</kbd> 互动 · <kbd>M</kbd> 地图 · <kbd>V</kbd> 相机 · <kbd>P</kbd> 笔触 · 拖鼠标转视角 · 滚轮远近
+        <kbd>WASD</kbd> 移动 · <kbd>E</kbd> 互动/上下车 · <kbd>1-9</kbd> 表情 · <kbd>J</kbd> 图鉴 · <kbd>O</kbd> 设置 · 拖鼠标转视角
       </div>
 
-      <div id="weather-chip" class="card"></div>
       <div id="o2" class="card"><span class="k">氧气</span><div class="meter o2"><i id="stat-o2"></i></div></div>
       <div id="actionbar"></div>
 

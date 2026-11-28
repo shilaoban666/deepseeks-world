@@ -63,8 +63,8 @@ export const CITY_R = 232;
 export const PLAZA = [40, -108];
 /** 家：鱼鱼家在 AI 小镇西南、清溪河拐弯的地方，也就是开局站的地方。 */
 export const HOME = [-600, -20];
-/** 月亮湖。 */
-export const LAKE = { x: -40, z: -520, rx: 185, rz: 86, level: 9, bed: 2 };
+/** 月亮湖：宽阔新月形湖湾，配平缓奶油沙滩与花草坡岸（与海滨同款吉卜力水天一色景观）。 */
+export const LAKE = { x: -40, z: -520, rx: 196, rz: 96, level: 9, bed: 1.2 };
 /** 海：东边和南边。海面比城里（-5 m）低一点。 */
 export const SEA = { level: -9 };
 
@@ -666,12 +666,12 @@ function land(x, z) {
     h += (bank - h) * smooth(80, 15, rv.d) * k;
     h -= 2.8 * smooth(RIVER_HALF + 3, 2.5, rv.d) * k;
   }
-  // 湖：岸是一圈刚高出水面的矮滩，往里缓缓沉下去（水边在 lakeDistance ≈ 0.95）
+  // 月亮湖：宽阔舒缓的奶油沙滩湖岸，往湖心平滑沉入碧水（与海滨沙滩同款开阔视角）
   const ld = lakeDistance(x, z);
-  if (ld < 2.4) {
-    const bank = LAKE.level + 0.5;
-    h += (bank - h) * smooth(2.4, 1.36, ld);
-    h -= (bank - LAKE.bed) * smooth(1.06, 0.25, ld);
+  if (ld < 2.2) {
+    const bank = LAKE.level + 0.95;
+    h += (bank - h) * smooth(2.2, 1.32, ld);
+    h -= (bank - LAKE.bed) * smooth(1.12, 0.28, ld);
   }
   return h;
 }
@@ -715,14 +715,16 @@ export const YARDS = [
 /** 铺装：路、广场、集市的场地。铺过的地方草长不出来；边缘是毛的，不是一刀切。 */
 export function pavedAt(x, z) {
   const ld = lakeDistance(x, z);
-  if (ld < 1.06) return 1; // 水下和湖滩
+  const ragged = (fbm(x / 3.1 + 4, z / 3.1 - 2, 2, 71) - 0.5) * 1.6;
+  if (ld < 1.11) return 1; // 月亮湖水下与宽阔洁净的奶油沙滩带
   // 河床和河滩的卵石、海边的沙滩
   const rv = riverAt(x, z);
   if (rv.d < RIVER_HALF + 4) return 1;
   const cd = coastD(x, z);
   if (cd < 160 && heightAt(x, z) < SEA.level + 2.4) return 1;
-  const ragged = (fbm(x / 3.1 + 4, z / 3.1 - 2, 2, 71) - 0.5) * 1.6;
   let p = 1 - smooth(-0.5, 0.9, roadEdge(x, z) + ragged);
+  // 月亮湖沙滩到野花草坡的自然柔边过渡
+  if (ld < 1.24) p = Math.max(p, 1 - smooth(1.10, 1.17, ld + ragged * 0.015));
   // 沙滩：比别处的岸宽得多
   if (cd < 150) p = Math.max(p, beachAt(x, z) * (1 - smooth(96, 112, cd + ragged * 4)));
   p = Math.max(p, 1 - smooth(29.5, 31.5, plazaDistance(x, z) + ragged));
@@ -770,11 +772,14 @@ export function paint(x, z) {
   growth *= 1 - smooth(150, 230, heightAt(x, z));
   const snow = snowAt(x, z);
   growth *= 1 - smooth(0.25, 0.6, snow);
-  // 城里野花少，野外多
+  // 城里野花少，野外与月亮湖畔草坡野花盛开
+  const ld = lakeDistance(x, z);
+  const lakeMeadow = ld > 1.14 && ld < 1.62 ? smooth(1.14, 1.22, ld) * (1 - smooth(1.42, 1.62, ld)) : 0;
   const wild = smooth(0.35, 0.9, fbm(x / 46 - 6, z / 46 + 3, 2, 55));
-  const flowers = Math.min(1, wild * (1.15 - 0.75 * built) + forest * 0.2) * (1 - snow);
+  const flowers = Math.min(1, wild * (1.15 - 0.75 * built) + forest * 0.2 + lakeMeadow * 0.44) * (1 - snow);
   const dry = 0.08 + 0.3 * smooth(0.55, 0.8, fbm(x / 110 + 2.2, z / 110 + 8.1, 3, 21));
-  const wet = Math.max(0, 1 - smooth(1.0, 1.5, lakeDistance(x, z))) * 0.9;
+  // 干沙滩保持明亮奶油金沙色（wet=0），仅贴近水线浅处微湿，彻底消除发黑泥泞感
+  const wet = Math.max(0, 1 - smooth(0.92, 1.01, ld)) * 0.16;
   if (plot) return { dry: plot.kind === 0 ? 0.96 : plot.kind === 1 ? 0.02 : 0.5, growth: Math.max(0, growth), wet: 0, flowers: 0 };
   return { dry: dry * (1 - wet), growth: Math.max(0, growth), wet, flowers };
 }

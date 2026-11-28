@@ -10,6 +10,8 @@ import { loadTownModels } from './models.js';
 import { loadKitManifest, createKitHouses } from './kit.js';
 import { createInterior } from './interior.js';
 import { loadWhalechan, createWhalechan, createCamera, createMover } from './player.js';
+import { PET_EMOTES } from './whale_anim.js';
+import { loadVehicleAssets } from './vehicles.js';
 import { createHud, bakeMinimap, createMinimap } from './ui.js';
 import { createGame } from './interactions.js';
 import { createFarGround } from './props.js';
@@ -125,13 +127,8 @@ if (TIERS.includes(asked)) {
   const saved = safeStore.get('tg-quality');
   quality = TIERS.includes(saved) ? saved : gpu.quality;
   qualityFrom = TIERS.includes(saved) ? '上次选的' : '自动';
-  // 上次启动到一半就没了下文：降一档再来
-  const crashed = safeStore.get('tg-starting');
-  if (TIERS.includes(crashed) && TIERS.indexOf(crashed) <= TIERS.indexOf(quality) && quality !== 'low') {
-    quality = TIERS[Math.max(0, TIERS.indexOf(crashed) - 1)];
-    qualityFrom = '上次没启动成功，自动降档';
-    safeStore.set('tg-quality', null);
-  }
+  // 清理旧的加载中断标记，避免刷新页面时被误降到无抗锯齿的 low 档导致画面闪烁发糊
+  safeStore.set('tg-starting', null);
 }
 safeStore.set('tg-starting', quality);
 const lite = quality === 'low';
@@ -348,7 +345,8 @@ if (params.get('tex') !== '0') {
   // 画风筛选：下面这几张和吉卜力/煤炭镇的手绘感不搭——鹅卵石和碎石路像照片、柏油和瓦楞铁太现代、
   // 铁艺灯柱和铁皮桶镜像拼接后出了对称花纹、木电杆是一整根画在图里（不能平铺）、煤渣砖太灰太脏。
   // 它们不载入；用到它们的地方自动退回同类的第 0 号或程序化画法。?alltex=1 全部载入（对比用）。
-  const OFF_STYLE = ['road0', 'road1', 'road2', 'road3', 'roof4', 'wall7', 'lamp0', 'lamp2', 'bin0'];
+  // 保留 road0（手绘泥土小路）和 road1（手绘鹅卵石小石子路）用于房前连通大路的小径
+  const OFF_STYLE = ['road2', 'road3', 'roof4', 'wall7', 'lamp0', 'lamp2', 'bin0'];
   if (params.get('alltex') !== '1') for (const k of OFF_STYLE) delete names[k];
   const loaded = {};
   await Promise.all(
@@ -407,6 +405,8 @@ if (!lite && params.get('kit') !== '0') {
     console.warn('房屋套件读不到，照旧画', e);
   }
 }
+await setProgress(0.49, '正在打磨载具与高铁…');
+const vehicleAssets = await loadVehicleAssets(field.uniforms, './vehicles/');
 const city = createCity(field.uniforms, field, {
   plants,
   kit,
@@ -417,6 +417,7 @@ const city = createCity(field.uniforms, field, {
   treeNear: high ? 150 : medium ? 110 : 70,
   treeFar: high ? 760 : medium ? 560 : 340,
   density: high ? 1 : medium ? 0.85 : 0.6,
+  vehicleAssets,
 });
 scene.add(city.group);
 if (city.modelSlots.length) {
@@ -429,7 +430,11 @@ if (city.modelSlots.length) {
   }
 }
 let rig = null; // 会动的模型（车、船）
-let ridden = null; // 正骑着的那一件 { model, it }
+let ridden = null; // 正骑着的那一件 { model, it, mesh }
+let railTrip = null; // 高铁乘车状态 { phase: 'ticketed' | 'waiting' | 'riding', from, to, train, arrivedAt }
+let busTrip = null; // 37 路公交乘车状态 { phase: 'waiting' | 'riding', from, to, fromS, toS, arrivedAt }
+let metroTrip = null; // 地铁 1 号线乘车状态 { phase: 'riding', from, to, arrivedAt }
+const cabinBase = { yaw: 0, pitch: 0 };
 if (kit && city.kitHouses.length) {
   try {
     const houses = await timed('kit', createKitHouses(field.uniforms, kit, city.kitHouses, plan.heightAt));
@@ -563,32 +568,134 @@ const game = createGame({
     if (st.exit) whale.setPos(st.exit[0], st.exit[1]);
     else whale.setPos(st.x + 1, st.z - 3);
   },
+  onBookRail(from, to) {
+    if (!from || !to || !city.train) {
+      if (to?.exit) whale.setPos(to.exit[0], to.exit[1]);
+      return;
+    }
+    if (game.state.riding) {
+      game.state.riding = null;
+      game.interact({ kind: 'vehicle', id: ridden?.it?.id, name: ridden?.it?.name, model: ridden?.model });
+    }
+    actions?.reset();
+    // 根据行车方向挑选对应轨道的列车（支持双向两列车）
+    const trains = city.trains?.length ? city.trains : [city.train];
+    const pickedTrain = to.stopMidS >= from.stopMidS ? trains[0] : (trains[1] ?? trains[0]);
+    const hasGate = !!from.gate?.col;
+    // 如果人物已经在站台上了，直接进入候车；否则在地面买完票，需先到检票口检票才能上楼梯进站台！
+    const alreadyUp = from.platform && Math.abs(whale.state.y - from.platform[1]) < 1.8;
+    if (hasGate && !alreadyUp) {
+      from.gate.col.off = false;
+      mover.dirty();
+      railTrip = { phase: 'ticketed', from, to, train: pickedTrain, arrivedAt: 0 };
+      hud.toast(`🎫 已购前往 ${to.name} 的车票！请走到楼梯口「检票口」按 E 检票进站`, 4500);
+    } else {
+      if (from.gate?.col) {
+        from.gate.col.off = true;
+        mover.dirty();
+      }
+      pickedTrain.approachStop(from.stopMidS, 85);
+      railTrip = { phase: 'waiting', from, to, train: pickedTrain, arrivedAt: 0 };
+      hud.toast(`已购前往 ${to.name} 的车票！高铁正在进站开门，可在双侧站台长椅候车`, 4200);
+    }
+  },
+  onCheckTicket(it) {
+    if (!it?.gate?.col) return;
+    if (!railTrip || (railTrip.phase !== 'ticketed' && railTrip.phase !== 'waiting')) {
+      hud.toast('🚫 请先在旁边的售票亭购买高铁车票，再检票进站！', 3200);
+      return;
+    }
+    if (railTrip.phase === 'ticketed') {
+      it.gate.col.off = true;
+      mover.dirty();
+      railTrip.phase = 'waiting';
+      railTrip.train.approachStop(railTrip.from.stopMidS, 85);
+      hud.toast(`✅ 检票通过！请上楼梯到站台候车，前往 ${railTrip.to.name} 的高铁即将进站开门`, 4500);
+    } else {
+      it.gate.col.off = true;
+      mover.dirty();
+      hud.toast('闸机已放行，请上楼梯到站台候车～', 2200);
+    }
+  },
+  onBookBus(from, to) {
+    if (!to || !city.bus?.approachStop) {
+      if (to) whale.setPos(to.x + 1, to.z - 3);
+      return;
+    }
+    if (game.state.riding) {
+      game.state.riding = null;
+      game.interact({ kind: 'vehicle', id: ridden?.it?.id, name: ridden?.it?.name, model: ridden?.model });
+    }
+    actions?.reset();
+    if (seated) { seated = null; whale.group.visible = true; }
+    const fromS = city.bus.nearestS(from?.x ?? whale.state.x, from?.z ?? whale.state.z);
+    let toS = city.bus.nearestS(to.x, to.z);
+    if (Math.abs(toS - fromS) < 35) toS = fromS > 120 ? fromS - 110 : fromS + 110;
+    // 37 路驶到眼前开门，靠站后自动登车发车！
+    city.bus.approachStop(fromS, 24);
+    busTrip = { phase: 'waiting', from: from ?? { name: '当前站' }, to, fromS, toS, arrivedAt: 0 };
+    hud.toast(`🚌 37 路复古公交正在驶来靠站，前往 ${to.name}…`, 3400);
+  },
+  onBookMetro(from, to) {
+    if (!to || !city.metro1?.startTrip) {
+      if (to) whale.setPos(to.x + 1, to.z + 2.5);
+      return;
+    }
+    if (game.state.riding) {
+      game.state.riding = null;
+      game.interact({ kind: 'vehicle', id: ridden?.it?.id, name: ridden?.it?.name, model: ridden?.model });
+    }
+    actions?.reset();
+    if (seated) { seated = null; whale.group.visible = true; }
+    cabinBase.yaw = cam.yaw;
+    cabinBase.pitch = cam.pitch;
+    city.metro1.startTrip();
+    metroTrip = { phase: 'riding', from: from ?? { name: '地铁站' }, to, arrivedAt: 0 };
+    hud.toast(`🚇 已乘上地铁 1 号线，前往 ${to.name}！（拖动鼠标环顾车厢，X 可快进到站）`, 4200);
+  },
   onRide(vehicle, it) {
-    // 交通工具状态保存在 game.state 中；这里让相机轻微拉远，保证骑乘时画面舒展。
-    cam.want = vehicle ? Math.max(cam.want, 9.5) : Math.min(cam.want, 7.5);
-    // 骑的是地上那一件模型：上车时它的碰撞盒让开，跟着人走；下车时停在脚边，人站到旁边
+    // 交通工具状态保存在 game.state 中；这里让相机轻微拉远，保证骑乘/驾驶时画面舒展。
+    const rv = it?.vehicle ?? '';
+    const isBig = /^(car|truck|bus)$/.test(rv);
+    cam.want = vehicle ? Math.max(cam.want, isBig ? 10.8 : 9.5) : Math.min(cam.want, 7.5);
     const model = it?.model;
-    if (!rig || !model?.slot) return;
     const st = whale.state;
     if (vehicle) {
-      ridden = { model, it };
-      if (model.col) model.col.off = true;
-      st.lift = /bicycle|bike|scooter/.test(it.vehicle) ? 0.42 : 0.5;
+      if (seated) {
+        seated = null;
+        whale.group.visible = true;
+      }
+      // 隐藏原本的静态实例，换成 Blender 精细载具模型跟着主角移动
+      if (rig && model?.slot) {
+        rig.move(model, 0, -999, 0, 0);
+        if (model.col) model.col.off = true;
+      }
+      const mesh = vehicleAssets.createVehicle(rv, it?.accent ?? null);
+      if (mesh) scene.add(mesh);
+      ridden = { model, it, mesh };
+      // 按 Blender 精模座椅高度精确匹配（零穿模）
+      st.lift = rv === 'bus' ? 0.98 : rv === 'truck' ? 0.50 : rv === 'car' ? 0.45 : /oxcart|ox-cart/.test(rv) ? 0.52 : /wheelbarrow|handcart/.test(rv) ? 0 : /bicycle|bike|scooter/.test(rv) ? 0.44 : 0.45;
     } else {
+      if (ridden?.mesh) scene.remove(ridden.mesh);
       ridden = null;
       st.lift = 0;
       const gy = Math.max(plan.walkAt(st.x, st.z), mover.floorAt(st.x, st.z, st.y));
-      rig.move(model, st.x, gy, st.z, st.yaw);
-      it.x = st.x;
-      it.z = st.z;
-      if (model.col) Object.assign(model.col, { x: st.x, z: st.z, c: Math.cos(st.yaw), s: Math.sin(st.yaw), ty: undefined, base: gy, off: false });
-      mover.dirty();
-      st.x += Math.cos(st.yaw) * 0.95;
-      st.z -= Math.sin(st.yaw) * 0.95;
+      if (rig && model?.slot) {
+        rig.move(model, st.x, gy, st.z, st.yaw);
+        it.x = st.x;
+        it.z = st.z;
+        if (model.col) Object.assign(model.col, { x: st.x, z: st.z, c: Math.cos(st.yaw), s: Math.sin(st.yaw), ty: undefined, base: gy, off: false });
+        mover.dirty();
+      }
+      st.x += Math.cos(st.yaw) * 1.1;
+      st.z -= Math.sin(st.yaw) * 1.1;
     }
   },
   onMap() {
     showMap(1);
+  },
+  onAnimate(name, dur) {
+    whale.trigger?.(name, dur);
   },
   onDoor(enter) {
     actions?.reset();
@@ -601,11 +708,11 @@ const game = createGame({
       seated = null;
       scene.remove(whale.group);
       indoorScene.add(whale.group);
+      whale.setIndoor?.(true);
       // 站在玄关，面朝屋里（不是站在客厅中间）
       whale.setPos(interior.spawn.x, interior.spawn.z);
       whale.state.y = 0;
       whale.state.yaw = interior.spawn.yaw;
-      whale.setIndoor(true);
       cam.setIndoor(true);
       cam.yaw = 0.35;
       cam.distance = cam.want = 9.5;
@@ -616,10 +723,10 @@ const game = createGame({
       game.state.indoor = false;
       indoorScene.remove(whale.group);
       scene.add(whale.group);
+      whale.setIndoor?.(false);
       // 出门站在门口，不在屋子正中间
       whale.setPos(outdoorDoor.x, outdoorDoor.z);
       whale.state.yaw = 0;
-      whale.setIndoor(false);
       cam.setIndoor(false);
       cam.distance = cam.want = 7.5;
       cam.pitch = 0.22;
@@ -628,18 +735,20 @@ const game = createGame({
     whale.group.visible = true;
     minimap.setInteractables(indoor ? interior.interactables : city.interactables);
   },
-  // 坐下：人挪到座位上（镜头还是那个俯看的镜头）
+  // 坐下：人挪到座位上（支持室内家具与室外/站台长椅）
   onSit(it) {
     if (!it?.seat) return;
     const seat = it.seat;
-    seated = { x: seat.x, z: seat.z, yaw: seat.yaw, kind: it.kind };
+    const sy = seat.y ?? (indoor ? (it.kind === 'sofa' ? 0.42 : it.kind === 'bed' ? 0.55 : 0.4) : plan.walkAt(seat.x, seat.z) + 0.44);
+    seated = { x: seat.x, y: sy, z: seat.z, yaw: seat.yaw, kind: it.kind, indoor };
     whale.setPos(seat.x, seat.z);
-    whale.state.y = 0;
+    whale.state.y = sy;
     whale.state.yaw = seat.yaw;
+    whale.state.visualYaw = seat.yaw;
     if (it.kind === 'sofa') {
       interior.tv.set(true);
       hud.toast('坐下了。电视开着——E 起身');
-    } else hud.toast('坐下了。E 起身');
+    } else hud.toast(railTrip?.phase === 'waiting' ? '坐在站台长椅上候车……（移动或按 E 起身）' : '坐下了。E 起身');
   },
   // 电视：开 / 关
   onTv() {
@@ -701,10 +810,20 @@ scene.add(glow.group);
 /** 从座位上站起来 */
 const standUp = () => {
   if (!seated) return false;
+  const was = seated;
   seated = null;
   whale.group.visible = true;
-  // 往座位后面让一点，别卡在沙发里
-  whale.setPos(whale.state.x, whale.state.z - 0.6);
+  if (was.indoor) {
+    whale.setPos(whale.state.x, whale.state.z - 0.6);
+    whale.state.y = 0;
+  } else {
+    // 室外长椅：往前迈一步站到地面/站台上
+    const nx = was.x + Math.sin(was.yaw) * 0.65;
+    const nz = was.z + Math.cos(was.yaw) * 0.65;
+    whale.state.x = nx;
+    whale.state.z = nz;
+    whale.state.y = Math.max(plan.walkAt(nx, nz), mover.floorAt(nx, nz, was.y) ?? -Infinity);
+  }
   hud.toast('起身了');
   return true;
 };
@@ -772,7 +891,7 @@ const syncSky = () => {
         frame.grade.y *= 1 + 0.01 * m;
         frame.grade.z *= 1 + 0.035 * m;
       }
-      underwaterLook();
+      if (!metroTrip) underwaterLook();
     }
   }
 };
@@ -903,15 +1022,45 @@ const findNearest = () => {
 }
 
 // ---- 动作 ------------------------------------------------------------------------------------------------------
-actions = createActions({ rig, whale, mover, cam, game, hud, woods: city.woods, particles, field, plan, weather, plants, shared: field.uniforms, scene });
+actions = createActions({ rig, whale, mover, cam, game, hud, woods: city.woods, particles, field, plan, weather, plants, shared: field.uniforms, scene, vehicleAssets });
 const panels = createPanels({
   fishSprites,
+  farmSprites,
   actions,
   weather,
   game,
   hud,
+  renderer,
+  frame,
+  quality,
+  getPaint: () => paintNow,
+  setPaint(v) {
+    paintNow = v;
+  },
+  onQualityChange(q) {
+    safeStore.set('tg-quality', q);
+    const u = new URL(location.href);
+    u.searchParams.set('quality', q);
+    hud.toast(`已切换至「${q === 'high' ? '高画质' : q === 'medium' ? '中画质' : '流畅'}」，正在刷新应用…`, 1800);
+    setTimeout(() => {
+      location.href = u.toString();
+    }, 500);
+  },
+  onPlayEmote(em) {
+    whale.trigger(em.id, em.dur);
+    hud.toast(`${em.icon ?? ''} 动作：${em.label}`, 1400);
+  },
   onAction(id) {
     if (id === 'bag') return panels.openBag();
+    if (id === 'dex') return panels.openDex();
+    if (id === 'emotes') return panels.openEmotes();
+    if (id === 'settings') return panels.openSettings();
+    if (id === 'map') {
+      if (hud.isOpen) hud.close();
+      cam.unlock();
+      mover.keys.clear();
+      return bigmap.open();
+    }
     if (id === 'weather') return panels.openWeather();
     if (id === 'camera') {
       hud.close();
@@ -958,10 +1107,41 @@ const photo = createPhoto({
   },
 });
 
+const boardRail = () => {
+  if (!railTrip || railTrip.phase !== 'waiting') return false;
+  if (!railTrip.train.isStoppedAt(railTrip.from.stopMidS)) {
+    hud.toast('高铁还在进站途中，请稍候…');
+    return true;
+  }
+  if (seated) {
+    seated = null;
+    whale.group.visible = true;
+  }
+  railTrip.phase = 'riding';
+  railTrip.arrivedAt = 0;
+  cabinBase.yaw = cam.yaw;
+  cabinBase.pitch = cam.pitch;
+  railTrip.train.departToward(railTrip.to.stopMidS);
+  hud.toast(`已登上前往 ${railTrip.to.name} 的高铁！坐在窗边欣赏风景吧（拖动鼠标可环顾窗外，X 快进到站）`, 4200);
+  return true;
+};
+
 const doInteract = () => {
+  // 正在站台候车且列车已停稳开门：优先按 E 上车！
+  if (railTrip?.phase === 'waiting' && railTrip.train.isStoppedAt(railTrip.from.stopMidS) && (!nearest || nearest.kind === 'station' || nearest.kind === 'chair')) {
+    if (!seated || nearest?.kind !== 'chair') {
+      boardRail();
+      return;
+    }
+  }
   // 坐着的时候，E 就是起身
   if (seated) {
     standUp();
+    return;
+  }
+  // 正在骑乘/驾驶载具时，按 E 随时下车（不必回到原地）
+  if (ridden && !hud.isOpen) {
+    game.interact(ridden.it);
     return;
   }
   if (hud.isOpen) {
@@ -1017,10 +1197,54 @@ window.addEventListener('keydown', (e) => {
     if (hud.isOpen) hud.close();
     else cam.unlock();
   }
-  if (e.code === 'KeyB') panels.openBag();
+  if (e.code === 'KeyB') {
+    if (hud.isOpen) hud.close();
+    else panels.openBag();
+  }
+  if (e.code === 'KeyJ') {
+    if (hud.isOpen) hud.close();
+    else panels.openDex();
+  }
+  if (e.code === 'KeyO') {
+    if (hud.isOpen) hud.close();
+    else panels.openSettings();
+  }
+  if (e.code === 'KeyU') {
+    if (hud.isOpen) hud.close();
+    else panels.openEmotes();
+  }
   if (e.code === 'KeyT') {
     if (hud.isOpen) hud.close();
     else panels.openWeather();
+  }
+  if (e.code === 'KeyX' && railTrip?.phase === 'riding') {
+    railTrip.train.approachStop(railTrip.to.stopMidS, 38);
+    railTrip.train.setHoldDoors(false);
+    hud.toast('列车即将进站…');
+    return;
+  }
+  if (e.code === 'KeyX' && busTrip?.phase === 'riding') {
+    city.bus?.fastForwardTo(busTrip.toS);
+    hud.toast('37 路公交即将到站…');
+    return;
+  }
+  if (e.code === 'KeyX' && metroTrip?.phase === 'riding') {
+    city.metro1?.fastForward();
+    hud.toast('地铁 1 号线即将进站…');
+    return;
+  }
+  if (e.code === 'KeyZ' && indoor && !hud.isOpen && !seated) {
+    actions.act('fastWalk');
+    return;
+  }
+  if (!hud.isOpen && !seated && !railTrip && /^Digit[1-9]$/.test(e.code)) {
+    const idx = Number(e.code.slice(5)) - 1;
+    const em = panels.getEmoteForKey(idx) ?? PET_EMOTES[idx];
+    if (em) {
+      whale.trigger(em.id, em.dur);
+      hud.toast(`${em.icon ?? ''} 动作：${em.label}`, 1200);
+      return;
+    }
   }
   if (!indoor && !hud.isOpen && !seated && actions.handleKey(e.code)) e.preventDefault();
   if (e.code === 'Space') e.preventDefault();
@@ -1047,34 +1271,149 @@ function hintOf(it) {
 // ---- 主循环 ----------------------------------------------------------------------------------------------------
 let last = performance.now();
 let mapAccum = 0;
+const _railSeatPos = new THREE.Vector3();
+const _railSeatYaw = { value: 0 };
+const _cabPos = new THREE.Vector3();
+const _cabLook = new THREE.Vector3();
+const baseFov = camera.fov;
 
 function tick(dt) {
   const ground = indoor ? interior.groundAt : plan.walkAt;
+  const ridingTransit = railTrip?.phase === 'riding' || (busTrip?.phase === 'riding' && !!city.bus?.seatWorld) || (metroTrip?.phase === 'riding' && !!city.metro1);
 
-  if (seated) {
-    // 坐着：人不动，坐下去一点
+  // 关键防抖顺序：在车内随行时，必须先推进列车/公交/地铁的本帧位置，再把小鱼与车内镜头严丝合缝贴到本帧车厢矩阵上！
+  // 彻底杜绝 1 帧位置滞后造成的窗外剧烈抖动！
+  if (ridingTransit) {
+    city.update(dt, [whale.state.x, whale.state.z], camera);
+  }
+  const wantFov = ridingTransit ? 60 : baseFov;
+  if (Math.abs(camera.fov - wantFov) > 0.05) {
+    camera.fov += (wantFov - camera.fov) * Math.min(1, dt * 8);
+    camera.updateProjectionMatrix();
+  }
+
+  if (railTrip?.phase === 'riding') {
+    // 坐在高铁车厢内部靠窗座位，镜头就在车厢内跟随小鱼望向窗外风景！
+    const tr = railTrip.train;
+    tr.seatWorld(1, _railSeatPos, _railSeatYaw);
+    whale.state.x = _railSeatPos.x;
+    whale.state.y = _railSeatPos.y;
+    whale.state.groundY = _railSeatPos.y;
+    whale.state.z = _railSeatPos.z;
+    whale.state.yaw = _railSeatYaw.value;
+    whale.state.visualYaw = _railSeatYaw.value;
+    whale.update(dt, camera, false, 'sit');
+    if (tr.cabinView?.(1, _cabPos, _cabLook, cam.yaw - cabinBase.yaw, cam.pitch - cabinBase.pitch)) {
+      camera.position.copy(_cabPos);
+      camera.lookAt(_cabLook);
+      cam.pivot.copy(_cabLook);
+    } else {
+      cam.update(dt, whale.state, () => _railSeatPos.y - 0.5, 0.85);
+    }
+    if (tr.isStoppedAt(railTrip.to.stopMidS)) {
+      railTrip.arrivedAt += dt;
+      if (railTrip.arrivedAt > 0.7) {
+        const dest = railTrip.to;
+        railTrip = null;
+        if (dest.platform) {
+          whale.state.x = dest.platform[0];
+          whale.state.z = dest.platform[2];
+          whale.state.y = whale.state.groundY = dest.platform[1];
+        } else if (dest.exit) {
+          whale.setPos(dest.exit[0], dest.exit[1]);
+        }
+        cam.want = 7.5;
+        game.state.minutes += 8;
+        game.syncStats?.();
+        hud.toast(`高铁已抵达 ${dest.name}，欢迎下车！`, 3500);
+      }
+    }
+  } else if (busTrip?.phase === 'riding' && city.bus?.seatWorld) {
+    // 坐在 37 路复古公交车厢内靠窗座位，镜头在车内跟随小鱼欣赏窗外玉海城街景！
+    const bus = city.bus;
+    bus.seatWorld(_railSeatPos, _railSeatYaw);
+    whale.state.x = _railSeatPos.x;
+    whale.state.y = _railSeatPos.y;
+    whale.state.groundY = _railSeatPos.y;
+    whale.state.z = _railSeatPos.z;
+    whale.state.yaw = _railSeatYaw.value;
+    whale.state.visualYaw = _railSeatYaw.value;
+    whale.update(dt, camera, false, 'sit');
+    if (bus.cabinView?.(_cabPos, _cabLook, cam.yaw - cabinBase.yaw, cam.pitch - cabinBase.pitch)) {
+      camera.position.copy(_cabPos);
+      camera.lookAt(_cabLook);
+      cam.pivot.copy(_cabLook);
+    }
+    if (bus.isStoppedAt(busTrip.toS)) {
+      busTrip.arrivedAt += dt;
+      if (busTrip.arrivedAt > 0.8) {
+        const dest = busTrip.to;
+        busTrip = null;
+        whale.setPos(dest.x + 1, dest.z - 3);
+        cam.want = 7.5;
+        game.state.minutes += 10;
+        game.syncStats?.();
+        hud.toast(`🚌 37 路公交已抵达 ${dest.name}，欢迎下车！`, 3500);
+      }
+    }
+  } else if (metroTrip?.phase === 'riding' && city.metro1) {
+    // 坐在地铁 1 号线紫绒长椅上，镜头在车厢内部随列车穿行暖灯拱顶隧道！
+    const m1 = city.metro1;
+    m1.seatWorld(_railSeatPos, _railSeatYaw);
+    whale.state.x = _railSeatPos.x;
+    whale.state.y = _railSeatPos.y;
+    whale.state.groundY = _railSeatPos.y;
+    whale.state.z = _railSeatPos.z;
+    whale.state.yaw = _railSeatYaw.value;
+    whale.state.visualYaw = _railSeatYaw.value;
+    whale.update(dt, camera, false, 'sit');
+    if (m1.cabinView?.(_cabPos, _cabLook, cam.yaw - cabinBase.yaw, cam.pitch - cabinBase.pitch)) {
+      camera.position.copy(_cabPos);
+      camera.lookAt(_cabLook);
+      cam.pivot.copy(_cabLook);
+    }
+    if (m1.phase === 'arrived') {
+      metroTrip.arrivedAt += dt;
+      if (metroTrip.arrivedAt > 1.1) {
+        const dest = metroTrip.to;
+        metroTrip = null;
+        m1.endTrip();
+        whale.setPos(dest.x, dest.z + 3.2);
+        cam.want = 7.5;
+        game.state.minutes += 6;
+        game.syncStats?.();
+        hud.toast(`🚇 地铁 1 号线已抵达 ${dest.name}，已出站！`, 3500);
+      }
+    }
+  } else if (seated) {
+    // 坐着：人不动，按座位实际高度落座
     whale.state.x = seated.x;
     whale.state.z = seated.z;
-    whale.state.y = seated.kind === 'sofa' ? 0.42 : seated.kind === 'bed' ? 0.55 : 0.4;
-    whale.update(dt, camera, false, 'sit');
+    whale.state.y = seated.y;
+    whale.state.groundY = seated.y - 0.4;
+    whale.update(dt, camera, false, seated.kind === 'bed' ? 'sleep' : 'sit');
     cam.update(dt, whale.state, ground, 1.3);
   } else {
     let moving;
     let pose = null;
     let eye = indoor ? 0.9 : 1.35;
+    let animCtx = {};
     if (indoor) {
-      const moved = mover.step(dt, whale.state, cam, game.state.stamina > 15 ? 1 : 0.62);
+      const moved = mover.step(dt, whale.state, cam, game.state.stamina > 15 ? 1 : 0.62, false, game.state.stamina > 15);
       whale.state.y = whale.state.groundY = ground(whale.state.x, whale.state.z);
       moving = moved.moved > 0.004;
+      pose = moving ? moved.gait : null;
+      animCtx = { speed: moved.speed };
     } else {
-      // 室外：交给动作系统（跑、跳、爬树、游泳、潜水、钓鱼、晒太阳）
+      // 室外：交给动作系统（走、快走、跑、跳、二段跳、爬树、游泳、潜水、钓鱼、滑雪、划船、冲浪、放风筝、晒太阳）
       const r = actions.step(dt, ground);
       moving = r.moving;
       pose = r.pose;
       eye = r.eye;
+      animCtx = r.animCtx ?? {};
     }
     // 朝向跟着走的方向（爬树、钓鱼、躺着的时候不转）
-    const turn = indoor || ['ground', 'swim', 'dive'].includes(actions.mode);
+    const turn = indoor || ['ground', 'kite', 'swim', 'dive'].includes(actions.mode);
     if (turn && moving) {
       const f = cam.forward;
       const rxp = -f.y;
@@ -1087,16 +1426,45 @@ function tick(dt) {
       if (mover.keys.has('KeyA') || mover.keys.has('ArrowLeft')) mx -= 1;
       if (mx || mz) whale.state.yaw = Math.atan2(f.x * mz + rxp * mx, f.y * mz + rzp * mx);
     }
-    // 骑着的车跟着人走
-    if (ridden && rig) rig.move(ridden.model, whale.state.x, whale.state.y, whale.state.z, whale.state.yaw);
-    whale.update(dt, camera, moving || window.__tg?.forceMoving, window.__tg?.forcePose ?? pose);
+    // 骑着/开着的载具跟着人走（Blender 精模；推车放在身前把手处）
+    if (ridden?.mesh) {
+      const rv = ridden.it?.vehicle ?? '';
+      const pushOff = /wheelbarrow|handcart/.test(rv) ? 0.88 : 0;
+      ridden.mesh.position.set(
+        whale.state.x + Math.sin(whale.state.visualYaw) * pushOff,
+        whale.state.y,
+        whale.state.z + Math.cos(whale.state.visualYaw) * pushOff,
+      );
+      ridden.mesh.rotation.set(0, whale.state.visualYaw, 0);
+    } else if (ridden && rig) {
+      rig.move(ridden.model, whale.state.x, whale.state.y, whale.state.z, whale.state.yaw);
+    }
+    // 若在站台候车且列车已停稳开门：走近车门（距离车厢 < 3.6m）直接顺畅登车入座！
+    if (railTrip?.phase === 'waiting') {
+      const tr = railTrip.train;
+      if (tr.isStoppedAt(railTrip.from.stopMidS)) {
+        const nearCar = (tr.cars ?? []).some((c) => Math.hypot(c.position.x - whale.state.x, c.position.z - whale.state.z) < 3.6);
+        if (nearCar) boardRail();
+      }
+    }
+    // 若已叫 37 路公交且车已停稳开门：自动登车出发！
+    if (busTrip?.phase === 'waiting' && city.bus?.isStoppedAt(busTrip.fromS)) {
+      busTrip.phase = 'riding';
+      busTrip.arrivedAt = 0;
+      cabinBase.yaw = cam.yaw;
+      cabinBase.pitch = cam.pitch;
+      city.bus.departToward(busTrip.toS);
+      hud.toast(`🚌 已坐上 37 路公交前往 ${busTrip.to.name}！（拖动鼠标看窗外，X 快进到站）`, 4000);
+    }
+    const finalPose = window.__tg?.forcePose ?? (photo.on && !moving && !pose ? 'photo' : pose);
+    whale.update(dt, camera, moving || window.__tg?.forceMoving, finalPose, animCtx);
     cam.update(dt, whale.state, ground, eye);
   }
   // 相机拿在手上：焦距、歪镜头、她眼睛的机位
   photo.apply();
 
   field.update(dt, camera);
-  city.update(dt, [whale.state.x, whale.state.z], camera);
+  if (!ridingTransit) city.update(dt, [whale.state.x, whale.state.z], camera);
   if (!indoor) life?.update(dt, camera, nightNow);
   glow.setGrade(frame.grade);
   glow.update(dt, farming.ripe());
@@ -1110,18 +1478,47 @@ function tick(dt) {
   indoorLight();
   if (sky) sky.update(dt, camera);
   frame.update(dt, camera);
-  // 屋里的东西小，笔刷也要小
-  const wantPaint = indoor ? Math.min(1, paintNow) : paintNow;
+  // 屋里与车厢内景的近处笔刷也要克制，画面温润干净不闪烁
+  const wantPaint = indoor || ridingTransit ? Math.min(1, paintNow) : paintNow;
   if (frame.paint !== wantPaint) frame.paint = wantPaint;
   frame.render(indoor ? indoorScene : scene, camera);
 
-  nearest = seated ? null : findNearest();
-  if (!hud.isOpen) hud.prompt(seated ? '站起身' : nearest ? hintOf(nearest) : !indoor && actions.canFish() ? 'E 钓鱼' : null);
+  const inTransit = railTrip?.phase === 'riding' || busTrip?.phase === 'riding' || metroTrip?.phase === 'riding';
+  nearest = seated || inTransit ? null : findNearest();
+  if (!hud.isOpen) {
+    const railWaitReady = railTrip?.phase === 'waiting' && railTrip.train.isStoppedAt(railTrip.from.stopMidS);
+    hud.prompt(
+      railTrip?.phase === 'riding'
+        ? `🚄 高铁前往 ${railTrip.to.name} 中…（拖动环顾窗外 · X 快进到站）`
+        : busTrip?.phase === 'riding'
+          ? `🚌 37路公交前往 ${busTrip.to.name} 中…（拖动环顾窗外 · X 快进到站）`
+          : metroTrip?.phase === 'riding'
+            ? `🚇 地铁1号线前往 ${metroTrip.to.name} 中…（拖动环顾车厢 · X 快进到站）`
+            : busTrip?.phase === 'waiting'
+              ? `🚌 37路公交正在靠站开门…`
+              : seated
+          ? railWaitReady
+            ? `起身 · 或下椅按 E 登车`
+            : 'E 站起身'
+          : ridden
+            ? `E 下车（${ridden.it?.name ?? '载具'}）`
+            : railWaitReady
+            ? `E 登上高铁（前往 ${railTrip.to.name}）`
+            : nearest
+              ? hintOf(nearest)
+              : !indoor && actions.canFish()
+                ? 'E 钓鱼'
+                : railTrip?.phase === 'waiting'
+                  ? `🚄 等候前往 ${railTrip.to.name} 的高铁进站…`
+                  : null,
+    );
+  }
 
   mapAccum += dt;
   if (mapAccum > 0.1) {
     mapAccum = 0;
     panels.update(indoor, camera);
+    panels.recordExplore(whale.state.x, whale.state.z, $('stat-place')?.textContent ?? '', nightNow > 0.4);
     minimap.draw(0.1, { x: whale.state.x, z: whale.state.z, yaw: whale.state.yaw, waypoint: bigmap.waypoint, place: indoor ? '家里' : undefined });
     const wp = bigmap.waypoint;
     $('minimap-mode').textContent = wp ? `→ ${wp.name} ${Math.round(Math.hypot(wp.x - whale.state.x, wp.z - whale.state.z))} 米` : 'M 大地图';

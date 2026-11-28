@@ -259,16 +259,16 @@ void main() {
   vec3 N = normalize(vec3(rip.x, 1.0, rip.y));
   vec3 R = reflect(-V, N);
   R.y = abs(R.y);
-  vec3 mirror = mix(skyAt(normalize(R + vec3(0.0, 0.3, 0.0))), uMid * 1.05, 0.45);
-  // 对岸低处的东西也映在水里：岸、山
-  float shore = 1.0 - smoothstep(0.015, 0.1, R.y + r1.x * 0.03);
-  mirror = mix(mirror, vec3(0.04, 0.15, 0.07) * (uSkyColor + uSunColor * 0.25), shore * 0.85);
-  float fres = 0.03 + 0.97 * pow(1.0 - max(dot(N, V), 0.0), 5.0);
+  vec3 mirror = mix(skyAt(normalize(R + vec3(0.0, 0.26, 0.0))), uMid * 1.10, 0.38);
+  // 对岸低处的远山轻柔映在水面，不发暗浑浊
+  float shore = 1.0 - smoothstep(0.012, 0.085, R.y + r1.x * 0.03);
+  mirror = mix(mirror, vec3(0.07, 0.24, 0.18) * (uSkyColor + uSunColor * 0.30), shore * 0.45);
+  float fres = 0.06 + 0.94 * pow(1.0 - max(dot(N, V), 0.0), 4.6);
   float shade = cloudAt(xz);
-  // 湖底：浅处是沙的暖色透上来，再深是青绿，最深是蓝黑
-  vec3 bed = mix(vec3(0.42, 0.46, 0.3), vec3(0.06, 0.3, 0.3), smoothstep(0.0, 1.1, depth));
-  bed = mix(bed, vec3(0.012, 0.07, 0.12), smoothstep(0.8, 5.0, depth)) * (uSkyColor + uSunColor * 0.3 * shade);
-  vec3 col = mix(bed, mirror, clamp(fres * 1.15 + 0.12, 0.0, 1.0));
+  // 清澈吉卜力水色：浅滩透出暖奶油金沙，渐入明亮海碧青，深水为纯净天蓝
+  vec3 bed = mix(vec3(0.72, 0.67, 0.48), vec3(0.08, 0.44, 0.56), smoothstep(0.0, 1.15, depth));
+  bed = mix(bed, vec3(0.022, 0.14, 0.26), smoothstep(0.9, 5.2, depth)) * (uSkyColor * 1.05 + uSunColor * 0.38 * shade);
+  vec3 col = mix(bed, mirror, clamp(fres * 1.15 + 0.18, 0.0, 1.0));
   float glint = pow(max(dot(R, uSunDir), 0.0), 420.0) * shade * (1.0 - smoothstep(0.15, 0.7, uNight));
   col += uSunColor * glint * 2.5;
   // 夜里水面映出月亮碎银（和 sky.js 的 uMoonDir 同一方向）
@@ -285,9 +285,9 @@ void main() {
   float ring = sin(depth * 26.0 - uTime * 2.2 + texture(tNoise, xz / 9.0).r * 6.0);
   col = mix(col, vec3(0.93, 0.97, 1.0) * (uSkyColor * 0.85 + uSunColor * 0.3), smoothstep(0.86, 0.98, ring) * smoothstep(0.75, 0.2, depth) * smoothstep(0.05, 0.14, depth) * 0.45 * stFade);
   #endif
-  // 水边一道细细的白沫，随波一明一暗
-  float foam = smoothstep(0.16, 0.03, depth) * smoothstep(0.35, 0.6, texture(tNoise, xz / 1.7 + flow * 0.02).r + 0.25 * sin(uTime * 0.9 + xz.x * 0.4));
-  col = mix(col, vec3(0.92, 0.96, 0.98) * (uSkyColor * 0.9 + uSunColor * 0.3), foam * 0.7);
+  // 水边一道轻盈的浪花白沫，随微风轻轻荡漾
+  float foam = smoothstep(0.22, 0.025, depth) * smoothstep(0.32, 0.58, texture(tNoise, xz / 1.7 + flow * 0.02).r + 0.25 * sin(uTime * 0.9 + xz.x * 0.4));
+  col = mix(col, vec3(0.96, 0.98, 1.0) * (uSkyColor * 0.92 + uSunColor * 0.36), foam * 0.78);
   float alpha = smoothstep(0.0, 0.07, depth);
   outC = vec4(applyFog(col, vWorld), alpha);
 }
@@ -386,18 +386,18 @@ export function createLake(shared) {
     group.add(sea);
   }
 
-  // 岸边的芦苇：一丛丛细长的叶子，站在浅水里
-  const reedGeo = new THREE.ConeGeometry(0.05, 1.5, 4);
-  reedGeo.translate(0, 0.75, 0);
+  // 芦苇仅自然点缀在西北出水口一隅，让月亮湖南岸与东岸的新月白沙滩视野完全开阔！
+  const reedGeo = new THREE.ConeGeometry(0.05, 1.4, 4);
+  reedGeo.translate(0, 0.7, 0);
   const reedMat = paintMaterial(shared, { lit: [0.42, 0.56, 0.22], shade: [0.14, 0.28, 0.14], kind: 'flat' });
   const spots = [];
-  for (let i = 0; i < 70; i++) {
-    const a = i * 2.399;
-    const k = 0.9 + ((i * 37) % 11) / 11 * 0.1;
+  for (let i = 0; i < 42; i++) {
+    const a = Math.PI * 0.82 + (i / 42) * Math.PI * 0.48;
+    const k = 0.94 + ((i * 37) % 11) / 11 * 0.08;
     const cx = LAKE.x + Math.cos(a) * LAKE.rx * k;
     const cz = LAKE.z + Math.sin(a) * LAKE.rz * k;
-    if (Math.sin(a * 3.1 + 1) < -0.1) continue;
-    for (let j = 0; j < 9; j++) spots.push([cx + Math.sin(j * 2.1 + i) * 0.9, cz + Math.cos(j * 1.7 + i) * 0.9, 0.7 + ((j * 13 + i) % 7) / 7, Math.sin(j + i) * 0.18]);
+    if (Math.sin(a * 4.1 + 1) < 0.0) continue;
+    for (let j = 0; j < 6; j++) spots.push([cx + Math.sin(j * 2.1 + i) * 0.85, cz + Math.cos(j * 1.7 + i) * 0.85, 0.65 + ((j * 13 + i) % 7) / 7 * 0.75, Math.sin(j + i) * 0.18]);
   }
   const reeds = new THREE.InstancedMesh(reedGeo, reedMat, spots.length);
   const m4 = new THREE.Matrix4();
@@ -816,12 +816,12 @@ export function createCritters(shared, places) {
  * 石板街：每段沿长度每 3 m、横向 4 格细分，贴着地形走；每个端点补一个圆盘，拐角不露缝。
  * uv：x 是横向 0~1（边缘给 shader 做毛边），y 是世界坐标的米（石板不拉伸）。
  */
-export function roadGeometry(segs, width = 8) {
+export function roadGeometry(segs, width = 8, lift = 0.07) {
   const pos = [];
   const uv = [];
   const idx = [];
   const hw = width / 2;
-  const LIFT = 0.07;
+  const LIFT = lift;
   const ACROSS = 4;
   for (const s of segs) {
     const dx = s.bx - s.ax;
@@ -977,6 +977,80 @@ void main() {
 export function roadMaterialTextured(shared, albedo, { scale = 0.14, lit = [0.66, 0.64, 0.6], shade = [0.32, 0.33, 0.38] } = {}) {
   const a = albedo ? { ...albedo, scale } : null;
   return paintMaterial(shared, { lit, shade, kind: 'stone', rows: 6, albedo: a });
+}
+
+/**
+ * 房前连通大路的手绘小径材质（小石子路 road1 / 温暖泥土路 road0）：
+ * 带噪声毛边、草缘自然渗入、云影/建筑阴影、雨湿与冬霜，无缝融入吉卜力草地。
+ */
+export function footpathMaterial(shared, albedo, { scale = 0.36, lit = [0.76, 0.72, 0.64], shade = [0.46, 0.45, 0.48], mixAmt = 0.78 } = {}) {
+  const tex = albedo?.texture ?? null;
+  const mean = albedo?.mean ?? new THREE.Vector3(0.6, 0.6, 0.6);
+  const frag = /* glsl */ `
+    ${COMMON}
+    in vec3 vWorld;
+    in vec3 vN;
+    in vec2 vUv;
+    uniform sampler2D tPath;
+    uniform float uHasTex;
+    uniform float uScale;
+    uniform vec3 uMean;
+    uniform vec3 uLit;
+    uniform vec3 uShade;
+    uniform float uMix;
+    layout(location = 0) out vec4 outC;
+    void main() {
+      vec2 xz = vWorld.xz;
+      float edge = min(vUv.x, 1.0 - vUv.x) * 2.0;
+      float n = texture(tNoise, xz / 2.2).r * 0.6 + texture(tNoise, xz / 0.65).g * 0.4;
+      if (edge < 0.36 * n + 0.04) discard;
+      vec3 base = uLit;
+      if (uHasTex > 0.5) {
+        vec3 t = texture(tPath, xz * uScale).rgb;
+        vec3 d = t / max(uMean, vec3(0.08));
+        d = clamp((d - 1.0) * 1.15 + 1.0, vec3(0.55), vec3(1.55));
+        base *= mix(vec3(1.0), d, uMix);
+      }
+      // 边缘渗入一圈柔和的草色与水彩笔触感
+      float grassEdge = smoothstep(0.62, 0.20, edge) * (0.45 + 0.55 * n);
+      base = mix(base, vec3(0.24, 0.40, 0.16), grassEdge * 0.52);
+      base *= 0.94 + 0.12 * texture(tNoise, xz / 5.1).r;
+      float open = openAt(xz);
+      vec3 sun = uSunColor * 0.42 * max(dot(normalize(vN), uSunDir), 0.0) * 1.2 + uSkyColor * 0.46;
+      vec3 sky = uSkyColor * 0.96 + 0.08;
+      vec3 c = mix(base * uShade * sky, base * sun, smoothstep(0.2, 0.88, open));
+      c = mix(c, c * vec3(0.74, 0.78, 0.85), uWetness * 0.45);
+      c = mix(c, vec3(0.88, 0.91, 0.96) * (uSunColor * 0.36 + uSkyColor * 0.5), uFrost * 0.68);
+      outC = vec4(applyFog(c, vWorld), 1.0);
+    }`;
+  return new THREE.ShaderMaterial({
+    glslVersion: THREE.GLSL3,
+    vertexShader: /* glsl */ `
+      out vec3 vWorld;
+      out vec3 vN;
+      out vec2 vUv;
+      void main() {
+        vUv = uv;
+        vec4 w = modelMatrix * vec4(position, 1.0);
+        vWorld = w.xyz;
+        vN = normalize(mat3(modelMatrix) * normal);
+        gl_Position = projectionMatrix * viewMatrix * w;
+      }`,
+    fragmentShader: frag,
+    uniforms: {
+      ...shared,
+      tPath: { value: tex },
+      uHasTex: { value: tex ? 1 : 0 },
+      uScale: { value: scale },
+      uMean: { value: mean },
+      uLit: { value: new THREE.Color(...lit) },
+      uShade: { value: new THREE.Color(...shade) },
+      uMix: { value: mixAmt },
+    },
+    polygonOffset: true,
+    polygonOffsetFactor: -1,
+    polygonOffsetUnits: -4,
+  });
 }
 
 export function roadMaterial(shared, plaza = 0) {

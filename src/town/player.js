@@ -1,80 +1,144 @@
-// 主角：小鲸鱼（鲸鱼娘）的贴图立牌 + 第三人称相机 + 走路和碰撞。
-// 贴图是从两张画好的图裁出来的（正面 / 背面），相机转到她背后就用背面，
-// 转到前面就用正面。她写进 alpha 的是一个很小的数，所以：
-//   1) frame.js 的笔触收尾不会把她抹成一团（alpha < 0.6 表示"已经是画好的了"）
-//   2) 收尾的墨线会沿着她自动描一圈（相邻 alpha 差够大），和原作里那个漫游者是同一个机制
+// 主角：小鲸鱼（鲸鱼娘）的 3D 骨骼模型（宫崎骏/吉卜力手绘赛璐璐着色 + 倒壳墨线 + 完整动作系统）+ 第三人称相机 + 走路/快走/奔跑碰撞。
+// 她写进 alpha 的是 0.16（< 0.23）：
+//   1) frame.js 的 Kuwahara 笔触收尾不会把她的脸和眼睛抹糊（alpha < 0.6 表示"已经是画好的了"）
+//   2) frame.js 收尾的暖色墨线会沿着她的 3D 轮廓自动描一圈，和原作里的漫游者（valley/wanderer.js）同一套机制
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { COMMON } from '../lib/index.js';
 import { heightAt, walkAt, inLake, START, START_YAW, HALF } from './plan.js';
+import { createWhaleAnimator } from './whale_anim.js';
 
-const billboardVertex = /* glsl */ `
+// ---- 宫崎骏 / 吉卜力风格 3D 蒙皮赛璐璐着色器 ----
+const skinnedCelVertex = /* glsl */ `
+#include <common>
+#include <skinning_pars_vertex>
 out vec2 vUv;
-out vec2 vLocalUv;
 out vec3 vWorld;
-out vec3 vRight;
-out vec3 vFwd;
+out vec3 vN;
+out vec3 vCol;
 void main() {
   vUv = uv;
-  vLocalUv = uv;
-  vec4 w = modelMatrix * vec4(position, 1.0);
+  #ifdef USE_COLOR_ALPHA
+  vCol = color.rgb;
+  #elif defined(USE_COLOR)
+  vCol = color.rgb;
+  #else
+  vCol = vec3(0.0, 0.0, 1.0);
+  #endif
+  #include <beginnormal_vertex>
+  #include <skinbase_vertex>
+  #include <skinnormal_vertex>
+  #include <begin_vertex>
+  #include <skinning_vertex>
+  vec4 w = modelMatrix * vec4(transformed, 1.0);
   vWorld = w.xyz;
-  vRight = normalize(mat3(modelMatrix) * vec3(1.0, 0.0, 0.0));
-  vFwd = normalize(mat3(modelMatrix) * vec3(0.0, 0.0, 1.0));
+  vN = normalize(mat3(modelMatrix) * objectNormal);
   gl_Position = projectionMatrix * viewMatrix * w;
 }
 `;
 
-const billboardFragment = /* glsl */ `
+const skinnedCelFragment = /* glsl */ `
 ${COMMON}
 uniform sampler2D tArt;
 uniform vec3 uTint;
 uniform float uAlpha;
 uniform float uIndoor;
 in vec2 vUv;
-in vec2 vLocalUv;
 in vec3 vWorld;
-in vec3 vRight;
-in vec3 vFwd;
+in vec3 vN;
+in vec3 vCol;
 layout(location = 0) out vec4 outC;
+
 void main() {
-  vec4 t = texture(tArt, vUv);
-  if (t.a < 0.5) discard;
-  // 2.5D 柔球柱虚拟法线：让角色吃太阳方向、树荫、建筑阴影、黄昏与雨雪，不再像自发光贴纸
-  vec2 sp = (vLocalUv - vec2(0.5, 0.54)) * vec2(1.85, 1.35);
-  vec3 N = normalize(vRight * (sp.x * 0.55) + vec3(0.0, sp.y * 0.32 + 0.22, 0.0) + vFwd * 0.86);
+  vec3 N = normalize(vN);
+  if (!gl_FrontFacing) N = -N;
+
+  // 采样手绘感底色，轻微提亮过暗的缝隙并保持吉卜力水彩的清透饱和度
+  vec3 tex = texture(tArt, vUv).rgb * uTint;
+  vec3 base = mix(tex, pow(max(tex, vec3(0.001)), vec3(0.92)), 0.32);
+  float lum = dot(base, vec3(0.2126, 0.7152, 0.0722));
+  base = max(mix(vec3(lum), base, 1.08), vec3(0.0));
+
+  float faceMask = clamp(vCol.r, 0.0, 1.0);
+  float softAo = clamp(vCol.b, 0.72, 1.0);
+
+  // 两阶吉卜力赛璐璐受光：身体/头发有干净的明暗转折；脸部柔化转折，保证五官清透可爱
   float ndl = dot(N, uSunDir);
-  float lit = smoothstep(-0.38, 0.48, ndl);
-  // 室外吃云影、树荫与建筑投影；室内吃暖灯
-  float occ = uIndoor > 0.5 ? 1.0 : smoothstep(0.18, 0.85, openAt(vWorld.xz));
-  vec3 sunL = (uSunColor * 0.29 + uSkyColor * 0.38) * 1.12;
-  float skyGrey = dot(uSkyColor, vec3(0.333));
-  vec3 skyL = mix(vec3(skyGrey), uSkyColor, 0.62) * 0.98 + 0.22;
-  vec3 light = uIndoor > 0.5
-    ? mix(vec3(0.84, 0.8, 0.78), vec3(1.08, 1.02, 0.94), lit) * (0.45 + 0.34 * dot(uSunColor, vec3(0.333)))
-    : mix(skyL, sunL, lit * occ);
-  // 极克制的边缘暖阳轮廓光，提升角色与背景的空气层次
-  float rim = smoothstep(0.45, 0.92, length(sp)) * max(0.0, dot(normalize(vRight * sp.x + vec3(0.0, 0.4, 0.0)), uSunDir) * 0.5 + 0.5);
-  vec3 col = t.rgb * uTint * light;
+  float bodyLit = smoothstep(-0.02, 0.14, ndl + 0.12);
+  float faceLit = smoothstep(-0.42, 0.35, ndl + 0.42);
+  float lit = mix(bodyLit, max(bodyLit, faceLit * 0.92), faceMask);
+
+  // 室外吃云影与树影（保留底亮，避免钻进树荫变黑）
   if (uIndoor < 0.5) {
-    col += uSunColor * (0.045 * rim * occ);
-    // 雨天微湿压深；霜雪天头顶沾一层极淡微霜
-    col = mix(col, col * vec3(0.84, 0.88, 0.94), uWetness * 0.28);
-    float crown = smoothstep(0.72, 0.96, vLocalUv.y);
-    col = mix(col, vec3(0.95, 0.97, 1.0) * (uSunColor * 0.32 + uSkyColor * 0.42), uFrost * crown * 0.26);
+    float open = smoothstep(0.32, 0.62, openAt(vWorld.xz));
+    lit *= mix(0.42, 1.0, open);
+  }
+
+  vec3 sun = uSunColor * 0.44 + uSkyColor * 0.34;
+  float grey = dot(uSkyColor, vec3(0.333));
+  vec3 sky = mix(uSkyColor, vec3(grey), 0.76) * 1.18 + 0.21;
+
+  // 背光面按颜料调出偏蓝紫的透明阴影色（和 models.js / wanderer.js 一致）
+  vec3 shade = base * vec3(0.76, 0.79, 0.94) * mix(softAo, 1.0, faceMask * 0.7);
+  vec3 litPaint = base * mix(0.92 + 0.08 * softAo, 1.0, faceMask);
+  vec3 col = mix(shade * sky, litPaint * sun, lit);
+
+  // 柔和的阳光轮廓高光（背光/侧光时发梢与衣缘泛出温暖的吉卜力日照边）
+  vec3 V = normalize(uCamPos - vWorld);
+  float rim = pow(1.0 - max(dot(N, V), 0.0), 3.0) * smoothstep(-0.18, 0.55, ndl) * (1.0 - faceMask * 0.85);
+  col += (uSunColor * 0.15 + uSkyColor * 0.08) * rim * (uIndoor > 0.5 ? 0.35 : 0.9);
+
+  // 天气：雨天微润，雪天肩头/发顶落一点轻霜
+  if (uIndoor < 0.5) {
+    col = mix(col, col * vec3(0.84, 0.87, 0.92), uWetness * 0.25);
+    float up = smoothstep(0.55, 0.92, N.y) * (1.0 - faceMask);
+    vec3 snow = vec3(0.92, 0.95, 1.0) * (uSunColor * 0.36 + uSkyColor * 0.42);
+    col = mix(col, snow, uFrost * up * 0.38);
     col = applyFog(col, vWorld);
   }
+
   outC = vec4(col, uAlpha);
 }
 `;
 
-const shadowFragment = /* glsl */ `
+// ---- 蒙皮倒壳内墨线（增强发丝、袖口、鲸鱼耳、鲸鱼尾等 3D 叠层边界；脸部自动收细为零） ----
+const skinnedOutlineVertex = /* glsl */ `
+#include <common>
+#include <skinning_pars_vertex>
+uniform float uThick;
+out vec3 vWorld;
+void main() {
+  #ifdef USE_COLOR_ALPHA
+  float detail = color.g;
+  #elif defined(USE_COLOR)
+  float detail = color.g;
+  #else
+  float detail = 0.0;
+  #endif
+  #include <beginnormal_vertex>
+  #include <skinbase_vertex>
+  #include <skinnormal_vertex>
+  #include <begin_vertex>
+  #include <skinning_vertex>
+  // 脸部区域把挤出厚度压到几乎为 0，绝不糊住眼睛和嘴
+  float thick = uThick * (1.0 - detail * 0.92);
+  transformed += normalize(objectNormal) * thick;
+  vec4 w = modelMatrix * vec4(transformed, 1.0);
+  vWorld = w.xyz;
+  gl_Position = projectionMatrix * viewMatrix * w;
+}
+`;
+
+const skinnedOutlineFragment = /* glsl */ `
 ${COMMON}
-in vec2 vUv;
+uniform vec3 uInk;
+uniform float uAlpha;
+uniform float uIndoor;
+in vec3 vWorld;
 layout(location = 0) out vec4 outC;
 void main() {
-  float d = length(vUv - 0.5) * 2.0;
-  float a = smoothstep(1.0, 0.15, d) * 0.5;
-  outC = vec4(mix(vec3(0.05, 0.09, 0.14), uSkyColor * 0.2, 0.25), a);
+  vec3 col = uIndoor > 0.5 ? uInk : applyFog(uInk, vWorld);
+  outC = vec4(col, uAlpha);
 }
 `;
 
@@ -86,89 +150,16 @@ void main() {
 }
 `;
 
-// 动画帧：图集里的一格。uRect = 这一格的 u0, v0, 宽, 高；uFlip = 1 时左右翻转（侧跑的原画朝左）
-const clipVertex = /* glsl */ `
-uniform vec4 uRect;
-uniform float uFlip;
-out vec2 vUv;
-out vec2 vLocalUv;
-out vec3 vWorld;
-out vec3 vRight;
-out vec3 vFwd;
+const shadowFragment = /* glsl */ `
+${COMMON}
+in vec2 vUv;
+layout(location = 0) out vec4 outC;
 void main() {
-  float u = mix(uv.x, 1.0 - uv.x, uFlip);
-  vUv = uRect.xy + vec2(u, uv.y) * uRect.zw;
-  vLocalUv = vec2(u, uv.y);
-  vec4 w = modelMatrix * vec4(position, 1.0);
-  vWorld = w.xyz;
-  vRight = normalize(mat3(modelMatrix) * vec3(1.0, 0.0, 0.0));
-  vFwd = normalize(mat3(modelMatrix) * vec3(0.0, 0.0, 1.0));
-  gl_Position = projectionMatrix * viewMatrix * w;
+  float d = length(vUv - 0.5) * 2.0;
+  float a = smoothstep(1.0, 0.15, d) * 0.48;
+  outC = vec4(mix(vec3(0.05, 0.09, 0.14), uSkyColor * 0.2, 0.25), a);
 }
 `;
-
-const ART = { w: 512, h: 768 };
-const VIEWS = ['front', 'side', 'back'];
-
-/** 读三张画（正面/侧面/背面，都来自 dsh-pet 的官方立绘），各做成一个材质。 */
-export async function loadWhalechan(shared, base = './figures/') {
-  const loader = new THREE.TextureLoader();
-  const load = (f) =>
-    new Promise((res, rej) =>
-      loader.load(
-        base + f,
-        (t) => {
-          t.colorSpace = THREE.SRGBColorSpace;
-          t.anisotropy = 4;
-          t.minFilter = THREE.LinearMipmapLinearFilter;
-          t.magFilter = THREE.LinearFilter;
-          t.needsUpdate = true;
-          res(t);
-        },
-        undefined,
-        rej,
-      ),
-    );
-  const indoorU = { value: 0 };
-  const textures = await Promise.all(VIEWS.map((v) => load(`whalechan-${v}.png`)));
-  const make = (tex) =>
-    new THREE.ShaderMaterial({
-      glslVersion: THREE.GLSL3,
-      vertexShader: billboardVertex,
-      fragmentShader: billboardFragment,
-      uniforms: { ...shared, tArt: { value: tex }, uTint: { value: new THREE.Color(1, 1, 1) }, uAlpha: { value: 0.16 }, uIndoor: indoorU },
-      side: THREE.DoubleSide,
-    });
-  const mats = Object.fromEntries(VIEWS.map((v, i) => [v, make(textures[i])]));
-  // 动画（从 dsh-pet 的透明动画里抽的帧：侧跑 / 小跑 / 待机 / 抱膝坐）。缺了就退回静态立绘。
-  const clips = {};
-  try {
-    const res = await fetch(`${base}clips.json`);
-    if (res.ok) {
-      const info = await res.json();
-      await Promise.all(
-        Object.entries(info).map(async ([name, c]) => {
-          const tex = await load(c.file);
-          tex.generateMipmaps = false;
-          tex.minFilter = THREE.LinearFilter;
-          clips[name] = {
-            ...c,
-            material: new THREE.ShaderMaterial({
-              glslVersion: THREE.GLSL3,
-              vertexShader: clipVertex,
-              fragmentShader: billboardFragment,
-              uniforms: { ...shared, tArt: { value: tex }, uTint: { value: new THREE.Color(1, 1, 1) }, uAlpha: { value: 0.16 }, uIndoor: indoorU, uRect: { value: new THREE.Vector4(0, 0, 1, 1) }, uFlip: { value: 0 } },
-              side: THREE.DoubleSide,
-            }),
-          };
-        }),
-      );
-    }
-  } catch (e) {
-    console.warn('主角动画没载入，用静态立绘', e);
-  }
-  return { ...mats, art: ART, clips, indoorU };
-}
 
 /** 把角度收进 [-π, π]。 */
 const wrapPi = (a) => {
@@ -178,11 +169,7 @@ const wrapPi = (a) => {
   return r;
 };
 
-/**
- * 选哪张图：相机在她正前方 → 正面；正后方 → 背面；中间 → 侧面。
- * @param yawToCam 从她指向相机的角度
- * @param facing 她的朝向
- */
+/** 保留旧接口导出，供测试脚本或外部调用兼容。 */
 export function pickView(yawToCam, facing) {
   const d = Math.abs(wrapPi(yawToCam - facing));
   if (d < Math.PI / 3) return 'front';
@@ -190,55 +177,103 @@ export function pickView(yawToCam, facing) {
   return 'side';
 }
 
+/** 载入 3D 骨骼小鲸鱼模型（public/figures/whalechan.glb）。 */
+export async function loadWhalechan(shared, base = './figures/') {
+  const loader = new GLTFLoader();
+  const gltf = await loader.loadAsync(`${base}whalechan.glb`);
+  let baseTexture = null;
+  gltf.scene.traverse((o) => {
+    if (o.isMesh && o.material?.map) {
+      baseTexture = o.material.map;
+      baseTexture.colorSpace = THREE.SRGBColorSpace;
+      baseTexture.anisotropy = 4;
+      baseTexture.minFilter = THREE.LinearMipmapLinearFilter;
+      baseTexture.magFilter = THREE.LinearFilter;
+      baseTexture.needsUpdate = true;
+    }
+  });
+  return { gltf, texture: baseTexture, is3D: true };
+}
+
 /**
- * 主角：一个永远面向相机的立牌（宽高比按 512×768），脚在地面上。
+ * 创建 3D 骨骼主角小鲸鱼（吉卜力赛璐璐着色 + 倒壳墨线 + 完整动作系统与二级物理）。
+ * @param shared 场景共享 uniforms（阳光、天光、雾、风、天气）
  * @param arts loadWhalechan 的结果
  */
 export function createWhalechan(shared, arts) {
   const group = new THREE.Group();
-  // 真人高度（1.68 m）。立绘本身是 Q 版比例，所以看起来头偏大——这是画风决定的，不是缩放错了。
-  const height = 1.68;
-  const width = (height * ART.w) / ART.h;
-  const geo = new THREE.PlaneGeometry(width, height);
-  geo.translate(0, height / 2, 0);
-  const mesh = new THREE.Mesh(geo, arts.back);
-  mesh.frustumCulled = false;
-  group.add(mesh);
-  // 动画用的立牌：一格是视频里 320×280 的一块，人在里面高约 216 像素、脚离下边 21 像素
-  const PX = height / 216;
-  const clipGeo = new THREE.PlaneGeometry(320 * PX, 280 * PX);
-  clipGeo.translate(0, (280 * PX) / 2 - 21 * PX, 0);
-  const clips = arts.clips ?? {};
-  const anim = new THREE.Mesh(clipGeo, Object.values(clips)[0]?.material ?? arts.back);
-  anim.frustumCulled = false;
-  anim.visible = false;
-  group.add(anim);
-  let clipTime = 0;
-  let clipName = '';
-  /** 播一段：按时间取帧，写进这段材质的 uRect */
-  const play = (name, dt, speed = 1, flip = false) => {
-    const c = clips[name];
-    if (!c) return false;
-    if (clipName !== name) {
-      clipName = name;
-      clipTime = 0;
-    }
-    clipTime += dt * speed;
-    const i = Math.floor((clipTime / c.seconds) * c.frames) % c.frames;
-    const col = i % c.cols;
-    const row = Math.floor(i / c.cols);
-    c.material.uniforms.uRect.value.set(col / c.cols, 1 - (row + 1) / c.rows, 1 / c.cols, 1 / c.rows);
-    c.material.uniforms.uFlip.value = flip ? 1 : 0;
-    if (anim.material !== c.material) anim.material = c.material;
-    return true;
-  };
+  const modelRoot = new THREE.Group();
+  const model = arts.gltf.scene;
+  modelRoot.add(model);
+  group.add(modelRoot);
 
-  // 影子：一块跟着地面转的圆
-  const shadowGeo = new THREE.PlaneGeometry(width * 0.9, width * 0.55);
+  const height = 1.60;
+  const width = 1.05;
+
+  const uIndoor = { value: 0 };
+  const celMat = new THREE.ShaderMaterial({
+    glslVersion: THREE.GLSL3,
+    vertexShader: skinnedCelVertex,
+    fragmentShader: skinnedCelFragment,
+    uniforms: {
+      ...shared,
+      tArt: { value: arts.texture },
+      uTint: { value: new THREE.Color(1, 1, 1) },
+      uAlpha: { value: 0.16 },
+      uIndoor,
+    },
+    vertexColors: true,
+    side: THREE.DoubleSide,
+  });
+
+  const outlineMat = new THREE.ShaderMaterial({
+    glslVersion: THREE.GLSL3,
+    vertexShader: skinnedOutlineVertex,
+    fragmentShader: skinnedOutlineFragment,
+    uniforms: {
+      ...shared,
+      uThick: { value: 0.0048 },
+      uInk: { value: new THREE.Color(0.08, 0.07, 0.14) },
+      uAlpha: { value: 0.16 },
+      uIndoor,
+    },
+    vertexColors: true,
+    side: THREE.BackSide,
+  });
+
+  let mainMesh = null;
+  const toAddOutlines = [];
+  model.traverse((o) => {
+    if (o.isSkinnedMesh) {
+      o.material = celMat;
+      o.frustumCulled = false;
+      mainMesh = o;
+      toAddOutlines.push(o);
+    } else if (o.isMesh) {
+      o.material = celMat;
+      o.frustumCulled = false;
+      if (!mainMesh) mainMesh = o;
+    }
+  });
+
+  // 人物主体写 uAlpha = 0.16，交给 frame.js 原生屏幕空间暖墨线（inkAt）自动勾勒干净无闪烁的吉卜力轮廓，
+  // 不再叠加会与双面发丝/裙边 Z-fighting 闪烁的 BackSide 倒壳。
+
+  const animator = createWhaleAnimator(model, arts.gltf.animations ?? []);
+
+  // 脚下接地投影圆
+  const shadowGeo = new THREE.PlaneGeometry(0.95, 0.95);
   shadowGeo.rotateX(-Math.PI / 2);
   const shadow = new THREE.Mesh(
     shadowGeo,
-    new THREE.ShaderMaterial({ glslVersion: THREE.GLSL3, vertexShader: shadowVertex, fragmentShader: shadowFragment, uniforms: { ...shared }, transparent: true, depthWrite: false }),
+    new THREE.ShaderMaterial({
+      glslVersion: THREE.GLSL3,
+      vertexShader: shadowVertex,
+      fragmentShader: shadowFragment,
+      uniforms: { ...shared },
+      transparent: true,
+      depthWrite: false,
+    }),
   );
   shadow.renderOrder = 2;
   group.add(shadow);
@@ -248,101 +283,79 @@ export function createWhalechan(shared, arts) {
     z: START[1],
     y: heightAt(START[0], START[1]),
     yaw: START_YAW,
+    visualYaw: START_YAW,
     vy: 0,
     onGround: true,
     speed: 0,
     walkPhase: 0,
     facingCamera: 0,
+    lift: 0,
   };
 
   return {
     group,
-    mesh,
+    mesh: mainMesh,
+    model,
+    animator,
+    mixer: animator.mixer,
+    clips: animator.clips,
+    bones: animator.bones,
     state,
     width,
     height,
+    /** 触发一个一次性交互动作（种植、浇水、采摘、做饭、吃饭、祈祷、挥手、欢呼、甩竿、点火等） */
+    trigger(name, duration) {
+      animator.trigger(name, duration);
+    },
+    /** 切换室内/室外光照模式 */
+    setIndoor(on) {
+      uIndoor.value = on ? 1 : 0;
+    },
+    /** 获取左手/右手骨骼的实时 3D 世界坐标 */
+    getHandWorldPos(side = 'right', out = new THREE.Vector3()) {
+      group.updateMatrixWorld(true);
+      return animator.getHandWorldPos(side, out);
+    },
     /**
-     * 每帧更新立牌朝向和动作。
-     * 坐着：抱膝坐。走着：镜头在侧面播侧跑（按往屏幕左还是右翻转）、在正面播小跑、在背后用背面立绘加摆动。
-     * 站着：镜头在正面播待机呼吸，其余用静态立绘。
+     * 每帧更新 3D 主角位置、平滑朝向、完整骨骼动作与二级物理。
      */
-    update(dt, camera, moving, pose = null) {
-      const pos = group.position;
-      pos.x = state.x;
-      pos.y = state.y + (state.lift ?? 0);
-      pos.z = state.z;
-      // 立牌绕着 Y 转向相机
-      const yawToCam = Math.atan2(camera.position.x - state.x, camera.position.z - state.z);
-      mesh.rotation.y = anim.rotation.y = yawToCam;
-      const facing = Math.atan2(Math.sin(state.yaw), Math.cos(state.yaw));
-      const view = pickView(yawToCam, facing);
-      // 她往屏幕右边走：立牌的 +x 就是屏幕右。原画朝左，所以往右走要翻转
-      const right = Math.sin(state.yaw) * Math.cos(yawToCam) - Math.cos(state.yaw) * Math.sin(yawToCam);
-      const running = pose === 'run';
-      const air = pose === 'air';
-      const swim = pose === 'swim';
-      const dive = pose === 'dive';
-      const climb = pose === 'climb';
-      const resting = pose === 'sit' || pose === 'lie' || pose === 'fish';
-      state.walkPhase += dt * (moving ? (running ? 13 : dive ? 4 : 9) : swim ? 3 : 2.2);
-      let animated = false;
-      let forceView = null;
-      if (resting) animated = play('sit', dt, pose === 'lie' ? 0.55 : 1);
-      else if (climb) forceView = 'back';
-      else if (dive) animated = play('run', dt, moving ? 0.8 : 0.35, right > 0);
-      else if ((moving || air) && view === 'side') animated = play('run', dt, running ? 2.2 : air ? 0.6 : 1.5, right > 0);
-      else if ((moving || air) && view === 'front') animated = play('jog', dt, running ? 2 : air ? 0.5 : 1.4);
-      else if (!moving && view === 'front') animated = play('idle', dt, 1);
-      anim.visible = animated;
-      mesh.visible = !animated;
-      if (!animated) {
-        clipName = '';
-        const v = forceView ?? view;
-        if (mesh.material !== arts[v]) mesh.material = arts[v];
-      }
-      // 走动时的小动作：上下颠、左右摆（背面没有动画帧，靠这个）
-      const step = moving && !air && !climb && !swim && !dive;
-      const bob = step ? Math.abs(Math.sin(state.walkPhase)) * (running ? 0.1 : 0.07) : Math.sin(state.walkPhase) * (swim ? 0.06 : 0.012);
-      mesh.position.set(0, bob, 0);
-      anim.position.set(0, step ? bob * 0.5 : swim ? bob : 0, 0);
-      let tilt = step ? Math.sin(state.walkPhase) * (running ? 0.09 : 0.06) : Math.sin(state.walkPhase * 0.6) * 0.012;
-      let sx = 1 + (step ? Math.sin(state.walkPhase * 2) * 0.025 : 0);
-      let sy = 1 - (step ? Math.sin(state.walkPhase * 2) * 0.03 : 0);
-      if (air) {
-        // 跳：往上冲的时候拉长，往下落的时候压扁一点
-        const k = Math.max(-0.14, Math.min(0.18, state.vy * 0.035));
-        sy = 1 + k;
-        sx = 1 - k * 0.6;
-        tilt = (right > 0 ? -1 : 1) * 0.08;
-      }
-      if (climb) {
-        // 抱着树干：左右晃，往上爬的时候一耸一耸
-        tilt = Math.sin(state.walkPhase * 0.8) * 0.05;
-        mesh.position.y = moving ? Math.abs(Math.sin(state.walkPhase * 1.3)) * 0.12 : 0;
-      }
-      if (dive) {
-        // 潜水：整个人横过来（头朝前进的方向），身子一波一波
-        tilt = (right > 0 ? -1 : 1) * (1.2 + Math.sin(state.walkPhase) * 0.08);
-        anim.position.set(right > 0 ? -0.55 : 0.55, 0.9, 0);
-      }
-      mesh.rotation.z = tilt;
-      anim.rotation.z = dive ? tilt : air ? tilt : 0;
-      mesh.scale.set(sx, sy, 1);
-      anim.scale.set(air ? sx : 1, air ? sy : 1, 1);
-      // 影子贴着地面（跳起来的时候影子留在地上、变小）；水里和树上没有影子
+    update(dt, camera, moving, pose = null, ctx = {}) {
+      const safeDt = Math.min(0.05, Math.max(0.0001, dt));
+      group.position.set(state.x, state.y + (state.lift ?? 0), state.z);
+
+      // 3D 朝向平滑插值（转弯丝滑，不瞬间 180° 跳变）
+      const turnRate = pose === 'ski' || pose === 'surf' || pose === 'boat' || pose === 'climb' ? 18 : 13;
+      state.visualYaw += wrapPi(state.yaw - state.visualYaw) * Math.min(1, safeDt * turnRate);
+      modelRoot.rotation.set(0, state.visualYaw, 0);
+
+      // 推进骨骼动作与风场二级物理
+      const activePose = animator.update(safeDt, {
+        pose,
+        moving,
+        speed: ctx.speed ?? state.speed ?? 0,
+        vy: state.vy,
+        yaw: state.visualYaw,
+        air: ctx.air ?? (pose === 'air' || pose === 'jump' || pose === 'doubleJump' || pose === 'fall'),
+        wind: shared?.uWind?.value ?? null,
+        steer: ctx.steer ?? 0,
+        brake: ctx.brake ?? false,
+        trick: ctx.trick ?? false,
+      });
+      state.pose = activePose;
+      state.walkPhase += safeDt * (moving ? (activePose === 'run' ? 12 : activePose === 'fastWalk' ? 9.5 : 7.5) : 2.2);
+
+      // 脚下影子贴地；水中、高空隐藏
       const groundY = state.groundY ?? state.y;
-      shadow.position.set(0, groundY - state.y + 0.03, 0);
-      shadow.visible = !swim && !dive && state.y - groundY < 4;
-      const s = 1 - Math.min(0.5, (state.y - groundY) * 0.12);
-      shadow.scale.setScalar(Math.max(0.4, s) * 1.1);
+      const inWater = pose === 'swim' || pose === 'dive' || pose === 'boat' || pose === 'surf';
+      shadow.position.set(0, groundY - state.y - (state.lift ?? 0) + 0.03, 0);
+      shadow.visible = !inWater && state.y - groundY < 4.5;
+      const s = 1 - Math.min(0.55, Math.max(0, state.y - groundY) * 0.12);
+      shadow.scale.setScalar(Math.max(0.35, s) * 1.05);
     },
     setPos(x, z) {
       state.x = x;
       state.z = z;
       state.y = walkAt(x, z);
-    },
-    setIndoor(on) {
-      if (arts.indoorU) arts.indoorU.value = on ? 1 : 0;
     },
   };
 }
@@ -351,7 +364,6 @@ export function createWhalechan(shared, arts) {
 export function createCamera(camera, canvas, dom) {
   const cam = {
     yaw: START_YAW + Math.PI,
-    // （开局镜头放低：地平线在画面中间，上半幅是天和云——和原作开场一样；俯着看，画面里只有地）
     pitch: 0.07,
     distance: 7.5,
     want: 7.5,
@@ -360,10 +372,8 @@ export function createCamera(camera, canvas, dom) {
     maxPitch: 1.15,
     maxDistance: 26,
     blocked: 1,
-    /** 看的方向（给主角走路用） */
     forward: new THREE.Vector2(0, 1),
   };
-  // 屋里的限制：天花板 2.9 m，所以镜头不能拉太远、也不能仰太高（仰过头会穿到天花板上）
   cam.setIndoor = (on) => {
     cam.maxDistance = on ? 15 : 26;
     cam.minDistance = on ? 5 : 2.2;
@@ -429,7 +439,6 @@ export function createCamera(camera, canvas, dom) {
     const offX = Math.sin(cam.yaw) * cp * cam.distance;
     const offZ = Math.cos(cam.yaw) * cp * cam.distance;
     const offY = Math.sin(cam.pitch) * cam.distance;
-    // 别钻进房子里：从人往镜头方向一步步探，碰到建筑的碰撞盒就停在它前面
     let k = 1;
     const boxes = cam.obstacles?.();
     if (boxes && boxes.length) {
@@ -454,23 +463,20 @@ export function createCamera(camera, canvas, dom) {
     cam.blocked += ((k < 1 ? k : 1) - cam.blocked) * Math.min(1, dt * (k < cam.blocked ? 30 : 4));
     const kk = cam.blocked;
     wanted.set(cam.pivot.x + offX * kk, cam.pivot.y + (offY + 0.6) * kk + (1 - kk) * 0.5, cam.pivot.z + offZ * kk);
-    // 别钻到地里
     const gy = groundAt(wanted.x, wanted.z) + 1.1;
     if (wanted.y < gy) wanted.y = gy;
     camera.position.lerp(wanted, Math.min(1, dt * 12));
     camera.lookAt(cam.pivot);
-    // 前后左右（沿地面，不看俯仰）
     cam.forward.set(-Math.sin(cam.yaw), -Math.cos(cam.yaw));
   };
   return cam;
 }
 
 /**
- * 走路：WASD 相对相机方向，Shift 跑。碰撞是轴对齐盒（建筑）加上"不能下水"和地图边界。
+ * 走路：WASD 相对相机方向，Z 切换快速行走，Shift 奔跑。碰撞是轴对齐/旋转盒（建筑）加上地图边界。
  * @param o.colliders [{x, z, hw, hd, top}]
  */
 export function createMover(o) {
-  // 碰撞盒可以换（屋里的家具和外面的建筑各一套）
   const list = () => o.colliderList?.() ?? o.colliders ?? [];
   const keys = new Set();
   window.addEventListener('keydown', (e) => {
@@ -480,13 +486,9 @@ export function createMover(o) {
   window.addEventListener('keyup', (e) => keys.delete(e.code));
   window.addEventListener('blur', () => keys.clear());
 
-  // ---- 碰撞盒：有朝向、有高度 ----
-  // 每个盒子有顶（topY）。脚比顶低不到 STEP 的（台阶、路牙、矮箱子）直接迈上去；跳起来够得着的能落在上面；
-  // 再高的才是墙，把人推出去。站在盒子上往外走，走出边就掉下去（actions.js 里的重力）。
   const STEP = 0.5;
   const groundOf = (x, z) => (o.groundAt ? o.groundAt(x, z) : 0);
   const topOf = (c) => (c.ty ??= (c.base ?? groundOf(c.x, c.z)) + (c.top ?? 20));
-  // 按 16 m 的格子分好（上万个盒子，每帧只问脚边那几格）
   const CELL = 16;
   let gridOf = null;
   let grid = null;
@@ -511,7 +513,6 @@ export function createMover(o) {
     return grid.get(Math.floor(x / CELL) * 4096 + Math.floor(z / CELL)) ?? EMPTY;
   };
   const EMPTY = [];
-  /** 脚下踩得到的最高的盒子顶（脚在 y；比脚高出 STEP 以上的不算）。没有就是 -Infinity。 */
   const floorAt = (x, z, y, pad = 0.12) => {
     let best = -Infinity;
     for (const c of near(x, z)) {
@@ -526,14 +527,11 @@ export function createMover(o) {
     }
     return best;
   };
-  /** 圆形的人对有朝向的盒子：把圆推出去，并返回最后一次接触法线。 */
   const pushOut = (p, radius) => {
     let nx = 0;
     let nz = 0;
     let hit = false;
     const feet = p.y ?? 0;
-    // Three passes resolve corners and adjacent building boxes without tunnelling
-    // through a second box after the first correction.
     for (let pass = 0; pass < 3; pass++) {
       let changed = false;
       for (const c of near(p.x, p.z)) {
@@ -545,7 +543,6 @@ export function createMover(o) {
         const dx = wx * cc - wz * cs;
         const dz = wx * cs + wz * cc;
         if (Math.abs(dx) > c.hw + radius || Math.abs(dz) > c.hd + radius) continue;
-        // 迈得上去、或者已经在它上面：不是墙
         if (topOf(c) <= feet + STEP) continue;
         const px = Math.min(c.hw, Math.max(-c.hw, dx));
         const pz = Math.min(c.hd, Math.max(-c.hd, dz));
@@ -564,16 +561,21 @@ export function createMover(o) {
             const edgeX = c.hw - Math.abs(dx);
             const edgeZ = c.hd - Math.abs(dz);
             if (edgeX < edgeZ) {
-              ax = Math.sign(dx || 1); az = 0; depth = radius + edgeX;
+              ax = Math.sign(dx || 1);
+              az = 0;
+              depth = radius + edgeX;
             } else {
-              ax = 0; az = Math.sign(dz || 1); depth = radius + edgeZ;
+              ax = 0;
+              az = Math.sign(dz || 1);
+              depth = radius + edgeZ;
             }
           }
           const gx = ax * cc + az * cs;
           const gz = -ax * cs + az * cc;
           p.x += gx * depth;
           p.z += gz * depth;
-          nx += gx; nz += gz;
+          nx += gx;
+          nz += gz;
           hit = changed = true;
         }
       }
@@ -583,18 +585,27 @@ export function createMover(o) {
     return hit ? { x: nx / Math.max(n, 1e-5), z: nz / Math.max(n, 1e-5) } : null;
   };
 
-  const state = { vx: 0, vz: 0, radius: 0.42 };
+  const state = { vx: 0, vz: 0, radius: 0.42, fastWalk: false };
 
   return {
     keys,
     floorAt,
     STEP,
-    /** 有盒子挪了地方（骑走的车）：格子重排 */
+    get fastWalk() {
+      return state.fastWalk;
+    },
+    set fastWalk(v) {
+      state.fastWalk = !!v;
+    },
+    toggleFastWalk() {
+      state.fastWalk = !state.fastWalk;
+      return state.fastWalk;
+    },
     dirty() {
       gridN = -1;
     },
-    /** 返回这一帧走了多远（给小地图和脚步声用）。 */
-    step(dt, p, cam, speedScale = 1, allowWater = false) {
+    /** 返回这一帧走了多远、当前速度和步态（walk / fastWalk / run）。 */
+    step(dt, p, cam, speedScale = 1, allowWater = false, canSprint = true) {
       const f = cam.forward;
       const rxp = -f.y;
       const rzp = f.x;
@@ -605,7 +616,9 @@ export function createMover(o) {
       if (keys.has('KeyD') || keys.has('ArrowRight')) mx += 1;
       if (keys.has('KeyA') || keys.has('ArrowLeft')) mx -= 1;
       const len = Math.hypot(mx, mz) || 1;
-      const base = keys.has('ShiftLeft') || keys.has('ShiftRight') ? 10.8 : 5.35;
+      const sprint = canSprint && (keys.has('ShiftLeft') || keys.has('ShiftRight'));
+      const brisk = !sprint && (state.fastWalk || keys.has('ControlRight'));
+      const base = sprint ? 11.0 : brisk ? 7.4 : 4.8;
       const wantX = ((f.x * mz + rxp * mx) / len) * base * speedScale;
       const wantZ = ((f.y * mz + rzp * mx) / len) * base * speedScale;
       const grip = 12;
@@ -615,13 +628,11 @@ export function createMover(o) {
       const oz = p.z;
       p.x += state.vx * dt;
       p.z += state.vz * dt;
-      // 边界
       const lim = HALF - 40;
       if (Math.abs(p.x) > lim) p.x = Math.sign(p.x) * lim;
       if (Math.abs(p.z) > lim) p.z = Math.sign(p.z) * lim;
       const contact = pushOut(p, state.radius);
       if (contact) {
-        // Remove velocity into the wall while preserving a little tangential slide.
         const into = state.vx * contact.x + state.vz * contact.z;
         if (into < 0) {
           state.vx -= contact.x * into;
@@ -630,14 +641,16 @@ export function createMover(o) {
           state.vz *= 0.86;
         }
       }
-      // 不下水
       if (!allowWater && inLake(p.x, p.z)) {
         p.x = ox;
         p.z = oz;
         state.vx *= 0.4;
         state.vz *= 0.4;
       }
-      return { moved: Math.hypot(p.x - ox, p.z - oz), speed: Math.hypot(state.vx, state.vz) };
+      const speed = Math.hypot(state.vx, state.vz);
+      p.speed = speed;
+      const gait = sprint ? 'run' : brisk ? 'fastWalk' : 'walk';
+      return { moved: Math.hypot(p.x - ox, p.z - oz), speed, gait };
     },
   };
 }

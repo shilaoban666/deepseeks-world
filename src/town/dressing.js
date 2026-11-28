@@ -6,7 +6,19 @@ import { SEGS, STREET_HALF, LANE_HALF, BUS_STOPS, RAIL_STATIONS, LAKE, SEA, HALF
 
 const TAU = Math.PI * 2;
 
-export function dress({ kit, random, painted, inst, makeRect, rectHit, rectNear, freeC, collide, railNear, faceRoad, extras = [] }) {
+export function dress({ kit, random, painted, inst, makeRect, rectHit, rectNear, freeC, collide, railNear, faceRoad, extras = [], add = null }) {
+  const VEH_LABEL = {
+    car: ['小汽车', 'E 开车'],
+    truck: ['小货车', 'E 开车'],
+    bus: ['乡间巴士', 'E 开巴士'],
+    bicycle: ['自行车', 'E 骑上去'],
+    veh_wheelbarrow: ['独轮车', 'E 推车走'],
+    prop_handcart: ['手推车', 'E 推车走'],
+    fishboat: ['小渔船', 'E 推下水去划'],
+    sailboat: ['小帆船', 'E 推下水去划'],
+  };
+  const SEAT_RE = /^(bench|prop_bench_|st_.*seat|inf_swing-bench|fur_(dining_chair|chair-old|armchair|rattan-sofa|settee|welcome-bench|milking-stool|stool-three-leg))/;
+  let seq = 0;
   const count = new Map();
   const where = new Map(); // 每种模型摆出去的某一件在哪（质检时去那儿看）
   const item = (id) => kit.byId.get(id);
@@ -60,6 +72,37 @@ export function dress({ kit, random, painted, inst, makeRect, rectHit, rectNear,
     if (o.loose && o.y != null && (id === 'pier' || /boat$/.test(id))) e.col = collide(r.x, r.z, r.hw - 0.05, r.hd, id === 'pier' ? 0.55 : id === 'rowboat' ? 0.22 : 0.5, turn, o.y);
     count.set(id, (count.get(id) ?? 0) + 1);
     if (!where.has(id) || random() < 0.2) where.set(id, [Math.round(x * 10) / 10, Math.round(z * 10) / 10, Math.round(turn * 100) / 100]);
+    if (add && !o.bird) {
+      if (VEH_LABEL[id]) {
+        const [vname, hint] = VEH_LABEL[id];
+        const isBoat = /boat$/.test(id);
+        add({
+          id: `dress-veh-${id}-${++seq}`,
+          name: vname,
+          kind: 'vehicle',
+          vehicle: isBoat ? 'transport-rowboat' : id,
+          x,
+          z,
+          r: Math.max(2.2, Math.max(it.w, it.d) * 0.65),
+          hint,
+          model: e,
+          accent: o.accent ?? null,
+          map: false,
+        });
+      } else if (SEAT_RE.test(id)) {
+        add({
+          id: `dress-seat-${id}-${++seq}`,
+          name: '长椅',
+          kind: 'chair',
+          x,
+          z,
+          r: 2.3,
+          hint: 'E 坐下',
+          seat: { x, y: (o.y ?? heightAt(x, z)) + 0.44, z, yaw: turn },
+          map: false,
+        });
+      }
+    }
     return e;
   };
   /** 在 (cx, cz) 周围 R 米里给一件大东西找块地。 */

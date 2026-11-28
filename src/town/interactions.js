@@ -29,7 +29,7 @@ for (const c of CROPS) {
   ITEMS[c.id] = { name: c.name, icon: '🥕', price: c.sell * 2, sell: c.sell, crop: c.id };
 }
 
-export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, onMap, onRide, busStops = [], metroStops = [], railStations = RAIL_STATIONS, fishSprites = null, farmSprites = null, fishAtlas = './textures/plants/fish.png' }) {
+export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, onBookRail, onBookBus, onBookMetro, onCheckTicket, onMap, onRide, onAnimate, busStops = [], metroStops = [], railStations = RAIL_STATIONS, fishSprites = null, farmSprites = null, fishAtlas = './textures/plants/fish.png' }) {
   // 作物的图标：手绘的收获物，种子用作物本身的小图
   if (farmSprites) {
     for (const c of CROPS) {
@@ -116,36 +116,100 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
   };
   const has = (need) => Object.entries(need).every(([k, n]) => count(k) >= n);
 
-  // ---- 钓鱼 --------------------------------------------------------------------------------------------------
+  // ---- 钓鱼（经典三段时机判定条：未到时机 / 最佳起鱼区 / 超过时机） -------------------------------------------
+  const renderFishingHtml = (f) => {
+    const z0 = Math.round(f.zoneStart * 100);
+    const zw = Math.round(f.zoneW * 100);
+    const z1 = Math.min(100, z0 + zw);
+    const pos = Math.min(100, Math.max(0, f.progress * 100));
+    const inZone = f.phase === 'bite';
+    const isLate = f.phase === 'late';
+    const statusText = inZone
+      ? '🎣 ！！就是现在！按 E 立刻拉竿！！'
+      : isLate
+        ? '💦 已经超过最佳时机，快跑了！'
+        : '🎣 浮漂轻晃，等待指针进入绿色起鱼区…';
+    const statusTag = inZone ? '最佳时机！' : isLate ? '已过时机' : '未到时机';
+    return `<div class="fish-status${inZone ? ' bite' : ''}"><span>${statusText}</span><span class="${inZone ? 'ok' : isLate ? 'no' : 'dim'}">${statusTag}</span></div>
+      <div class="fish-bar${inZone ? ' in-zone' : ''}">
+        <div class="fish-bar-inner">
+          <div class="fish-zone-early" style="width:${z0}%"></div>
+          <div class="fish-zone-sweet" style="left:${z0}%;width:${zw}%"></div>
+          <div class="fish-zone-late" style="left:${z1}%;width:${100 - z1}%"></div>
+        </div>
+        <div class="fish-needle" style="left:${pos.toFixed(1)}%"></div>
+      </div>
+      <div class="fish-legend">
+        <span>← 未到时机（太早）</span>
+        <span class="ok">★ 绿色起鱼区</span>
+        <span class="no">超过时机（太晚）→</span>
+      </div>
+      <div class="fish-keys"><span>指针进入绿色区域时按 <kbd>E</kbd> 或点「拉竿」</span><span><kbd>Esc</kbd> 收线</span></div>`;
+  };
+
   const startFishing = () => {
     if (fishing) return;
-    fishing = { phase: 'cast', t: 0, wait: 1.4 + Math.random() * 2.6, water: player.waterKind ?? 'lake', luck: acts?.fishBonus?.() ?? 0 };
-    hud.open('钓鱼', '<p id="fish-line">甩出鱼线……水面很静。</p>', [
-      { label: '收线', onClick: () => { fishing = null; hud.close(); } },
-    ], { dock: true });
+    const water = player.waterKind ?? 'lake';
+    const h = Math.floor(state.minutes / 60) % 24;
+    const fish = rollFish(water, { luck: state.luck + (acts?.fishBonus?.() ?? 0), night: h < 6 || h >= 19, rain: player.raining });
+    // 越稀有：绿色起鱼区越窄、指针扫得越快（经典考验反应节奏的钓鱼手感！）
+    const zoneW = [0, 0.16, 0.13, 0.10, 0.085][fish.rarity] + Math.min(0.025, state.luck * 0.008);
+    const zoneStart = 0.28 + Math.random() * Math.max(0.10, 0.56 - zoneW);
+    const duration = [0, 1.25, 1.05, 0.90, 0.78][fish.rarity];
+    const waveAmp = [0, 0.0, 0.18, 0.28, 0.38][fish.rarity];
+    const waveFreq = 5.5 + Math.random() * 3.5;
+    fishing = {
+      phase: 'cast', // 'cast'(未到) -> 'bite'(区间内) -> 'late'(已超过)
+      t: 0,
+      progress: 0,
+      duration,
+      waveAmp,
+      waveFreq,
+      zoneStart,
+      zoneW,
+      zoneEnd: zoneStart + zoneW,
+      water,
+      fish,
+    };
+    hud.open(
+      '垂钓中',
+      `<div id="fish-line" class="fish-box">${renderFishingHtml(fishing)}</div>`,
+      [
+        { label: '拉竿 (E)', primary: true, onClick: () => pullFishing() },
+        { label: '收线', onClick: () => { fishing = null; hud.close(); } },
+      ],
+      { dock: true },
+    );
+    let lastPhase = null;
     panelTick = () => {
       if (!fishing) return;
-      if (fishing.phase === 'cast') hud.refresh('fish-line', '甩出鱼线……水面上有细细的波纹。<br><span class="dim">（等一等）</span>');
-      else hud.refresh('fish-line', `<b class="warn">！上钩了</b> —— 按 <kbd>E</kbd> 拉竿！<br><span class="dim">还剩 ${fishing.life.toFixed(1)} 秒</span>`);
+      const needle = document.querySelector('#fish-line .fish-needle');
+      if (needle && lastPhase === fishing.phase) {
+        // 60fps 丝滑直驱指针位置，零重建 DOM 卡顿
+        needle.style.left = `${Math.min(100, Math.max(0, fishing.progress * 100)).toFixed(2)}%`;
+      } else {
+        lastPhase = fishing.phase;
+        hud.refresh('fish-line', renderFishingHtml(fishing));
+      }
     };
   };
   const pullFishing = () => {
     if (!fishing) return false;
-    if (fishing.phase === 'cast') {
-      hud.toast('太早了，鱼被吓跑了');
-      fishing = null;
+    const p = fishing.progress;
+    const { zoneStart, zoneEnd, fish: f } = fishing;
+    fishing = null;
+    if (p < zoneStart) {
       hud.close();
+      hud.toast('太早了！还没到咬钩时机，鱼被吓跑了');
       return true;
     }
-    const f = fishing.fish;
-    const good = Math.random() < 0.7 + state.luck * 0.05 - (f.rarity - 1) * 0.08;
-    fishing = null;
-    if (!good) {
+    if (p > zoneEnd) {
       hud.close();
-      hud.toast(f.rarity >= 3 ? `好大一条……线断了` : '跑掉了……');
+      hud.toast('太晚了！已经超过最佳时机，鱼挣脱跑掉了');
       return true;
     }
     state.stats.fish++;
+    onAnimate?.('cheer', 1.6);
     const first = !state.dex[f.id];
     state.dex[f.id] = (state.dex[f.id] ?? 0) + 1;
     // 传说的鱼拍张照就放回去；其余进背包（做饭用）
@@ -185,6 +249,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
       const got = farm.harvest(i, state.luck);
       add(got.crop.id, got.n);
       state.stats.harvested++;
+      onAnimate?.('cheer', 1.25);
       const back = Math.random() < 0.35;
       if (back) add(`seed-${got.crop.id}`, 1);
       syncStats();
@@ -207,6 +272,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
           if (!take(`seed-${id}`, 1)) return;
           farm.plant(i, id, state.day * 1440 + state.minutes);
           state.stats.planted++;
+          onAnimate?.('farm_plant', 1.05);
           hud.close();
           hud.toast(`种下了${CROP[id].name}。${p.water > 0.05 ? '地是湿的' : '记得浇水'}，大约 ${hoursLeft(farm.plot(i))}后能收`);
         });
@@ -219,6 +285,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
     // 地干了：E 一下就是浇水（身边几块一起浇），再按 E 才看长势
     if (!wetNow) {
       const n = waterAround();
+      onAnimate?.('farm_water', 1.15);
       return void hud.toast(n > 1 ? `提着水壶浇了 ${n} 块地` : `给${c.name}浇了水`);
     }
     hud.open(
@@ -235,6 +302,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
           disabled: wetNow,
           onClick: () => {
             farm.water(i);
+            onAnimate?.('farm_water', 1.15);
             hud.close();
             hud.toast(`给${c.name}浇了水`);
           },
@@ -243,6 +311,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
           label: '铲掉',
           onClick: () => {
             farm.clear(i);
+            onAnimate?.('farm_plant', 0.95);
             hud.close();
             hud.toast('铲掉了，地空出来了');
           },
@@ -297,6 +366,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
           for (const [k, n] of Object.entries(r.need)) take(k, n);
           add('cooked', 1);
           state.stats.cooked++;
+          onAnimate?.('cook', 1.45);
           hud.toast(`做好了 ${r.name}`);
           syncStats();
           openCook();
@@ -307,6 +377,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
 
   // ---- 商店 --------------------------------------------------------------------------------------------------
   const shop = (title, list, blurb, buysCrops = false) => {
+    onAnimate?.('wave', 1.1);
     const rows = list.map((k) => `<tr><td>${ITEMS[k].icon} ${ITEMS[k].name}${ITEMS[k].seedOf ? ` <span class="dim">· ${CROP[ITEMS[k].seedOf].hours} 小时熟，卖 ${CROP[ITEMS[k].seedOf].sell}/个</span>` : ''}</td><td class="need">${ITEMS[k].price} 金币</td></tr>`).join('');
     const mine = CROPS.reduce((n, c) => n + (state.bag[c.id] ?? 0), 0);
     hud.open(
@@ -381,6 +452,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
       arcade = null;
       hud.close();
       syncStats();
+      onAnimate?.('cheer', 1.4);
       hud.toast(`打完 5 轮，共 ${got} 分，换到 ${got * 3} 金币`);
     }
     return true;
@@ -417,6 +489,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
       }
       case 'snowman':
         state.minutes += 6;
+        onAnimate?.('cheer', 1.25);
         hud.toast(['给雪人拍实了一把雪，它看起来更圆了', '把雪人的鼻子扶正了。它好像在笑', '把自己的围巾借雪人围了一会儿，又拿回来了（冷）'][Math.floor(Math.random() * 3)]);
         break;
       case 'boat': {
@@ -490,6 +563,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
       case 'shell': {
         if (state.picked[it.id] === state.day) return void hud.toast('这一片捡过了，等明天潮水再送来');
         state.picked[it.id] = state.day;
+        onAnimate?.('gather', 1.0);
         const n = 1 + Math.floor(Math.random() * 2);
         add('shell', n);
         if (Math.random() < 0.06 + state.luck * 0.02) {
@@ -556,6 +630,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
                 state.hunger = Math.max(0, state.hunger - (port ? 6 : 12));
                 state.coins += pay;
                 syncStats();
+                onAnimate?.('work', 1.5);
                 hud.close();
                 hud.toast(port ? `十箱货搬完了，胳膊酸酸的。工头数了 ${pay} 金币给你` : `整理了一下午推理链，还喝到了咖啡。领到 ${pay} 金币`);
               },
@@ -574,6 +649,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
           state.coins += 6;
         }
         syncStats();
+        onAnimate?.(win ? 'cheer' : 'read', 1.35);
         hud.toast(win ? '樱花落在棋盘上。你走了一步怪棋，老爷爷想了很久，认输了（彩头 6 金币）' : '老爷爷落子很慢，赢得很快。「再来？」他笑眯眯地问');
         break;
       }
@@ -639,6 +715,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
           state.stamina = Math.min(100, state.stamina + 14);
           state.coins = Math.max(0, state.coins - 5);
           syncStats();
+          onAnimate?.('cheer', 1.35);
           hud.toast('跑了两圈，体力 +14（门票 5 金币）');
         } else hud.toast('太累了，先吃点东西');
         break;
@@ -652,6 +729,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
         state.stats.read++;
         state.stamina = Math.min(100, state.stamina + 6);
         syncStats();
+        onAnimate?.('read', 1.6);
         hud.open('图书馆', `<p>${books[Math.floor(Math.random() * books.length)]}</p><p class="dim">安静得能听见翻页的声音。</p>`, [
           { label: '合上书', onClick: () => hud.close() },
         ]);
@@ -663,6 +741,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
         state.stats.read++;
         const first = today('study') === 0;
         bump('study');
+        onAnimate?.('read', 1.6);
         if (first && Math.random() < 0.5) {
           state.coins += 12;
           hud.toast(`在${it.name}上了半节课，随堂小测居然全对——奖学金 12 金币`);
@@ -672,6 +751,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
       }
       case 'pray':
         state.luck = Math.min(3, state.luck + 1);
+        onAnimate?.('pray', 1.6);
         hud.open(
           it.name,
           '<p>你闭上眼睛，听见风穿过屋檐。</p><p class="ok">获得祝福：接下来钓到东西的概率更高（运气 +1）</p>',
@@ -682,10 +762,12 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
         if (state.coins < 1) return void hud.toast('没钱许愿了');
         state.coins -= 1;
         syncStats();
+        onAnimate?.('pray', 1.5);
         hud.toast('硬币沉进水里，翻了个身。愿望说给水听');
         break;
       case 'mail': {
         const letters = ['一封是广告：「玉海城第一届钓鱼大赛报名中」', '一张明信片，背面画着一朵云', '一封信写着「鱼片，记得按时吃饭」', '里面只有一张白纸，可能重要，可能不重要'];
+        onAnimate?.('wave', 1.1);
         hud.open('信箱', `<p>${letters[Math.floor(Math.random() * letters.length)]}</p>`, [{ label: '收好', onClick: () => hud.close() }]);
         break;
       }
@@ -715,6 +797,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
                     state.coins += q.reward;
                     state.quests = quests.filter((x) => x !== q);
                     syncStats();
+                    onAnimate?.('cheer', 1.5);
                     hud.close();
                     hud.toast(`完成委托，+${q.reward} 金币`);
                   },
@@ -744,6 +827,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
         const today = state.day;
         if (state.picked[it.id] === today) return void hud.toast(it.kind === 'orchard' ? '今天摘过了，留点给鸟吃' : '今天的菜摘过了');
         state.picked[it.id] = today;
+        onAnimate?.('gather', 1.05);
         const n = 2 + Math.floor(Math.random() * 3);
         add(it.kind === 'orchard' ? 'fruit' : 'veg', n);
         hud.toast(it.kind === 'orchard' ? `摘了 ${n} 个果子（${it.fruit ?? '水果'}）` : `摘了 ${n} 把青菜`);
@@ -781,24 +865,23 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
         hud.open(it.name, `<p>${it.text ?? ''}</p>`, [{ label: '嗯', onClick: () => hud.close() }]);
         break;
       case 'station': {
-        // 高铁：高架已经通了，五个站随便坐。it.stop 是这一站的名字（没有就按离得最近的站算）
+        // 高铁：购票 → 上站台候车（可坐在长椅休息）→ 列车进站开门 → 登车坐在车厢内沿高架旅行
         const here = railStations.find((st) => st.name === it.stop) ?? railStations.reduce((a, b) => (a && Math.hypot(a.x - it.x, a.z - it.z) <= Math.hypot(b.x - it.x, b.z - it.z) ? a : b), null);
         const fare = 5;
         const stops = railStations.filter((st) => st !== here);
         hud.open(
           here?.name ?? '高铁站',
-          `<p>大厅里很亮，广播在报站。车票 ${fare} 金币，一站大约 8 分钟。</p><p class="dim">高架从雪山绕过田园、海边新城、高铁总站，一路到大学城和湖边小镇。按 M 可以看地图。</p>`,
+          `<p>站台上的蓝白牌子被风吹得亮堂堂的。车票 ${fare} 金币，一站大约 8 分钟。</p><p class="dim">买票后会前往站台候车（可以坐在站台长椅上休息），列车进站开门后按 <kbd>E</kbd> 登车进入车厢。</p>`,
           [
             ...stops.map((st) => ({
-              label: `🚄 去 ${st.name}（${fare}）`,
+              label: `🚄 购票去 ${st.name}（${fare}）`,
               disabled: state.coins < fare,
               onClick: () => {
                 state.coins -= fare;
-                state.minutes += 8;
                 hud.close();
-                onTravel?.(st);
+                if (onBookRail) onBookRail(here, st, fare);
+                else onTravel?.(st);
                 syncStats();
-                hud.toast(`坐高铁到了 ${st.name}`);
               },
             })),
             { label: '看看地图', onClick: () => { hud.close(); onMap?.(); } },
@@ -809,26 +892,33 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
         break;
       }
       case 'bus': {
-        // it.line：'37 路公交'（默认）或者 '地铁 1 号线'；公交在各个公交站之间跑，地铁在地铁站之间跑
+        // it.line：'37 路公交'（真实 3D 复古公交沿街接送）或者 '地铁 1 号线'（地下 1 号线列车沉浸乘车）
         const line = it.line ?? '37 路公交';
         const metro = line.includes('地铁');
         const fare = 2;
-        const took = metro ? 6 : 12;
-        const stops = (metro ? metroStops : busStops).filter((st) => st.name !== it.stop);
+        const list = metro ? metroStops : busStops;
+        const here = list.find((st) => st.name === it.stop) ?? list.reduce((a, b) => (a && Math.hypot(a.x - it.x, a.z - it.z) <= Math.hypot(b.x - it.x, b.z - it.z) ? a : b), null);
+        const stops = list.filter((st) => st.name !== it.stop);
         hud.open(
           line,
-          `<p>${metro ? '站名' : '站牌'}：${it.stop ?? it.name}。车票 ${fare} 金币。</p>`,
+          metro
+            ? `<p>地铁 1 号线 · <b>${it.stop ?? it.name}</b>。单程票 ${fare} 金币。</p><p class="dim">购票进站后将登上 1 号线列车，坐在紫绒软座上穿梭地下隧道前往目的地（途中按 <kbd>X</kbd> 可快进到站）。</p>`
+            : `<p>37 路公交 · <b>${it.stop ?? it.name}</b>。投币 ${fare} 金币。</p><p class="dim">买票后 37 路复古公交车将驶来开门接你上车，坐在窗边一路欣赏玉海城风景（途中按 <kbd>X</kbd> 可快进到站）。</p>`,
           [
             ...stops.map((st) => ({
-              label: `去 ${st.name}（${fare}）`,
+              label: `${metro ? '🚇' : '🚌'} 去 ${st.name}（${fare}）`,
               disabled: state.coins < fare,
               onClick: () => {
                 state.coins -= fare;
-                state.minutes += took;
                 hud.close();
-                onTravel?.(st);
+                if (metro && onBookMetro) onBookMetro(here, st);
+                else if (!metro && onBookBus) onBookBus(here, st);
+                else {
+                  state.minutes += metro ? 6 : 12;
+                  onTravel?.(st);
+                  hud.toast(`坐${line}到了 ${st.name}`);
+                }
                 syncStats();
-                hud.toast(`坐${line}到了 ${st.name}`);
               },
             })),
             { label: '不坐了', wide: true, onClick: () => hud.close() },
@@ -862,12 +952,16 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
       case 'chair':
         onSit?.(it);
         break;
+      case 'ticketgate':
+        onCheckTicket?.(it);
+        break;
       case 'gate':
         hud.open(it.name ?? '玉海城', '<p>牌坊上的字被太阳晒得发白。门里是一条笔直的大街，尽头是玉海宫的金顶。</p><p class="dim">城里：宫前广场、玉海宫、清真寺、书店、老街、电影院、电玩店、超市、集市……</p>', [
           { label: '进城', onClick: () => hud.close() },
         ]);
         break;
       case 'gather':
+        onAnimate?.('gather', 1.0);
         if (Math.random() < 0.75 + state.luck * 0.05) {
           add('flower', 1);
           hud.toast('采到一朵野花');
@@ -877,6 +971,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
         state.stamina = Math.min(100, state.stamina + 12);
         state.minutes += 10;
         syncStats();
+        onAnimate?.('cheer', 1.45);
         hud.toast(['荡了一会儿秋千，风从耳边过去（体力 +12）', '从滑梯上溜下来，裙子沾了点沙（体力 +12）', '转了几圈旋转木马，有点晕（体力 +12）'][Math.floor(Math.random() * 3)]);
         break;
       case 'home':
@@ -914,6 +1009,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
           state.hunger = Math.min(100, state.hunger + 45);
           syncStats();
           onSit?.(it);
+          onAnimate?.('eat', 1.4);
           hud.toast('坐下来吃完了，很满足');
         } else if (it.seat) {
           onSit?.(it);
@@ -926,12 +1022,14 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
         state.stamina = 100;
         state.hunger = Math.max(6, state.hunger - 14);
         syncStats();
+        onAnimate?.('sleep', 1.8);
         hud.toast(`睡到第二天早上（第 ${state.day} 天）`);
         break;
       case 'desk':
         state.stamina = Math.min(100, state.stamina + 4);
         syncStats();
         if (it.seat) onSit?.(it);
+        onAnimate?.('read', 1.5);
         hud.open('书房', '<p>桌上摊着一本手绘背景的画册，边角被翻得起了毛。</p><p class="dim">「颜色要按颜料去调，不要按光去调。」</p>', [
           { label: '合上', onClick: () => hud.close() },
         ]);
@@ -940,9 +1038,11 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
         state.stamina = Math.min(100, state.stamina + 20);
         state.hunger = Math.max(0, state.hunger - 4);
         syncStats();
+        onAnimate?.('cheer', 1.25);
         hud.toast('洗了个热水澡，整个人都松了（体力 +20）');
         break;
       default:
+        onAnimate?.('wave', 1.0);
         hud.toast(it.name);
     }
   };
@@ -959,20 +1059,20 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
     else state.stamina = Math.max(0, state.stamina - dt * 0.6);
     farm?.update(dt * 2, player.raining);
     if (fishing) {
-      fishing.t += dt;
-      if (fishing.phase === 'cast' && fishing.t > fishing.wait) {
+      // 稀有鱼在拉扯时会有微妙的变速节奏，更像真实咬钩手感
+      const speedMul = 1 + (fishing.waveAmp ?? 0) * Math.sin(fishing.t * (fishing.waveFreq ?? 6));
+      fishing.t += dt * Math.max(0.65, speedMul);
+      fishing.progress = fishing.t / fishing.duration;
+      if (fishing.progress < fishing.zoneStart) {
+        fishing.phase = 'cast';
+      } else if (fishing.progress <= fishing.zoneEnd) {
         fishing.phase = 'bite';
-        // 上钩的是哪条：越稀有，留给你拉竿的时间越短
-        const h = Math.floor(state.minutes / 60) % 24;
-        fishing.fish = rollFish(fishing.water, { luck: state.luck + (fishing.luck ?? 0), night: h < 6 || h >= 19, rain: player.raining });
-        fishing.life = [0, 1.7, 1.35, 1.05, 0.8][fishing.fish.rarity];
-      } else if (fishing.phase === 'bite') {
-        fishing.life -= dt;
-        if (fishing.life <= 0) {
-          fishing = null;
-          hud.close();
-          hud.toast('鱼把饵吃了，跑了');
-        }
+      } else if (fishing.progress < 1.0) {
+        fishing.phase = 'late';
+      } else {
+        fishing = null;
+        hud.close();
+        hud.toast('超过最佳时机，鱼把饵吃了跑掉了');
       }
     }
     if (arcade) {
@@ -1038,6 +1138,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
         take(key, 1);
         state.hunger = Math.min(100, state.hunger + c.food);
         syncStats();
+        onAnimate?.('eat', 1.3);
         return `吃掉了一个${c.name}，饱食 +${c.food}`;
       }
       if (key === 'pearl') return '圆圆的，亮晶晶的。舍不得卖';
@@ -1048,6 +1149,7 @@ export function createGame({ hud, player, city, onDoor, onSit, onTv, onTravel, o
         state.hunger = Math.min(100, state.hunger + FOOD[key]);
         if (key === 'tea') state.stamina = Math.min(100, state.stamina + 15);
         syncStats();
+        onAnimate?.('eat', 1.3);
         return `吃掉了 ${ITEMS[key].icon}${ITEMS[key].name}，饱食 +${FOOD[key]}`;
       }
       return '';

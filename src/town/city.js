@@ -12,7 +12,7 @@ import { placeActivities } from './activities.js';
 import { dress } from './dressing.js';
 import { addBuildings, createBuildingMaterial, WALLS, ROOFS, SLATE } from '../valley/village.js';
 import { createGrove } from '../valley/trees.js';
-import { createLake, createTrees, createRocks, createFlowerClumps, createPigeons, createCritters, roadGeometry, plazaGeometry, roadMaterial, roadMaterialTextured } from './props.js';
+import { createLake, createTrees, createRocks, createFlowerClumps, createPigeons, createCritters, roadGeometry, plazaGeometry, roadMaterial, roadMaterialTextured, footpathMaterial } from './props.js';
 import { createPlantBatch } from './billboard.js';
 import { paintMaterial, getAlbedo } from './paint.js';
 import {
@@ -74,7 +74,7 @@ const STYLE = {
 };
 const FOOT = { cottage: [7, 10], house: [7.5, 11], wing: [10.5, 11], tall: [7, 8.5], long: [8, 19], church: [9, 22], round: [7.4, 7.4], slim: [3.8, 3.8] };
 
-export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar = 560, density = 1, plants = null, roadTex = false, models = [], kit = null } = {}) {
+export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar = 560, density = 1, plants = null, roadTex = false, models = [], kit = null, vehicleAssets = null } = {}) {
   const group = new THREE.Group();
   const b = new Builder(shared);
   // ---- 街具和地标换成套件里的模型 ----
@@ -136,26 +136,54 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
   const gym = swap(gym0, (o) => has('gym') && inst('gym', o.x, o.z, o.rotY ?? 0, { y: o.y, wall: PALETTE.wall[1], roof: [0.2, 0.46, 0.44] }));
   const stall = swap(stall0, (o) => has('stall') && inst('stall', o.x, o.z, o.rotY ?? 0, { y: o.y, accent: clothOf(o.c2 ?? 'cloth#0') }));
   const lamp = swap(lamp0, (x, z, rot = 0) => has('lamp') && inst('lamp', x, z, rot));
-  const bench = swap(bench0, (x, z, rot = 0) => has('bench') && inst('bench', x, z, rot));
+  const benchRaw = swap(bench0, (x, z, rot = 0) => has('bench') && inst('bench', x, z, rot));
+  let benchSeq = 0;
+  const bench = (b2, x, z, rot = 0) => {
+    const res = benchRaw(b2, x, z, rot);
+    add({ id: `bench-city-${++benchSeq}`, name: '长椅', kind: 'chair', x, z, r: 2.5, hint: 'E 坐下', seat: { x, y: heightAt(x, z) + 0.44, z, yaw: rot }, map: false });
+    return res;
+  };
   const stoneLantern = swap(stoneLantern0, (x, z) => has('stonelantern') && inst('stonelantern', x, z, 0));
-  const fence = swap(fence0, (x1, z1, x2, z2, height = 1.1) => {
-    if (!has('fence')) return null;
+  const fenceSegments = [];
+  const fence = (bb, x1, z1, x2, z2, height = 1.1) => {
     const len = Math.hypot(x2 - x1, z2 - z1);
-    const n = Math.max(1, Math.round(len / 1.6));
+    if (len < 0.2) return;
     const turn = Math.atan2(-(z2 - z1), x2 - x1);
-    const list = [];
-    const chain = ++fenceRuns;
-    for (let i = 0; i < n; i++) {
-      const t = (i + 0.5) / n;
-      // 顺着坡走：每一段落在自己两头较低的那一头，高出来的坡用栏杆自己的高度补上（不然一头悬空、一头埋进土里）
-      const ha = heightAt(x1 + ((x2 - x1) * i) / n, z1 + ((z2 - z1) * i) / n);
-      const hb = heightAt(x1 + ((x2 - x1) * (i + 1)) / n, z1 + ((z2 - z1) * (i + 1)) / n);
-      list.push(inst('fence', x1 + (x2 - x1) * t, z1 + (z2 - z1) * t, turn, { y: Math.min(ha, hb) - 0.04, scale: [len / n / 1.6, (height + Math.abs(ha - hb)) / 1.1, 1] }));
-      // （同一道篱笆里相邻的两段本来就是接着的，不算互相穿）
-      if (list[i].rect) list[i].rect.chain = chain;
+    const mx = (x1 + x2) / 2;
+    const mz = (z1 + z2) / 2;
+    // 为每一道木篱笆注册真实碰撞盒：主角不再穿模，同时 A* 房前小路会自动绕开所有篱笆！
+    b.collide(mx, mz, len / 2 + 0.12, 0.28, height + 0.5, turn);
+    const n = Math.max(1, Math.round(len / 1.6));
+    if (vehicleAssets?.hasFence) {
+      for (let i = 0; i < n; i++) {
+        const t = (i + 0.5) / n;
+        const ha = heightAt(x1 + ((x2 - x1) * i) / n, z1 + ((z2 - z1) * i) / n);
+        const hb = heightAt(x1 + ((x2 - x1) * (i + 1)) / n, z1 + ((z2 - z1) * (i + 1)) / n);
+        fenceSegments.push({
+          x: x1 + (x2 - x1) * t,
+          y: Math.min(ha, hb) - 0.03,
+          z: z1 + (z2 - z1) * t,
+          turn,
+          sx: len / n / 1.6,
+          sy: (height + Math.abs(ha - hb)) / 1.1,
+          sz: 1,
+        });
+      }
+      return;
     }
-    return list;
-  });
+    if (kit && has('fence')) {
+      const chain = ++fenceRuns;
+      for (let i = 0; i < n; i++) {
+        const t = (i + 0.5) / n;
+        const ha = heightAt(x1 + ((x2 - x1) * i) / n, z1 + ((z2 - z1) * i) / n);
+        const hb = heightAt(x1 + ((x2 - x1) * (i + 1)) / n, z1 + ((z2 - z1) * (i + 1)) / n);
+        const e = inst('fence', x1 + (x2 - x1) * t, z1 + (z2 - z1) * t, turn, { y: Math.min(ha, hb) - 0.04, scale: [len / n / 1.6, (height + Math.abs(ha - hb)) / 1.1, 1] });
+        if (e.rect) e.rect.chain = chain;
+      }
+      return;
+    }
+    fence0(bb, x1, z1, x2, z2, height);
+  };
   const uni = (id, base, v) => (v ?? base) / base;
   const LM = kit
     ? {
@@ -802,7 +830,8 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     paintedHouse(d.x + 22, d.z + 44, { shape: 'church', scale: 1.2, kitScale: 1.05, turn: faceRoad(d.x + 22, d.z + 44), wall: WALLS[0], roof: [0.72, 0.3, 0.2] });
     add({ id: 'church', name: '教堂', kind: 'pray', x: d.x + 22, z: d.z + 44, r: 15, hint: 'E 祈祷' });
     add({ id: 'lakeside', name: '湖边小镇', kind: 'village', x: d.x + 4, z: d.z + 12, r: 10, hint: 'E 和镇上的人聊聊', text: '红瓦的小房子挤在湖边。咖啡店把桌子摆到了水边，阳伞下有人在画湖。' });
-    for (const [x, z] of [[176, -520], [182, -496], [172, -470]]) parasols.push([x, z]);
+    // 湖边东岸与南岸沙滩太阳伞（呼应吉卜力海湾度假氛围）
+    for (const [x, z] of [[176, -520], [182, -496], [172, -470], [65, -432], [28, -426], [-85, -432]]) parasols.push([x, z]);
   }
 
   // ===== 高铁站：玻璃拱顶的大厅，铁路从背后的高架上过 =============================================================
@@ -1032,28 +1061,47 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     if (moles.length) LM.breakwater(b, [moles[0].a, moles[0].e, moles[1].e, moles[2].e], { top: moles[0].top });
   }
 
-  // ===== 公交站牌（37 路）和地铁口（1 号线）======================================================================
+  // ===== 公交站牌（37 路昭和木构站亭）和地铁口（1 号线红砖拱顶站口）=============================================
   for (const st of BUS_STOPS) {
     const gy = heightAt(st.x, st.z - 5);
-    b.add(new THREE.CylinderGeometry(0.06, 0.06, 2.8, 6), 'iron#0', [st.x, gy + 1.4, st.z - 5]);
-    b.add(new THREE.BoxGeometry(3.4, 0.12, 1.4), 'cloth#2', [st.x + 1.4, gy + 2.5, st.z - 5]);
-    b.add(new THREE.BoxGeometry(2.6, 0.12, 0.5), 'wood#1', [st.x + 1.4, gy + 0.5, st.z - 5.3]);
-    for (const dx of [0.2, 2.6]) b.add(new THREE.CylinderGeometry(0.05, 0.05, 2.5, 6), 'iron#0', [st.x + dx, gy + 1.25, st.z - 5.5]);
-    b.addSign(`37路 ${st.name}`, [st.x, gy + 2.2, st.z - 4.9], 0, { w: 2.6, h: 0.5, bg: '#e8a13a', fg: '#3a2a1c' });
-    claim(st.x + 1.2, st.z - 5, 2.6);
-    add({ id: `bus-${st.name}`, name: `公交站 · ${st.name}`, kind: 'bus', line: '37 路公交', x: st.x + 1, z: st.z - 4, r: 5, hint: 'E 坐 37 路公交', stop: st.name });
+    const stopModel = vehicleAssets?.hasTransit ? vehicleAssets.createBusStop37() : null;
+    if (stopModel) {
+      stopModel.position.set(st.x + 1.1, gy, st.z - 5);
+      group.add(stopModel);
+      b.addSign(`37路 ${st.name}`, [st.x + 1.1, gy + 2.48, st.z - 4.12], 0, { w: 2.8, h: 0.48, bg: '#e8a13a', fg: '#3a2a1c' });
+    } else {
+      b.add(new THREE.CylinderGeometry(0.06, 0.06, 2.8, 6), 'iron#0', [st.x, gy + 1.4, st.z - 5]);
+      b.add(new THREE.BoxGeometry(3.4, 0.12, 1.4), 'cloth#2', [st.x + 1.4, gy + 2.5, st.z - 5]);
+      b.add(new THREE.BoxGeometry(2.6, 0.12, 0.5), 'wood#1', [st.x + 1.4, gy + 0.5, st.z - 5.3]);
+      for (const dx of [0.2, 2.6]) b.add(new THREE.CylinderGeometry(0.05, 0.05, 2.5, 6), 'iron#0', [st.x + dx, gy + 1.25, st.z - 5.5]);
+      b.addSign(`37路 ${st.name}`, [st.x, gy + 2.2, st.z - 4.9], 0, { w: 2.6, h: 0.5, bg: '#e8a13a', fg: '#3a2a1c' });
+    }
+    claim(st.x + 1.2, st.z - 5, 2.8);
+    add({ id: `bus-${st.name}`, name: `37路公交站 · ${st.name}`, kind: 'bus', line: '37 路公交', x: st.x + 1, z: st.z - 3.6, r: 5.5, hint: 'E 乘坐 37 路公交', stop: st.name });
   }
   for (const st of METRO_STOPS) {
     const gy = heightAt(st.x, st.z);
-    b.add(new THREE.BoxGeometry(4.2, 0.3, 5.2), 'stone#2', [st.x, gy + 0.05, st.z]);
-    for (const [dx, dz] of [[-1.8, -2.3], [1.8, -2.3], [-1.8, 2.3], [1.8, 2.3]]) b.add(new THREE.CylinderGeometry(0.09, 0.09, 2.8, 6), 'iron#0', [st.x + dx, gy + 1.5, st.z + dz]);
-    b.add(new THREE.BoxGeometry(4.6, 0.2, 5.6), 'paint#9', [st.x, gy + 2.95, st.z]);
-    b.add(new THREE.BoxGeometry(3.6, 1.0, 0.12), 'glass#2', [st.x, gy + 0.9, st.z - 2.3]);
-    b.addSign(`Ⓜ ${st.name}`, [st.x, gy + 2.5, st.z + 2.86], 0, { w: 3.6, h: 0.6, bg: '#6a48b0', fg: '#ffffff' });
-    b.collide(st.x, st.z - 2.3, 1.9, 0.2, 3);
-    claim(st.x, st.z, 4);
-    add({ id: `metro-${st.name}`, name: `地铁 · ${st.name}`, kind: 'bus', line: '地铁 1 号线', x: st.x, z: st.z + 1, r: 4.5, hint: 'E 坐地铁 1 号线', stop: st.name });
+    const entModel = vehicleAssets?.hasTransit ? vehicleAssets.createMetroEntrance() : null;
+    if (entModel) {
+      entModel.position.set(st.x, gy, st.z);
+      group.add(entModel);
+      b.addSign(`Ⓜ 1号线 · ${st.name}`, [st.x, gy + 3.06, st.z + 2.85], 0, { w: 3.8, h: 0.58, bg: '#6a48b0', fg: '#ffffff' });
+      b.collide(st.x - 2.05, st.z - 0.15, 0.3, 2.6, 3.2);
+      b.collide(st.x + 2.05, st.z - 0.15, 0.3, 2.6, 3.2);
+      b.collide(st.x, st.z - 2.65, 2.2, 0.3, 3.2);
+    } else {
+      b.add(new THREE.BoxGeometry(4.2, 0.3, 5.2), 'stone#2', [st.x, gy + 0.05, st.z]);
+      for (const [dx, dz] of [[-1.8, -2.3], [1.8, -2.3], [-1.8, 2.3], [1.8, 2.3]]) b.add(new THREE.CylinderGeometry(0.09, 0.09, 2.8, 6), 'iron#0', [st.x + dx, gy + 1.5, st.z + dz]);
+      b.add(new THREE.BoxGeometry(4.6, 0.2, 5.6), 'paint#9', [st.x, gy + 2.95, st.z]);
+      b.add(new THREE.BoxGeometry(3.6, 1.0, 0.12), 'glass#2', [st.x, gy + 0.9, st.z - 2.3]);
+      b.addSign(`Ⓜ ${st.name}`, [st.x, gy + 2.5, st.z + 2.86], 0, { w: 3.6, h: 0.6, bg: '#6a48b0', fg: '#ffffff' });
+      b.collide(st.x, st.z - 2.3, 1.9, 0.2, 3);
+    }
+    claim(st.x, st.z, 4.5);
+    add({ id: `metro-${st.name}`, name: `地铁 1 号线 · ${st.name}`, kind: 'bus', line: '地铁 1 号线', x: st.x, z: st.z + 1.8, r: 5.2, hint: 'E 进站乘地铁 1 号线', stop: st.name });
   }
+  const metro1 = LM.createMetroLine1(shared, vehicleAssets);
+  if (metro1?.group) group.add(metro1.group);
 
   // ===== 高铁：站房、小站、高架、会跑的车 ========================================================================
   let train = null;
@@ -1095,11 +1143,18 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     // 总站
     const si = rail.nearest(20, 372);
     const gy = heightAt(stationHall.x, stationHall.z);
-    LM.grandStation(b, { x: stationHall.x, z: stationHall.z, rotY: 0, w: 70, d: 30, h: 18, sign: '高铁站', y: gy, platformY: rail.path[si][1] - gy - 0.2 });
+    const gs = LM.grandStation(b, { x: stationHall.x, z: stationHall.z, rotY: 0, w: 70, d: 30, h: 18, sign: '高铁站', y: gy, platformY: rail.path[si][1] - gy - 0.2 });
     claim(stationHall.x, stationHall.z, 40);
     claim(stationHall.x, stationHall.z + 30, 16);
-    RAIL_STATIONS.find((s) => s.main).exit = [stationHall.x, stationHall.z + 30];
-    add({ id: 'station', name: '高铁站', kind: 'station', stop: '高铁站', x: stationHall.x, z: stationHall.z + 26, r: 12, hint: 'E 看车次' });
+    const mainSt = RAIL_STATIONS.find((s) => s.main);
+    mainSt.exit = [stationHall.x, stationHall.z + 30];
+    mainSt.platform = gs.platform;
+    mainSt.stopMidS = rail.cum[si] - rail.cum[6];
+    add({ id: 'station', name: '高铁站', kind: 'station', stop: '高铁站', x: stationHall.x, z: stationHall.z + 26, r: 12, hint: 'E 购票候车' });
+    add({ id: 'station-plat-main', name: '高铁站 · 站台乘车点', kind: 'station', stop: '高铁站', x: gs.platform[0], z: gs.platform[2], r: 12, hint: 'E 购票 / 乘车', map: false });
+    gs.benches?.forEach((sb, bi) => {
+      add({ id: `bench-station-main-${bi}`, name: '站台长椅', kind: 'chair', x: sb.x, z: sb.z, r: 2.8, hint: 'E 坐下候车', seat: sb, map: false });
+    });
     for (const sx of [-1, 1]) for (let k = 0; k < 3; k++) lamp(b, stationHall.x + sx * (14 + k * 12), stationHall.z + 34, 0);
     for (const sx of [-1, 1]) bench(b, stationHall.x + sx * 8, stationHall.z + 40, 0);
     // 四个小站：站房朝着镇子那一边
@@ -1116,15 +1171,34 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
       let rot = Math.atan2(-tz, tx); // 局部 x 沿着铁轨
       const town = D(toward[st.name]);
       if (Math.sin(rot) * (town.x - p[0]) + Math.cos(rot) * (town.z - p[2]) < 0) rot += Math.PI;
-      LM.smallStation(b, { x: p[0], z: p[2], rotY: rot, name: st.name, deckY: p[1] });
-      const ex = p[0] + Math.sin(rot) * 20;
-      const ez = p[2] + Math.cos(rot) * 20;
-      st.exit = [ex, ez];
+      const ss = LM.smallStation(b, { x: p[0], z: p[2], rotY: rot, name: st.name, deckY: p[1] });
+      const bx = ss.booth?.[0] ?? (p[0] + Math.sin(rot) * 20);
+      const bz = ss.booth?.[2] ?? (p[2] + Math.cos(rot) * 20);
+      const bcx = ss.boothCenter?.[0] ?? bx;
+      const bcz = ss.boothCenter?.[2] ?? bz;
+      st.exit = [bx, bz];
+      st.platform = ss.platform;
+      st.platformOpp = ss.platformOpp;
+      st.gate = ss.gate;
+      st.stopMidS = rail.cum[i] - rail.cum[6];
       claim(p[0] + Math.sin(rot) * 10, p[2] + Math.cos(rot) * 10, 13);
-      add({ id: `station-${st.name}`, name: st.name, kind: 'station', stop: st.name, x: ex, z: ez, r: 7, hint: 'E 看车次' });
+      // 售票交互锚定在木质售票小屋正中，半径 9.5m（绕售票亭四周任意一侧都能轻松触发 E 购票！）
+      add({ id: `station-${st.name}`, name: st.name, kind: 'station', stop: st.name, x: bcx, z: bcz, r: 9.5, hint: 'E 购票候车' });
+      if (ss.gate) {
+        add({ id: `gate-${st.name}`, name: `${st.name} · 检票口`, kind: 'ticketgate', stop: st.name, gate: ss.gate, x: ss.gate.x, z: ss.gate.z, r: 3.4, hint: 'E 检票进站', map: false });
+      }
+      add({ id: `station-plat-${st.name}`, name: `${st.name} · 站台`, kind: 'station', stop: st.name, x: ss.platform[0], z: ss.platform[2], r: 10, hint: 'E 购票 / 乘车', map: false });
+      (ss.benches ?? (ss.bench ? [ss.bench] : [])).forEach((sb, bi) => {
+        add({ id: `bench-station-${st.name}-${bi}`, name: '站台长椅', kind: 'chair', x: sb.x, z: sb.z, r: 2.8, hint: 'E 坐下候车', seat: sb, map: false });
+      });
     }
-    // 高架：有路、有河、有房子的地方不立桥墩
-    LM.viaduct(b, rail.path, { width: 8, pierEvery: 24, groundAt: heightAt, skip: (x, z) => roadEdge(x, z) < 4 || riverAt(x, z).d < RIVER_HALF + 3 || lakeDistance(x, z) < 1.06 || !free(x, z, 1.6) || heightAt(x, z) < SEA.level + 0.3 });
+    // 高架：收集全部车站站台位置传入 stationZones，按 2m 步进与站台端头严丝合缝对齐断开石墙护栏
+    const stationZones = RAIL_STATIONS.map((st) => {
+      const idx = rail.nearest(st.x, st.z);
+      const rp = rail.path[idx];
+      return [rp[0], rp[2], st.main ? 40.5 : 17.2];
+    });
+    LM.viaduct(b, rail.path, { width: 8, pierEvery: 24, groundAt: heightAt, stationZones, skip: (x, z) => roadEdge(x, z) < 4 || riverAt(x, z).d < RIVER_HALF + 3 || lakeDistance(x, z) < 1.06 || !free(x, z, 1.6) || heightAt(x, z) < SEA.level + 0.3 });
     // 两头钻进山里：一座石头的隧道口
     for (const end of [0, rail.path.length - 1]) {
       const p = rail.path[end];
@@ -1135,11 +1209,11 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
       b.add(new THREE.BoxGeometry(16, 1, 6), 'stone#1', [p[0] - Math.sin(rot) * 1.5, p[1] + 8.8, p[2] - Math.cos(rot) * 1.5], rot);
     }
     const stops = RAIL_STATIONS.map((s) => rail.cum[rail.nearest(s.x, s.z)]).sort((p, q) => p - q);
-    // 两列车，一股道一列，对着开：一列从这头出发、一列从那头出发，各自到头停一会儿再折回来，路上总会交会
+    // 两列车，一股道一列，双向停靠 22 秒并完整开门，两边站台都能自由上下车
     const line = rail.path.slice(6, rail.path.length - 6);
     const halts = stops.map((s) => s - rail.cum[6]).filter((s) => s > 30);
-    train = LM.createTrain(shared, line, { cars: 5, speed: 34, stops: halts, dwell: 8, loop: false, accel: 2.2, side: 1.8 });
-    train2 = LM.createTrain(shared, line, { cars: 5, speed: 34, stops: halts, dwell: 8, loop: false, accel: 2.2, side: -1.8, from: 1, stripe: [0.78, 0.3, 0.22] });
+    train = LM.createTrain(shared, line, { cars: 5, speed: 34, stops: halts, dwell: 22, loop: false, accel: 2.2, side: 1.8, assets: vehicleAssets });
+    train2 = LM.createTrain(shared, line, { cars: 5, speed: 34, stops: halts, dwell: 22, loop: false, accel: 2.2, side: -1.8, from: 1, stripe: [0.78, 0.3, 0.22], assets: vehicleAssets });
     for (const t of [train, train2]) if (t?.group) group.add(t.group);
   }
 
@@ -1408,7 +1482,7 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
   // 农家旁边是草垛、稻草人、蜂箱、农具架；和式的房子旁边是石灯笼、水缸、竹篱。
   const propSlots = []; // （老办法：一件一个 GLB、各用各的材质。现在都走套件那一个着色器了，这里空着）
   // 模型库里转过来的三百多种模型：房侧的杂物、街具、公交站、集市、车站、农家、船、地标、鸟和鱼（dressing.js）
-  const dressStats = kit ? dress({ kit, random, painted, inst, makeRect, rectHit, rectNear, freeC, collide: (...a) => b.collide(...a), railNear, faceRoad, extras: kitExtras }) : null;
+  const dressStats = kit ? dress({ kit, random, painted, inst, makeRect, rectHit, rectNear, freeC, collide: (...a) => b.collide(...a), railNear, faceRoad, extras: kitExtras, add }) : null;
 
   // ===== 路面和广场 ============================================================================================
   {
@@ -1427,6 +1501,333 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
       const m = new THREE.Mesh(plazaGeometry([x, z], r), plaza.material);
       m.matrixAutoUpdate = false;
       group.add(m);
+    }
+
+    // ===== 房前小石子路（road1）与泥土小路（road0）：避障 A* 最短路径 + 共享支路树（可从邻居已有小路分叉） =====
+    {
+      // 1) 构建空间哈希障碍索引：包含全部房屋、篱笆、摊位、墙体碰撞盒 + 菜地（绝不穿房、不穿篱笆、不穿菜地、不涉水）
+      const CELL = 24;
+      const obsGrid = new Map();
+      const putObs = (box) => {
+        const rad = Math.hypot(box.hw, box.hd) + 2.2;
+        const x0 = Math.floor((box.x - rad) / CELL);
+        const x1 = Math.floor((box.x + rad) / CELL);
+        const z0 = Math.floor((box.z - rad) / CELL);
+        const z1 = Math.floor((box.z + rad) / CELL);
+        for (let gz = z0; gz <= z1; gz++) {
+          for (let gx = x0; gx <= x1; gx++) {
+            const k = `${gx},${gz}`;
+            let arr = obsGrid.get(k);
+            if (!arr) obsGrid.set(k, (arr = []));
+            arr.push(box);
+          }
+        }
+      };
+      for (const col of b.colliders) {
+        if (!col || col.off) continue;
+        // 跳过架空高架桥/高站台楼板（只避开地面上的房子、篱笆、墙体与设施）
+        if (col.base != null && col.base > heightAt(col.x, col.z) + 1.4) continue;
+        if (col.hw <= 0 || col.hd <= 0) continue;
+        putObs(col);
+      }
+      for (const g of GARDENS) {
+        putObs({ x: g.x, z: g.z, hw: g.hw + 0.6, hd: g.hd + 0.6, c: 1, s: 0 });
+      }
+      // 鱼鱼家整个带篱笆的私家院子作为禁入区：周围邻居的小路严禁穿过鱼鱼家的篱笆和菜院！
+      putObs({ x: HOME[0], z: HOME[1] - 5, hw: 9.2, hd: 12.2, c: 1, s: 0 });
+      // 挂载所有 Blender 贴图木篱笆实例化网格
+      if (fenceSegments.length && vehicleAssets?.createFenceGroup) {
+        const fg = vehicleAssets.createFenceGroup(fenceSegments);
+        if (fg) group.add(fg);
+      }
+      // 鱼鱼家门前栅栏与院子范围保护（已有主石板广场，不额外乱拉穿篱笆小路）
+      const isBlocked = (x, z, pad = 1.25, ignoreCol = null) => {
+        if (waterAt(x, z) != null) return true;
+        const gx = Math.floor(x / CELL);
+        const gz = Math.floor(z / CELL);
+        const arr = obsGrid.get(`${gx},${gz}`);
+        if (!arr) return false;
+        for (let i = 0; i < arr.length; i++) {
+          const o = arr[i];
+          if (o === ignoreCol) continue;
+          const dx = x - o.x;
+          const dz = z - o.z;
+          const lx = dx * o.c - dz * o.s;
+          const lz = dx * o.s + dz * o.c;
+          if (Math.abs(lx) < o.hw + pad && Math.abs(lz) < o.hd + pad) return true;
+        }
+        return false;
+      };
+      const segmentClear = (ax, az, bx, bz, pad = 1.1, ignoreCol = null) => {
+        const len = Math.hypot(bx - ax, bz - az);
+        const steps = Math.max(2, Math.ceil(len / 1.1));
+        for (let i = 1; i < steps; i++) {
+          const t = i / steps;
+          if (isBlocked(ax + (bx - ax) * t, az + (bz - az) * t, pad, ignoreCol)) return false;
+        }
+        return true;
+      };
+
+      // 2) 动态路网（空间哈希加速查询最近路点）：初始为主干道，每修好一条房前小路就加入路网，供后续邻居共享分叉！
+      const NET_CELL = 32;
+      const netGrid = new Map();
+      const registerNetSeg = (s) => {
+        const minx = Math.min(s.ax, s.bx);
+        const maxx = Math.max(s.ax, s.bx);
+        const minz = Math.min(s.az, s.bz);
+        const maxz = Math.max(s.az, s.bz);
+        const seg = { ax: s.ax, az: s.az, bx: s.bx, bz: s.bz, minx, maxx, minz, maxz };
+        const x0 = Math.floor(minx / NET_CELL);
+        const x1 = Math.floor(maxx / NET_CELL);
+        const z0 = Math.floor(minz / NET_CELL);
+        const z1 = Math.floor(maxz / NET_CELL);
+        for (let gz = z0; gz <= z1; gz++) {
+          for (let gx = x0; gx <= x1; gx++) {
+            const k = `${gx},${gz}`;
+            let arr = netGrid.get(k);
+            if (!arr) netGrid.set(k, (arr = []));
+            arr.push(seg);
+          }
+        }
+      };
+      for (const g of SEGS) {
+        if (!g.lane) registerNetSeg(g);
+      }
+
+      const nearestOnNet = (x, z, maxR = 46) => {
+        const gx0 = Math.floor((x - maxR) / NET_CELL);
+        const gx1 = Math.floor((x + maxR) / NET_CELL);
+        const gz0 = Math.floor((z - maxR) / NET_CELL);
+        const gz1 = Math.floor((z + maxR) / NET_CELL);
+        let best = null;
+        let bestD = maxR;
+        const seen = new Set();
+        for (let gz = gz0; gz <= gz1; gz++) {
+          for (let gx = gx0; gx <= gx1; gx++) {
+            const arr = netGrid.get(`${gx},${gz}`);
+            if (!arr) continue;
+            for (let i = 0; i < arr.length; i++) {
+              const g = arr[i];
+              if (seen.has(g)) continue;
+              seen.add(g);
+              if (x < g.minx - bestD || x > g.maxx + bestD || z < g.minz - bestD || z > g.maxz + bestD) continue;
+              const dx = g.bx - g.ax;
+              const dz = g.bz - g.az;
+              const t = Math.min(1, Math.max(0, ((x - g.ax) * dx + (z - g.az) * dz) / (dx * dx + dz * dz || 1)));
+              const px = g.ax + dx * t;
+              const pz = g.az + dz * t;
+              const d = Math.hypot(px - x, pz - z);
+              if (d < bestD) {
+                bestD = d;
+                best = { x: px, z: pz, d };
+              }
+            }
+          }
+        }
+        return best;
+      };
+
+      // 3) 局部 A* 避障最短路（步长 2.0m，8 方向，绕开房子/篱笆/菜地/水面，再做字符串拉直去锯齿）
+      const findPathAStar = (sx, sz, tx, tz, ignoreCol = null) => {
+        if (segmentClear(sx, sz, tx, tz, 1.15, ignoreCol)) {
+          return [[sx, sz], [tx, tz]];
+        }
+        const STEP = 2.0;
+        const gx0 = Math.round(sx / STEP);
+        const gz0 = Math.round(sz / STEP);
+        const gtx = Math.round(tx / STEP);
+        const gtz = Math.round(tz / STEP);
+        const padCells = 12;
+        const minGX = Math.min(gx0, gtx) - padCells;
+        const maxGX = Math.max(gx0, gtx) + padCells;
+        const minGZ = Math.min(gz0, gtz) - padCells;
+        const maxGZ = Math.max(gz0, gtz) + padCells;
+        const keyOf = (gx, gz) => `${gx},${gz}`;
+        const open = [{ gx: gx0, gz: gz0, g: 0, f: Math.hypot(gtx - gx0, gtz - gz0) }];
+        const gScore = new Map([[keyOf(gx0, gz0), 0]]);
+        const came = new Map();
+        const closed = new Set();
+        const DIRS = [
+          [1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1],
+          [1, 1, 1.414], [1, -1, 1.414], [-1, 1, 1.414], [-1, -1, 1.414],
+        ];
+        let found = null;
+        let iters = 0;
+        while (open.length && iters++ < 520) {
+          let bi = 0;
+          for (let i = 1; i < open.length; i++) if (open[i].f < open[bi].f) bi = i;
+          const cur = open.splice(bi, 1)[0];
+          const ck = keyOf(cur.gx, cur.gz);
+          if (closed.has(ck)) continue;
+          closed.add(ck);
+          if (Math.hypot(cur.gx - gtx, cur.gz - gtz) <= 1.5) {
+            found = cur;
+            break;
+          }
+          for (const [dx, dz, cost] of DIRS) {
+            const nx = cur.gx + dx;
+            const nz = cur.gz + dz;
+            if (nx < minGX || nx > maxGX || nz < minGZ || nz > maxGZ) continue;
+            const nk = keyOf(nx, nz);
+            if (closed.has(nk)) continue;
+            const wx = nx * STEP;
+            const wz = nz * STEP;
+            // 目标附近 2.2m 内允许接入主路；其余点严格避开所有障碍物
+            const nearGoal = Math.hypot(wx - tx, wz - tz) < 2.2;
+            if (!nearGoal && isBlocked(wx, wz, 1.25, ignoreCol)) continue;
+            // 对角线移动检查两侧是否擦角
+            if (dx !== 0 && dz !== 0 && !nearGoal) {
+              if (isBlocked((cur.gx + dx) * STEP, cur.gz * STEP, 0.9, ignoreCol) || isBlocked(cur.gx * STEP, (cur.gz + dz) * STEP, 0.9, ignoreCol)) continue;
+            }
+            const ng = cur.g + cost;
+            if (ng < (gScore.get(nk) ?? 1e9)) {
+              gScore.set(nk, ng);
+              came.set(nk, ck);
+              open.push({ gx: nx, gz: nz, g: ng, f: ng + Math.hypot(gtx - nx, gtz - nz) * 1.05 });
+            }
+          }
+        }
+        if (!found) return null;
+        // 回溯路径
+        const raw = [[tx, tz]];
+        let ck = keyOf(found.gx, found.gz);
+        while (ck && ck !== keyOf(gx0, gz0)) {
+          const [gx, gz] = ck.split(',').map(Number);
+          raw.push([gx * STEP, gz * STEP]);
+          ck = came.get(ck);
+        }
+        raw.push([sx, sz]);
+        raw.reverse();
+        // 字符串拉直（去锯齿，只保留必要拐点）
+        const smoothPts = [raw[0]];
+        let anchor = 0;
+        while (anchor < raw.length - 1) {
+          let far = raw.length - 1;
+          while (far > anchor + 1 && !segmentClear(raw[anchor][0], raw[anchor][1], raw[far][0], raw[far][1], 1.15, ignoreCol)) {
+            far--;
+          }
+          smoothPts.push(raw[far]);
+          anchor = far;
+        }
+        return smoothPts;
+      };
+
+      const pebbleSegs = [];
+      const dirtSegs = [];
+      const commitPath = (pts, usePebble) => {
+        const targetList = usePebble ? pebbleSegs : dirtSegs;
+        for (let i = 0; i < pts.length - 1; i++) {
+          const seg = { ax: pts[i][0], az: pts[i][1], bx: pts[i + 1][0], bz: pts[i + 1][1] };
+          if (Math.hypot(seg.bx - seg.ax, seg.bz - seg.az) < 0.6) continue;
+          targetList.push(seg);
+          // 同步注册进共享路网：后续房子可以直接从这条路分叉，不再重复拉长路！
+          registerNetSeg(seg);
+        }
+      };
+
+      // 4) 收集每栋房子的门前起点，按距离主干道由近到远排序（形成经典最小路径树：近房连主路 → 远房连近房小路）
+      const candidates = [];
+      for (let i = 0; i < painted.length; i++) {
+        const h = painted[i];
+        if (!h) continue;
+        // 鱼鱼家门口已有宽阔主石板院子，跳过自动拉线
+        if (Math.hypot(h.x - HOME[0], h.z - HOME[1]) < 22) continue;
+        const turn = h.turn ?? 0;
+        const hd = h.rect?.hd ?? 4.0;
+        const fx = Math.sin(turn);
+        const fz = Math.cos(turn);
+        // 从门前稍向外探一点找无障碍起点
+        let doorX = h.x + fx * (hd + 1.35);
+        let doorZ = h.z + fz * (hd + 1.35);
+        if (isBlocked(doorX, doorZ, 0.85, h.col)) {
+          doorX = h.x + fx * (hd + 2.4);
+          doorZ = h.z + fz * (hd + 2.4);
+        }
+        if (isBlocked(doorX, doorZ, 0.85, h.col)) continue;
+        // 已经在石板广场/主路上的门前不再画多余小路
+        if (pavedAt(doorX, doorZ) > 0.65) continue;
+        const initNear = nearestOnNet(doorX, doorZ, 52);
+        if (!initNear || initNear.d < 2.2) continue;
+        candidates.push({ h, doorX, doorZ, initD: initNear.d });
+      }
+      candidates.sort((a, b) => a.initD - b.initD);
+
+      for (const item of candidates) {
+        const { h, doorX, doorZ } = item;
+        // 重新查询「当前共享路网」（包含主路 + 邻居刚铺好的小路！）
+        const near = nearestOnNet(doorX, doorZ, 44);
+        if (!near || near.d < 1.8) continue;
+        const pts = findPathAStar(doorX, doorZ, near.x, near.z, h.col);
+        if (!pts || pts.length < 2) continue;
+        // 丢弃绕太远的不合理路径
+        let totalLen = 0;
+        for (let k = 0; k < pts.length - 1; k++) totalLen += Math.hypot(pts[k + 1][0] - pts[k][0], pts[k + 1][1] - pts[k][1]);
+        if (totalLen > Math.max(48, near.d * 2.2)) continue;
+        const usePebble = builtAt(h.x, h.z) > 0.28 && fieldsAt(h.x, h.z) < 0.25 && snowAt(h.x, h.z) < 0.2;
+        commitPath(pts, usePebble);
+      }
+
+      // 5) 在草地生长贴图 tMap 里沿所有合法小路清空草丛与野花，让小石子路与泥土路自然露出
+      const clearGrassAlong = (segs, halfW) => {
+        const tMap = field?.uniforms?.tMap?.value;
+        const data = tMap?.image?.data;
+        if (!data) return;
+        const res = tMap.image.width;
+        const ext = field.uniforms.uExtentInv?.value ? 1 / field.uniforms.uExtentInv.value : 2048;
+        const minX = field.uniforms.uExtentMin?.value?.x ?? -ext / 2;
+        const minZ = field.uniforms.uExtentMin?.value?.y ?? -ext / 2;
+        const texel = ext / res;
+        for (const s of segs) {
+          const dx = s.bx - s.ax;
+          const dz = s.bz - s.az;
+          const len2 = dx * dx + dz * dz || 1;
+          const pad = halfW + texel;
+          const ix0 = Math.max(0, Math.floor((Math.min(s.ax, s.bx) - pad - minX) / texel));
+          const ix1 = Math.min(res - 1, Math.ceil((Math.max(s.ax, s.bx) + pad - minX) / texel));
+          const iz0 = Math.max(0, Math.floor((Math.min(s.az, s.bz) - pad - minZ) / texel));
+          const iz1 = Math.min(res - 1, Math.ceil((Math.max(s.az, s.bz) + pad - minZ) / texel));
+          for (let iz = iz0; iz <= iz1; iz++) {
+            const wz = minZ + (iz + 0.5) * texel;
+            for (let ix = ix0; ix <= ix1; ix++) {
+              const wx = minX + (ix + 0.5) * texel;
+              const t = Math.min(1, Math.max(0, ((wx - s.ax) * dx + (wz - s.az) * dz) / len2));
+              const dist = Math.hypot(wx - (s.ax + dx * t), wz - (s.az + dz * t));
+              if (dist < halfW) {
+                const o = (iz * res + ix) * 4;
+                if (dist < halfW * 0.78) {
+                  data[o + 1] = 0;
+                  data[o + 3] = 0;
+                } else {
+                  const k = (dist - halfW * 0.78) / (halfW * 0.22);
+                  data[o + 1] = Math.min(data[o + 1], Math.round(255 * k * 0.4));
+                  data[o + 3] = Math.min(data[o + 3], Math.round(255 * k * 0.2));
+                }
+              }
+            }
+          }
+        }
+        tMap.needsUpdate = true;
+      };
+      if (pebbleSegs.length) {
+        clearGrassAlong(pebbleSegs, 1.45);
+        const pebbleAlb = getAlbedo('road1') ?? getAlbedo('stone0');
+        const pMesh = new THREE.Mesh(
+          roadGeometry(pebbleSegs, 2.2, 0.056),
+          footpathMaterial(shared, pebbleAlb, { scale: 0.36, lit: [0.76, 0.74, 0.69], shade: [0.56, 0.56, 0.60], mixAmt: 0.86 }),
+        );
+        pMesh.matrixAutoUpdate = false;
+        group.add(pMesh);
+      }
+      if (dirtSegs.length) {
+        clearGrassAlong(dirtSegs, 1.50);
+        const dirtAlb = getAlbedo('road0');
+        const dMesh = new THREE.Mesh(
+          roadGeometry(dirtSegs, 2.3, 0.052),
+          footpathMaterial(shared, dirtAlb, { scale: 0.26, lit: [0.80, 0.72, 0.58], shade: [0.58, 0.54, 0.48], mixAmt: 0.80 }),
+        );
+        dMesh.matrixAutoUpdate = false;
+        group.add(dMesh);
+      }
     }
   }
 
@@ -1662,12 +2063,13 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     if (mountainAt(x, z) < 0.15) continue;
     rockPlaces.push({ x, z, s: 1.2 + random() * 3.4, r: random() * 6 });
   }
-  for (let i = 0; i < 40; i++) {
-    const a = random() * TAU;
-    const x = LAKE.x + Math.cos(a) * LAKE.rx * (1.02 + random() * 0.12);
-    const z = LAKE.z + Math.sin(a) * LAKE.rz * (1.02 + random() * 0.12);
+  // 月亮湖仅在遥远的北岸山脚点缀少量自然湖石，保留南岸/东西岸一整片洁净开阔的奶油白沙滩！
+  for (let i = 0; i < 14; i++) {
+    const a = Math.PI * 1.15 + random() * Math.PI * 0.7;
+    const x = LAKE.x + Math.cos(a) * LAKE.rx * (1.14 + random() * 0.1);
+    const z = LAKE.z + Math.sin(a) * LAKE.rz * (1.14 + random() * 0.1);
     if (builtAt(x, z) > 0.5) continue;
-    rockPlaces.push({ x, z, s: 0.7 + random() * 1.1, r: random() * 6 });
+    rockPlaces.push({ x, z, s: 0.65 + random() * 0.9, r: random() * 6 });
   }
   for (let i = 0; i < 70; i++) {
     // 海滨小镇和大学城的崖脚：一堆礁石
@@ -1750,10 +2152,11 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
       if (!free(x, z, 2.6) || roadEdge(x, z) < 1.5 || snowAt(x, z) > 0.2) continue;
       if (card(x, z, 25 + Math.floor(random() * 12), 4.6 + random() * 1.6)) claim(x, z, 2.5);
     }
-    // 月亮湖和河边：柳树、芦竹
-    for (let i = 0; i < 30; i++) {
+    // 月亮湖畔柳树（退到草坡外缘 1.24 处，让观湖沙滩视野豁然开朗）
+    for (let i = 0; i < 18; i++) {
       const a = random() * TAU;
-      card(LAKE.x + Math.cos(a) * LAKE.rx * 1.12, LAKE.z + Math.sin(a) * LAKE.rz * 1.12, 49 + (i % 2), 7 + random() * 2.5);
+      if (Math.sin(a) > 0.25 && Math.abs(Math.cos(a)) < 0.7) continue; // 南岸观湖视野留白
+      card(LAKE.x + Math.cos(a) * LAKE.rx * 1.24, LAKE.z + Math.sin(a) * LAKE.rz * 1.24, 49 + (i % 2), 6.8 + random() * 2.2);
     }
     for (let t = 0.03; t < 0.9; t += 0.014) {
       if (random() < 0.4) continue;
@@ -1840,44 +2243,20 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     group.add(still);
     group.userData.goods = goods.length;
 
-    // 37 路公交：一块沿着路线来回开的立牌
-    const busBatch = createPlantBatch(shared, plants.critter, [{ x: BUS_ROUTE[0][0], z: BUS_ROUTE[0][1], y: 0, h: 3.1, sprite: names.get('bus') }], { alpha: 0.16, sway: 0 });
-    group.add(busBatch);
-    const route = [];
-    let total = 0;
-    for (let i = 0; i + 1 < BUS_ROUTE.length; i++) {
-      const len = Math.hypot(BUS_ROUTE[i + 1][0] - BUS_ROUTE[i][0], BUS_ROUTE[i + 1][1] - BUS_ROUTE[i][1]);
-      route.push({ a: BUS_ROUTE[i], b: BUS_ROUTE[i + 1], from: total, len });
-      total += len;
-    }
-    const busAttr = busBatch.children[0].geometry.attributes.aOffset;
-    bus = {
-      s: 0,
-      dir: 1,
-      wait: 0,
-      x: BUS_ROUTE[0][0],
-      z: BUS_ROUTE[0][1],
+    // 37 路公交：真实 3D 吉卜力复古公交车沿环城公路行驶（带旋转车轮、可开关折叠门与可互动登车！）
+    const bus37 = LM.createBus37Runner(shared, BUS_ROUTE, { assets: vehicleAssets, heightAt, speed: 15.5, stops: BUS_STOPS.slice(0, 9) });
+    if (bus37?.group) group.add(bus37.group);
+    const busLiveIt = { id: 'bus-37-live', name: '37 路公交车', kind: 'bus', line: '37 路公交', stop: '沿途招手上车', x: bus37.x, z: bus37.z, r: 5.8, hint: 'E 招手乘 37 路公交', map: false };
+    interactables.push(busLiveIt);
+    bus = Object.assign(bus37, {
+      liveIt: busLiveIt,
+      _origUpdate: bus37.update,
       update(dt) {
-        if (this.wait > 0) this.wait -= dt;
-        else {
-          this.s += this.dir * 11 * dt;
-          if (this.s >= total || this.s <= 0) {
-            this.s = Math.min(total, Math.max(0, this.s));
-            this.dir *= -1;
-            this.wait = 6;
-          }
-        }
-        const seg = route.find((r) => this.s <= r.from + r.len) ?? route[route.length - 1];
-        const k = (this.s - seg.from) / seg.len;
-        // 靠右行驶：往路的一侧偏一点
-        const nx = -(seg.b[1] - seg.a[1]) / seg.len;
-        const nz = (seg.b[0] - seg.a[0]) / seg.len;
-        this.x = seg.a[0] + (seg.b[0] - seg.a[0]) * k + nx * 1.6 * this.dir;
-        this.z = seg.a[1] + (seg.b[1] - seg.a[1]) * k + nz * 1.6 * this.dir;
-        busAttr.setXYZ(0, this.x, heightAt(this.x, this.z) + 0.05, this.z);
-        busAttr.needsUpdate = true;
+        this._origUpdate(dt);
+        busLiveIt.x = this.x;
+        busLiveIt.z = this.z;
       },
-    };
+    });
 
     // 蜻蜓：河面和湖面上一群，绕着各自的点打转
     const homes = [];
@@ -2266,11 +2645,17 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
     get bus() {
       return bus;
     },
+    get metro1() {
+      return metro1;
+    },
     get train2() {
       return train2;
     },
     get train() {
       return train;
+    },
+    get trains() {
+      return [train, train2].filter(Boolean);
     },
     /** 高铁线（世界坐标的折线 [x, y, z]）和各站 */
     rail: rail.path,
@@ -2320,6 +2705,7 @@ export function createCity(shared, field, { cards = 1, treeNear = 120, treeFar =
       critters.userData.update(dt, playerPos);
       lake.userData.update(dt);
       bus?.update(dt);
+      metro1?.update(dt);
       flies?.update(dt);
       train?.update(dt);
       train2?.update(dt);

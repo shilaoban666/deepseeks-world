@@ -26,6 +26,7 @@ export function createActions({ rig = null, whale, mover, cam, game, hud, woods,
   let jumpCount = 0;
   let doubleJumpTimer = 0;
   let prevGroundY = s.y;
+  let stairLatch = 0;
   let tree = null; // 正在爬的树 { x, z, top }
   let oxygen = 100;
   const handPos = new THREE.Vector3();
@@ -852,8 +853,13 @@ export function createActions({ rig = null, whale, mover, cam, game, hud, woods,
           }
         }
         const [fx, fz] = forward();
-        const aheadG = Math.max(ground(s.x + fx * 0.42, s.z + fz * 0.42), mover.floorAt?.(s.x + fx * 0.42, s.z + fz * 0.42, s.y + 0.4) ?? -Infinity);
-        const onStairs = !air && moving && (Math.abs(aheadG - g) > 0.09 || (onThing && Math.abs(g - prevGroundY) > 0.015));
+        const ahead1 = Math.max(ground(s.x + fx * 0.36, s.z + fz * 0.36), mover.floorAt?.(s.x + fx * 0.36, s.z + fz * 0.36, s.y + 0.55) ?? -Infinity);
+        const ahead2 = Math.max(ground(s.x + fx * 0.72, s.z + fz * 0.72), mover.floorAt?.(s.x + fx * 0.72, s.z + fz * 0.72, s.y + 0.75) ?? -Infinity);
+        const stepHit = !air && moving && (Math.abs(ahead1 - g) > 0.07 || Math.abs(ahead2 - g) > 0.16 || (onThing && Math.abs(g - prevGroundY) > 0.015));
+        if (stepHit) stairLatch = 0.42;
+        else if (!moving || air) stairLatch = 0;
+        else stairLatch = Math.max(0, stairLatch - dt);
+        const onStairs = !air && moving && stairLatch > 0;
         prevGroundY = g;
 
         if (game.state.riding) {

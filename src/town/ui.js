@@ -44,8 +44,12 @@ export function createHud() {
     },
     prompt(text) {
       if (text) {
-        const t = String(text).replace(/^E\s*/, '');
-        el.prompt.innerHTML = `<kbd>E</kbd>${t}`;
+        const s = String(text);
+        if (/^E\s+/.test(s)) {
+          el.prompt.innerHTML = `<kbd>E</kbd><span>${s.replace(/^E\s+/, '')}</span>`;
+        } else {
+          el.prompt.innerHTML = `<span>${s}</span>`;
+        }
         el.prompt.classList.add('on');
       } else el.prompt.classList.remove('on');
     },
@@ -56,7 +60,7 @@ export function createHud() {
       toastTimer = setTimeout(() => el.toast.classList.remove('on'), ms);
     },
     /** 打开一个面板；body 是 HTML 字符串，buttons 是 [{label, onClick, primary, disabled, wide}] */
-    open(title, body, buttons = [], { dock = false, grid = false } = {}) {
+    open(title, body, buttons = [], { dock = false, grid = false, wide = false } = {}) {
       el.panelTitle.textContent = title;
       el.panelBody.innerHTML = body;
       el.panelFoot.innerHTML = '';
@@ -73,6 +77,7 @@ export function createHud() {
         el.panelFoot.appendChild(b);
       }
       el.panel.classList.toggle('dock', dock);
+      el.panel.classList.toggle('wide', wide);
       // grid：按钮排成两列（车站的目的地一多，一行行排下去太高）
       el.panelFoot.classList.toggle('grid', grid);
       el.panel.classList.add('on');
@@ -81,6 +86,7 @@ export function createHud() {
     },
     close() {
       el.panel.classList.remove('on');
+      el.panel.classList.remove('wide');
       el.root.classList.remove('panel-open');
       panelOpen = false;
     },

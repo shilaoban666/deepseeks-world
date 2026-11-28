@@ -18,6 +18,7 @@ const cone = (r, h, seg = 10) => new THREE.ConeGeometry(r, h, seg);
 export function collideRot(b, x, z, rotY, hw, hd, top = 20, base = null) {
   // （盒子现在可以带朝向：不再取外接的正盒，斜着的房子旁边没有看不见的墙角了）
   b.collide(x, z, hw, hd, top, rotY, base);
+  return b.colliders[b.colliders.length - 1];
 }
 
 /** 局部坐标系：at 把局部点转到世界，put 加几何体，hit 登记局部位置的碰撞盒。 */
@@ -30,7 +31,7 @@ function frame(b, o) {
   const put = (geo, key, lx, ly, lz, turn = 0) => b.add(geo, key, at(lx, ly, lz), rotY + turn);
   const hit = (lx, lz, hw, hd, top) => {
     const p = at(lx, 0, lz);
-    collideRot(b, p[0], p[2], rotY, hw, hd, top, base);
+    return collideRot(b, p[0], p[2], rotY, hw, hd, top, base);
   };
   return { x, z, rotY, base, at, put, hit };
 }
@@ -704,39 +705,121 @@ export function grandStation(b, o) {
 export function smallStation(b, o) {
   const { rotY, base, at, put, hit } = frame(b, o);
   const name = o.name ?? '小站';
-  const ph = Math.max(0.6, (o.deckY ?? base + 7) - base) + 0.3; // 站台面离地（比桥面高 0.3，免得共面）
-  const pz = o.platZ ?? 6.6;
-  // 站台板 + 石墩
-  put(box(34, 0.5, 5), 'mason#2', 0, ph - 0.25, pz);
-  put(box(34, 0.06, 0.3), 'flower#1', 0, ph + 0.02, pz - 2.2);
-  put(box(34, 0.6, 0.5), 'mason#1', 0, ph - 0.7, pz);
-  for (const lx of [-14, -7, 0, 7, 14]) {
-    put(box(1.2, ph + 0.6, 2.6), 'mason#1', lx, (ph - 1.4) / 2, pz);
-    hit(lx, pz, 0.7, 1.4, ph);
-  }
-  // +z 边的栏杆（楼梯口留空）
+  const ph = Math.max(0.6, (o.deckY ?? base + 7) - base) + 0.3; // 站台面离地（与车厢地板齐平）
+  const pz = o.platZ ?? 6.2; // 紧贴轨道边缘（消除站台与车门间缝隙）
   const run = Math.max(1, Math.ceil((ph - 0.1) / 0.35)) * 0.5;
-  put(box(17 - run / 2, 0.1, 0.1), 'wood#2', -(17 + run / 2) / 2, ph + 1.0, pz + 2.4);
-  put(box(17 - run / 2 - 1.8, 0.1, 0.1), 'wood#2', (17 + run / 2 + 1.8) / 2, ph + 1.0, pz + 2.4);
-  for (let lx = -16.8; lx <= 16.81; lx += 2.8) if (lx < -run / 2 || lx > run / 2 + 1.8) put(box(0.12, 1.0, 0.12), 'wood#2', lx, ph + 0.5, pz + 2.4);
-  // 木雨棚：柱 + 背板 + 青瓦人字顶
-  const sx0 = -8;
-  for (const lx of [-6.5, 0, 6.5]) for (const dz of [-1.4, 1.4]) put(box(0.26, 3.0, 0.26), 'wood#1', sx0 + lx, ph + 1.5, pz + dz);
-  put(box(13.4, 2.0, 0.14), 'wood#0', sx0, ph + 1.9, pz + 1.4);
-  put(box(13.8, 0.24, 3.4), 'wood#2', sx0, ph + 3.05, pz);
-  put(gableRoof(4.8, 15, 1.3), 'roof#10', sx0, ph + 3.15, pz, PI / 2);
-  put(box(5, 0.12, 0.7), 'wood#1', sx0, ph + 0.5, pz + 0.9);
-  for (const lx of [-2, 2]) put(box(0.12, 0.5, 0.6), 'wood#2', sx0 + lx, ph + 0.25, pz + 0.9);
-  b.addSign(name, at(sx0, ph + 2.0, pz + 1.5), rotY, { w: 5.0, h: 1.1, bg: '#1f4b7a', fg: '#ffffff' });
-  b.addSign(name, at(sx0, ph + 2.0, pz + 1.32), rotY + PI, { w: 5.0, h: 1.1, bg: '#1f4b7a', fg: '#ffffff' });
-  // 楼梯：贴着站台 +z 边，从 +x 端的地面往 -x 爬到站台
+  const sx0 = -7.5;
+
+  // ---- 双向双侧站台（+pz 主站台 & -pz 对侧站台，两侧列车均可直接登车） ----
+  for (const side of [1, -1]) {
+    const spz = side * pz;
+    put(box(34, 0.5, 4.8), 'mason#2', 0, ph - 0.25, spz);
+    // 站台内侧安全黄线
+    put(box(34, 0.05, 0.28), 'flower#1', 0, ph + 0.02, spz - side * 2.15);
+    put(box(34, 0.6, 0.5), 'mason#1', 0, ph - 0.7, spz);
+    for (const lx of [-14, -7, 0, 7, 14]) {
+      put(box(1.2, ph + 0.6, 2.4), 'mason#1', lx, (ph - 1.4) / 2, spz);
+      hit(lx, spz, 0.7, 1.3, ph);
+    }
+    // 外侧护栏：+1 侧在楼梯口（lx = -run/2 - 2.6 .. -run/2 + 0.8）留出宽敞无遮挡开口！
+    const railZ = spz + side * 2.3;
+    if (side === 1) {
+      const gapL = -run / 2 - 2.4;
+      const gapR = -run / 2 + 0.8;
+      const leftLen = Math.max(0.2, gapL - -17);
+      const rightLen = Math.max(0.2, 17 - gapR);
+      if (leftLen > 0.4) put(box(leftLen, 0.1, 0.1), 'wood#2', -17 + leftLen / 2, ph + 1.0, railZ);
+      if (rightLen > 0.4) put(box(rightLen, 0.1, 0.1), 'wood#2', gapR + rightLen / 2, ph + 1.0, railZ);
+      for (let lx = -16.8; lx <= 16.81; lx += 2.8) {
+        if (lx < gapL || lx > gapR) put(box(0.12, 1.0, 0.12), 'wood#2', lx, ph + 0.5, railZ);
+      }
+    } else {
+      put(box(34, 0.1, 0.1), 'wood#2', 0, ph + 1.0, railZ);
+      for (let lx = -16.8; lx <= 16.81; lx += 2.8) put(box(0.12, 1.0, 0.12), 'wood#2', lx, ph + 0.5, railZ);
+    }
+    // 木雨棚 + 候车长椅 + 站名牌（两侧站台均有）
+    for (const lx of [-6.5, 0, 6.5]) for (const dz of [-1.3, 1.3]) put(box(0.26, 3.0, 0.26), 'wood#1', sx0 + lx, ph + 1.5, spz + dz);
+    put(box(13.4, 2.0, 0.14), 'wood#0', sx0, ph + 1.9, spz + side * 1.3);
+    put(box(13.8, 0.24, 3.3), 'wood#2', sx0, ph + 3.05, spz);
+    put(gableRoof(4.8, 15, 1.3), 'roof#10', sx0, ph + 3.15, spz, PI / 2);
+    put(box(5, 0.12, 0.7), 'wood#1', sx0, ph + 0.5, spz + side * 0.85);
+    for (const lx of [-2, 2]) put(box(0.12, 0.5, 0.6), 'wood#2', sx0 + lx, ph + 0.25, spz + side * 0.85);
+    b.addSign(name, at(sx0, ph + 2.0, spz + side * 1.4), rotY + (side < 0 ? PI : 0), { w: 5.0, h: 1.1, bg: '#1f4b7a', fg: '#ffffff' });
+    b.addSign(name, at(sx0, ph + 2.0, spz + side * 1.2), rotY + (side < 0 ? 0 : PI), { w: 5.0, h: 1.1, bg: '#1f4b7a', fg: '#ffffff' });
+    // 站台可行走碰撞面
+    hit(0, spz, 17, 2.5, ph);
+  }
+  // ---- 昭和木构跨线人行天桥（位于站台 +x 端，净空高过受电弓，完全不切断下方双股钢轨！） ----
+  // 站台下方钢轨保持 100% 连续无遮挡，两侧站台通过架空木天桥相连
+  const bx = 13.6;
+  const overH = 4.75; // 桥面离站台高度（净空 ~4.55m，高出列车受电弓 4.25m）
+  const overY = ph + overH;
+  const spanZ = pz * 2 + 1.8;
+  // 天桥主梁与木质桥面
+  put(box(2.4, 0.28, spanZ), 'wood#2', bx, overY - 0.14, 0);
+  put(box(2.1, 0.08, spanZ - 0.2), 'bridge#0', bx, overY + 0.02, 0);
+  hit(bx, 0, 1.25, spanZ / 2, overY + 0.04);
+  // 天桥廊柱、扶手、观景玻璃与人字瓦顶
+  for (const dz of [-pz - 0.6, -pz + 1.6, 0, pz - 1.6, pz + 0.6]) {
+    for (const dx of [-1.05, 1.05]) {
+      put(box(0.16, 2.35, 0.16), 'wood#2', bx + dx, overY + 1.18, dz);
+    }
+  }
+  for (const dx of [-1.05, 1.05]) {
+    put(box(0.14, 0.95, spanZ - 0.6), 'wood#1', bx + dx, overY + 0.5, 0);
+    put(box(0.08, 1.05, spanZ - 1.0), 'glass#1', bx + dx, overY + 1.55, 0);
+  }
+  // 支撑落柱（落在两侧站台外沿，不挡轨面）
+  for (const side of [-1, 1]) {
+    for (const dx of [-1.05, 1.05]) {
+      put(box(0.24, overH + 0.3, 0.24), 'wood#2', bx + dx, ph + overH / 2 - 0.1, side * (pz + 0.6));
+    }
+  }
+  // 天桥青瓦人字屋顶
+  put(gableRoof(2.9, spanZ + 0.8, 0.95), 'roof#10', bx, overY + 2.35, 0);
+  // 天桥两侧楼梯（分别沿 +/-z 站台向 -x 方向自然落地，18 级平稳上下）
+  const oRun = 7.2;
+  const oSteps = 18;
+  const oRise = overH / oSteps;
+  for (const side of [-1, 1]) {
+    const osz = side * (pz + 0.95);
+    for (let i = 0; i < oSteps; i++) {
+      const top = ph + oRise * (i + 1);
+      const lx = bx - 1.2 - oRun + (oRun / oSteps) * (i + 0.5);
+      put(box(oRun / oSteps + 0.08, 0.16, 1.45), 'bridge#0', lx, top - 0.08, osz);
+      hit(lx, osz, (oRun / oSteps) * 0.58, 0.78, top);
+    }
+    const osl = Math.hypot(oRun, overH);
+    const oAng = Math.atan2(overH, oRun);
+    for (const dz of [-0.68, 0.68]) {
+      const str = box(osl, 0.22, 0.10);
+      str.rotateZ(oAng);
+      put(str, 'wood#2', bx - 1.2 - oRun / 2, ph + overH / 2 - 0.15, osz + dz);
+      const hr = box(osl, 0.09, 0.09);
+      hr.rotateZ(oAng);
+      put(hr, 'wood#2', bx - 1.2 - oRun / 2, ph + overH / 2 + 0.82, osz + dz);
+    }
+  }
+  // 轨道区隐形安全防掉落碰撞层（低于钢轨顶，视觉上四条钢轨 100% 连续无遮挡）
+  hit(0, 0, 17.5, pz + 2.2, ph - 0.16);
+
+  // ---- 楼梯：贴着 +z 站台外侧，从 +x 地面往 -x 爬到站台，顶部无栏杆阻挡 ----
   const n = Math.round(run / 0.5);
-  const sz = pz + 2.5 + 0.9;
+  const sz = pz + 2.4 + 0.9;
   const rise = ph / n;
   for (let i = 0; i < n; i++) {
     const top = rise * (i + 1);
     put(box(0.56, 0.2, 1.7), 'bridge#0', run / 2 - 0.5 * (i + 0.5), top - 0.1, sz);
   }
+  // 楼梯顶部衔接平台（与站台平滑相接，零缝隙）+ 外侧防掉落护栏
+  put(box(2.6, 0.26, 1.9), 'bridge#0', -run / 2 - 1.1, ph - 0.13, sz);
+  hit(-run / 2 - 1.1, sz, 1.4, 1.0, ph);
+  // 顶部平台尽头与外侧护栏（避免走上楼梯后一脚踩空）
+  put(box(0.14, 1.05, 1.9), 'wood#2', -run / 2 - 2.35, ph + 0.52, sz);
+  put(box(2.6, 0.12, 0.12), 'wood#2', -run / 2 - 1.1, ph + 0.95, sz + 0.88);
+  hit(-run / 2 - 2.4, sz, 0.2, 1.0, ph + 1.5);
+  hit(-run / 2 - 1.1, sz + 0.95, 1.4, 0.18, ph + 1.5);
+
   const sl = Math.hypot(run, ph);
   for (const dz of [-0.8, 0.8]) {
     const g = box(sl, 0.34, 0.14);
@@ -753,12 +836,25 @@ export function smallStation(b, o) {
     const hh = ph * t * 0.96;
     for (const dz of [-0.8, 0.8]) put(box(0.16, hh + 1.0, 0.16), 'wood#2', lx, (hh + 1.0) / 2 - 0.05, sz + dz);
   }
-  // 楼梯一级一级都踩得住，上到站台；站台与紧邻的高架轨面都可站立，不会掉下去
   for (let i = 0; i < n; i++) hit(run / 2 - 0.5 * (i + 0.5), sz, 0.29, 0.85, rise * (i + 1));
-  hit(0, pz, 17, 2.6, ph);
-  hit(0, 0, 18, 4.2, ph - 0.3);
-  // 售票小屋（地面，楼梯脚旁）
-  const hx = o.houseX ?? run / 2 + 4.2;
+
+  // ---- 昭和木质检票闸机（位于楼梯入口处：买票后按 E 检票放行！） ----
+  const gx = run / 2 + 0.7;
+  const gz = sz;
+  for (const dz of [-0.95, 0.95]) {
+    put(box(0.55, 1.15, 0.32), 'wood#2', gx, 0.58, gz + dz);
+    put(box(0.62, 0.12, 0.38), 'paint#4', gx, 1.18, gz + dz);
+  }
+  // 检票闸机顶梁与标牌
+  put(box(0.22, 0.22, 2.2), 'wood#2', gx, 2.35, gz);
+  for (const dz of [-0.95, 0.95]) put(box(0.18, 2.35, 0.18), 'wood#2', gx, 1.18, gz + dz);
+  b.addSign('检票口', at(gx + 0.14, 2.35, gz), rotY + PI / 2, { w: 1.8, h: 0.45, bg: '#2f6d97', fg: '#fff8e6' });
+  // 闸机碰撞体（未检票时挡住楼梯入口；检票通过后 off = true 放行）
+  const gateCol = hit(gx, gz, 0.38, 1.05, 2.2);
+  const gatePos = at(gx + 0.6, 0, gz);
+
+  // ---- 售票小屋（地面，楼梯脚旁） ----
+  const hx = o.houseX ?? run / 2 + 4.8;
   const hz = o.houseZ ?? 14;
   put(box(6.4, 1.6, 5.4), 'mason#0', hx, -0.5, hz);
   put(box(6, 3.2, 5), 'wood#1', hx, 1.9, hz);
@@ -772,8 +868,24 @@ export function smallStation(b, o) {
   put(box(4.0, 0.9, 0.12), 'wood#2', hx, 3.2, hz + 2.6);
   b.addSign(name, at(hx, 3.2, hz + 2.68), rotY, { w: 3.6, h: 0.72, bg: '#1f4b7a', fg: '#ffffff' });
   hit(hx, hz, 3.3, 2.8, 5.6);
-  const bp = at(sx0, ph + 0.48, pz + 0.9);
-  return { rotY, platform: at(0, ph, pz), platformH: ph, stairRun: run, bench: { x: bp[0], y: bp[1], z: bp[2], yaw: rotY + PI } };
+
+  const bp1 = at(sx0, ph + 0.48, pz + 0.85);
+  const bp2 = at(sx0, ph + 0.48, -pz - 0.85);
+  return {
+    rotY,
+    platform: at(0, ph, pz),
+    platformOpp: at(0, ph, -pz),
+    booth: at(hx, 0, hz + 3.6),
+    boothCenter: at(hx, 0, hz),
+    platformH: ph,
+    stairRun: run,
+    gate: { x: gatePos[0], y: gatePos[1], z: gatePos[2], col: gateCol },
+    benches: [
+      { x: bp1[0], y: bp1[1], z: bp1[2], yaw: rotY + PI },
+      { x: bp2[0], y: bp2[1], z: bp2[2], yaw: rotY },
+    ],
+    bench: { x: bp1[0], y: bp1[1], z: bp1[2], yaw: rotY + PI },
+  };
 }
 
 // ---- 13 风车 / 14 水磨坊 ---------------------------------------------------------------------------------------
@@ -911,9 +1023,10 @@ function sampler(path) {
 
 /** 石拱高架铁路：桥面 + 护墙 + 道砟 + 两对钢轨，每隔 pierEvery 一个墩，墩间一道拱肋。path 的 y 是桥面顶。 */
 export function viaduct(b, path, opts = {}) {
-  const { width = 8, pierEvery = 24, groundAt = heightAt, skip = null } = opts;
+  const { width = 8, pierEvery = 24, groundAt = heightAt, skip = null, stationZones = [] } = opts;
   if (!path || path.length < 2) return { piers: [], total: 0 };
   const T = 1.1; // 桥面厚
+  const inStation = (x, z) => stationZones.some(([sx, sz, sr = 24]) => Math.hypot(x - sx, z - sz) < sr);
   // 一段桥面：a → c
   const seg = (a, c) => {
     const dx = c[0] - a[0];
@@ -935,7 +1048,21 @@ export function viaduct(b, path, opts = {}) {
     };
     place(box(width, T, len), 'mason#4', 0, -T / 2);
     place(box(width + 0.3, 0.22, len), 'mason#3', 0, -T + 0.02);
-    for (const sx of [-1, 1]) place(box(0.4, 0.95, len), 'mason#4', sx * (width / 2 - 0.2), 0.42);
+    // 车站站台区段按 2m 精细步进精准断开高架石墙护栏：与站台端头严丝合缝衔接，绝不留锯齿空隙！
+    const subN = Math.max(1, Math.ceil(len / 2.0));
+    const subLen = len / subN + 0.06;
+    for (let k = 0; k < subN; k++) {
+      const t = (k + 0.5) / subN;
+      const sxp = a[0] + dx * t;
+      const syp = a[1] + dy * t;
+      const szp = a[2] + dz * t;
+      if (inStation(sxp, szp)) continue;
+      for (const sx of [-1, 1]) {
+        const g = box(0.4, 0.95, subLen);
+        g.rotateX(-pitch);
+        b.add(g, 'mason#4', [sxp + sx * (width / 2 - 0.2) * cos, syp + 0.42, szp - sx * (width / 2 - 0.2) * sin], rotY);
+      }
+    }
     place(box(width - 1.6, 0.12, len), 'mason#1', 0, 0.06);
     for (const tx of [-width * 0.24, width * 0.24]) for (const g of [-0.72, 0.72]) place(box(0.12, 0.16, len), 'iron#0', tx + g, 0.2);
   };
@@ -1357,7 +1484,7 @@ export function createTrain(shared, path, opts = {}) {
   const { cars = 5, speed = 34, stops = [], dwell = 8, loop = false, accel = 1.2, side = 0, from = 0, stripe = null, assets = null } = opts;
   const group = new THREE.Group();
   const sp = sampler(path);
-  const GAP = 24.5;
+  const GAP = assets?.hasHsr ? 16.0 : 24.5;
   const WHITE = [0.95, 0.96, 0.97];
   const BLUE = stripe ?? [0.2, 0.4, 0.72];
   const DARK = [0.14, 0.17, 0.24];
@@ -1411,19 +1538,27 @@ export function createTrain(shared, path, opts = {}) {
   let holdDoors = false;
   const lead = [0, 0, 0];
   const place = () => {
+    // 5 点高斯平滑采样轨线位置与切向，彻底消除折线段拐点造成的车内镜头微抖！
+    const wb = assets?.hasHsr ? 5.6 : 9;
     for (let i = 0; i < cars; i++) {
       const sc = s - i * GAP;
-      const p0 = sp.at(sc - 9);
-      const p1 = sp.at(sc + 9);
-      const dx = p1[0] - p0[0];
-      const dy = p1[1] - p0[1];
-      const dz = p1[2] - p0[2];
+      const pm2 = sp.at(sc - wb * 1.4);
+      const pm1 = sp.at(sc - wb * 0.7);
+      const pc = sp.at(sc);
+      const pp1 = sp.at(sc + wb * 0.7);
+      const pp2 = sp.at(sc + wb * 1.4);
+      const cx = (pm2[0] + 2 * pm1[0] + 3 * pc[0] + 2 * pp1[0] + pp2[0]) / 9;
+      const cy = (pm2[1] + 2 * pm1[1] + 3 * pc[1] + 2 * pp1[1] + pp2[1]) / 9;
+      const cz = (pm2[2] + 2 * pm1[2] + 3 * pc[2] + 2 * pp1[2] + pp2[2]) / 9;
+      const dx = (pp2[0] - pm2[0]) * 0.4 + (pp1[0] - pm1[0]) * 0.6;
+      const dy = (pp2[1] - pm2[1]) * 0.4 + (pp1[1] - pm1[1]) * 0.6;
+      const dz = (pp2[2] - pm2[2]) * 0.4 + (pp1[2] - pm1[2]) * 0.6;
       const car = list[i];
       const hl = Math.hypot(dx, dz) || 1;
-      car.position.set((p0[0] + p1[0]) / 2 - (dz / hl) * side, (p0[1] + p1[1]) / 2 + 0.12, (p0[2] + p1[2]) / 2 + (dx / hl) * side);
+      car.position.set(cx - (dz / hl) * side, cy + 0.12, cz + (dx / hl) * side);
       if (dx * dx + dz * dz > 1e-6) {
         car.rotation.y = Math.atan2(dx, dz);
-        car.rotation.x = -Math.atan2(dy, Math.hypot(dx, dz));
+        car.rotation.x = -Math.atan2(dy, hl);
       }
       if (i === 0) {
         lead[0] = car.position.x;
@@ -1434,16 +1569,17 @@ export function createTrain(shared, path, opts = {}) {
   };
   const animateDoors = (dt, shouldOpen) => {
     const want = shouldOpen ? 1 : 0;
-    doorOpen += (want - doorOpen) * Math.min(1, dt * 5);
+    doorOpen += (want - doorOpen) * Math.min(1, dt * 4.5);
     for (const d of allDoors) {
-      d.mesh.position.z = d.baseZ + 1.15 * doorOpen;
-      d.mesh.position.x = d.baseX + d.side * 0.08 * doorOpen;
+      // 车门向车厢两侧顺滑完全滑开 1.65m，彻底敞开门洞可直接走入车厢内部
+      d.mesh.position.z = d.baseZ + 1.65 * doorOpen;
+      d.mesh.position.x = d.baseX + d.side * 0.10 * doorOpen;
     }
   };
   /** 前方（按行驶方向）最近的停靠点；没有就是线路尽头。 */
   const target = () => {
     let best = dir > 0 ? sMax : sMin;
-    for (const h of halts) if ((h - s) * dir > 0.5 && (h - s) * dir < (best - s) * dir) best = h;
+    for (const h of halts) if ((h - s) * dir > 0.01 && (h - s) * dir < (best - s) * dir) best = h;
     return best;
   };
   place();
@@ -1451,6 +1587,9 @@ export function createTrain(shared, path, opts = {}) {
     group,
     cars: list,
     halts,
+    get s() { return s; },
+    get doorOpen() { return doorOpen; },
+    get wait() { return wait; },
     /** 让列车从合适距离进站（候车时不必干等好几分钟） */
     approachStop(stopMidS, leadDist = 72) {
       const targetS = Math.min(sMax, Math.max(sMin, stopMidS + tail / 2));
@@ -1459,7 +1598,7 @@ export function createTrain(shared, path, opts = {}) {
         holdDoors = true;
         return;
       }
-      if (Math.abs(s - targetS) > leadDist) {
+      if (Math.abs(s - targetS) > leadDist || (targetS - s) * dir < -1) {
         // 把列车调到距离站台 leadDist 米处，平顺进站减速停靠（约 4~5 秒进站）
         const d = targetS - s >= 0 ? 1 : -1;
         dir = d;
@@ -1476,6 +1615,7 @@ export function createTrain(shared, path, opts = {}) {
       wait = 0;
       const targetS = Math.min(sMax, Math.max(sMin, destMidS + tail / 2));
       dir = targetS >= s ? 1 : -1;
+      s += dir * 0.08;
       v = Math.max(v, 3.0);
     },
     setHoldDoors(on) {
@@ -1486,21 +1626,47 @@ export function createTrain(shared, path, opts = {}) {
       const targetS = Math.min(sMax, Math.max(sMin, stopMidS + tail / 2));
       return wait > 0 && Math.abs(s - targetS) < tol;
     },
-    /** 获取车厢内靠窗座位的世界坐标与朝向 */
+    /** 获取车厢内靠窗座位的世界坐标与朝向（坐在车门过厅后方首排靠窗位，背后开阔无遮挡，可完整看见全身！） */
     seatWorld(carIdx = 1, outPos = new THREE.Vector3(), outYaw = { value: 0 }) {
       const car = list[Math.min(list.length - 1, Math.max(0, carIdx))];
       if (!car) return null;
       car.updateMatrixWorld(true);
-      // 车厢内部右侧靠窗座位（高度约地板 0.62 + 坐垫 0.42）
-      outPos.set(0.92, 0.85, 2.2).applyMatrix4(car.matrixWorld);
-      outYaw.value = car.rotation.y + (dir < 0 ? Math.PI : 0);
+      // 首排靠窗座（Blender y=2.2，后方 z∈[-1.5,1.5] 为宽敞车门过厅，零椅背挡全身！）
+      outPos.set(0.86, 0.86, 2.24).applyMatrix4(car.matrixWorld);
+      outYaw.value = car.rotation.y;
       return outPos;
+    },
+    /** 获取车厢内部全景随行机位（拉远至对侧过厅，完整拍出小鱼全身 + 车厢座椅 + 窗外开阔风景） */
+    cabinView(carIdx = 1, outCamPos = new THREE.Vector3(), outLookAt = new THREE.Vector3(), lookYaw = 0, lookPitch = 0) {
+      const car = list[Math.min(list.length - 1, Math.max(0, carIdx))];
+      if (!car) return false;
+      car.updateMatrixWorld(true);
+      const ly = Math.max(-1.05, Math.min(1.05, lookYaw));
+      const lp = Math.max(-0.34, Math.min(0.32, lookPitch));
+      // 机位设在对侧车门过厅（(-1.02, 1.58, -0.08)），距小鱼 ~2.95m，完整入画头到脚！
+      const ox = -1.02;
+      const oy = 1.58;
+      const oz = -0.08;
+      outCamPos.set(ox, oy, oz).applyMatrix4(car.matrixWorld);
+      // 视线穿过小鱼全身（(+0.86, 1.24, 2.24)）斜向前方两扇全景大窗外
+      const baseAngle = Math.atan2(2.05, 2.38);
+      const ang = baseAngle + ly;
+      const pitch = -0.07 + lp;
+      const dist = 7.5;
+      outLookAt.set(ox + Math.sin(ang) * Math.cos(pitch) * dist, oy + Math.sin(pitch) * dist, oz + Math.cos(ang) * Math.cos(pitch) * dist).applyMatrix4(car.matrixWorld);
+      return true;
     },
     update(dt) {
       dt = Math.min(dt, 0.1);
       if (sMax - sMin < 1) return;
       if (wait > 0) {
-        if (!holdDoors) wait -= dt;
+        if (!holdDoors) {
+          wait -= dt;
+          if (wait <= 0) {
+            wait = 0;
+            s += dir * 0.08;
+          }
+        }
         animateDoors(dt, true);
         return;
       }
@@ -1531,6 +1697,379 @@ export function createTrain(shared, path, opts = {}) {
     },
     get doorOpen() {
       return doorOpen;
+    },
+  };
+}
+
+// ---- 18 37 路复古吉卜力公交（真实 3D 沿环城路行驶、靠站开门、可上车内景乘坐） ----------------------------------
+export function createBus37Runner(shared, routePts, opts = {}) {
+  const { assets = null, heightAt: groundFn = heightAt, speed = 15.5, stops = [] } = opts;
+  const pts3 = routePts.map(([x, z]) => [x, groundFn(x, z), z]);
+  const sp = sampler(pts3);
+  const group = new THREE.Group();
+  const busObj = new THREE.Group();
+  busObj.rotation.order = 'YXZ';
+  const built = assets?.hasTransit ? assets.createBus37() : null;
+  if (built) {
+    busObj.add(built.group);
+  } else {
+    const m = new THREE.Mesh(box(2.4, 2.8, 8.2), paintMaterial(shared, { lit: [0.22, 0.48, 0.35], shade: [0.12, 0.28, 0.2], kind: 'flat' }));
+    m.position.y = 1.5;
+    busObj.add(m);
+  }
+  group.add(busObj);
+
+  const nearestS = (x, z) => {
+    let bestS = 0;
+    let bestD = Infinity;
+    for (let t = 0; t <= sp.total; t += 4) {
+      const p = sp.at(t);
+      const d = Math.hypot(p[0] - x, p[2] - z);
+      if (d < bestD) {
+        bestD = d;
+        bestS = t;
+      }
+    }
+    return bestS;
+  };
+  const stopSs = stops.map((st) => nearestS(st.x, st.z)).sort((a, b) => a - b);
+
+  let s = 12;
+  let dir = 1;
+  let v = 0;
+  let wait = 0;
+  let doorOpen = 0;
+  let holdDoor = false;
+  let targetStopS = null;
+  let wheelAngle = 0;
+  const curPos = [pts3[0][0], pts3[0][1], pts3[0][2]];
+
+  const place = () => {
+    // 多点平滑道路位置、切向与路面高程，车内窗外景致丝滑不抖动
+    const pm = sp.at(Math.max(0, s - 3.6));
+    const pc = sp.at(s);
+    const pp = sp.at(Math.min(sp.total, s + 3.6));
+    const dx = pp[0] - pm[0];
+    const dz = pp[2] - pm[2];
+    const hl = Math.hypot(dx, dz) || 1;
+    const off = 1.65 * dir;
+    const cx = (pm[0] + 2 * pc[0] + pp[0]) * 0.25;
+    const cz = (pm[2] + 2 * pc[2] + pp[2]) * 0.25;
+    const x = cx - (dz / hl) * off;
+    const z = cz + (dx / hl) * off;
+    const y0 = groundFn(pm[0] - (dz / hl) * off, pm[2] + (dx / hl) * off);
+    const y1 = groundFn(x, z);
+    const y2 = groundFn(pp[0] - (dz / hl) * off, pp[2] + (dx / hl) * off);
+    const y = (y0 + 2 * y1 + y2) * 0.25;
+    curPos[0] = x;
+    curPos[1] = y;
+    curPos[2] = z;
+    busObj.position.set(x, y, z);
+    const fx = dx * dir;
+    const fz = dz * dir;
+    if (fx * fx + fz * fz > 1e-6) {
+      busObj.rotation.y = Math.atan2(fx, fz);
+      busObj.rotation.x = -Math.atan2((y2 - y0) * dir, hl) * 0.5;
+    }
+  };
+
+  const animateBus = (dt, shouldOpen) => {
+    const want = shouldOpen ? 1 : 0;
+    doorOpen += (want - doorOpen) * Math.min(1, dt * 5.0);
+    if (built?.door) {
+      built.door.mesh.position.z = built.door.baseZ + 1.02 * doorOpen;
+      built.door.mesh.position.x = built.door.baseX + 0.14 * doorOpen;
+    }
+    if (built?.wheels?.length && v > 0.05) {
+      wheelAngle += (v * dt) / 0.45;
+      for (const w of built.wheels) w.rotation.x = -wheelAngle;
+    }
+  };
+
+  place();
+  return {
+    group,
+    mesh: busObj,
+    nearestS,
+    get s() { return s; },
+    get x() { return curPos[0]; },
+    get y() { return curPos[1]; },
+    get z() { return curPos[2]; },
+    get doorOpen() { return doorOpen; },
+    approachStop(stopS, leadDist = 26) {
+      const ts = Math.min(sp.total - 4, Math.max(4, stopS));
+      targetStopS = ts;
+      holdDoor = true;
+      if (Math.abs(s - ts) < 3.5) {
+        s = ts;
+        v = 0;
+        wait = 14;
+        place();
+        return;
+      }
+      const d = ts >= s ? 1 : -1;
+      dir = d;
+      if (Math.abs(s - ts) > leadDist) s = Math.min(sp.total - 2, Math.max(2, ts - d * leadDist));
+      v = Math.min(speed, Math.sqrt(2 * 3.0 * Math.abs(ts - s)) + 1.5);
+      wait = 0;
+      place();
+    },
+    departToward(destS) {
+      holdDoor = false;
+      wait = 0;
+      const ts = Math.min(sp.total - 4, Math.max(4, destS));
+      targetStopS = ts;
+      dir = ts >= s ? 1 : -1;
+      s += dir * 0.15;
+      v = Math.max(v, 4.5);
+    },
+    fastForwardTo(destS) {
+      const ts = Math.min(sp.total - 4, Math.max(4, destS));
+      targetStopS = ts;
+      dir = ts >= s ? 1 : -1;
+      if (Math.abs(ts - s) > 22) s = Math.min(sp.total - 2, Math.max(2, ts - dir * 22));
+      v = Math.min(speed, 11);
+      wait = 0;
+      place();
+    },
+    isStoppedAt(stopS, tol = 5.0) {
+      const ts = Math.min(sp.total - 4, Math.max(4, stopS));
+      return wait > 0 && Math.abs(s - ts) < tol;
+    },
+    seatWorld(outPos = new THREE.Vector3(), outYaw = { value: 0 }) {
+      busObj.updateMatrixWorld(true);
+      // 37 路靠窗座位（坐实绿绒坐垫，背靠椅背自然前望）
+      outPos.set(0.72, 0.96, 0.76).applyMatrix4(busObj.matrixWorld);
+      outYaw.value = busObj.rotation.y;
+      return outPos;
+    },
+    cabinView(outCamPos = new THREE.Vector3(), outLookAt = new THREE.Vector3(), lookYaw = 0, lookPitch = 0) {
+      busObj.updateMatrixWorld(true);
+      const ly = Math.max(-1.05, Math.min(1.05, lookYaw));
+      const lp = Math.max(-0.30, Math.min(0.28, lookPitch));
+      // 退至后排斜对角（距小鱼 ~2.9m），透过中央宽过道完整展现小鱼全身 + 车厢与全景街景！
+      const ox = -0.78;
+      const oy = 1.68;
+      const oz = -1.75;
+      outCamPos.set(ox, oy, oz).applyMatrix4(busObj.matrixWorld);
+      const baseAngle = Math.atan2(1.42, 2.55);
+      const ang = baseAngle + ly;
+      const pitch = -0.10 + lp;
+      const dist = 7.5;
+      outLookAt.set(ox + Math.sin(ang) * Math.cos(pitch) * dist, oy + Math.sin(pitch) * dist, oz + Math.cos(ang) * Math.cos(pitch) * dist).applyMatrix4(busObj.matrixWorld);
+      return true;
+    },
+    update(dt) {
+      dt = Math.min(dt, 0.1);
+      if (wait > 0) {
+        if (!holdDoor) {
+          wait -= dt;
+          if (wait <= 0) {
+            wait = 0;
+            targetStopS = null;
+            s += dir * 0.2;
+          }
+        }
+        animateBus(dt, true);
+        return;
+      }
+      animateBus(dt, false);
+      let t = targetStopS != null ? targetStopS : (dir > 0 ? sp.total - 4 : 4);
+      if (targetStopS == null) {
+        for (const h of stopSs) {
+          if ((h - s) * dir > 0.5 && (h - s) * dir < (t - s) * dir) t = h;
+        }
+      }
+      const dist = (t - s) * dir;
+      if (dist <= 0.15) {
+        s = t;
+        v = 0;
+        wait = targetStopS != null ? 14 : 6;
+        if (targetStopS == null && (s >= sp.total - 5 || s <= 5)) dir = -dir;
+        place();
+        return;
+      }
+      const accel = 3.2;
+      v = Math.max(1.2, Math.min(v + accel * dt, speed, Math.sqrt(2 * accel * dist)));
+      const step = v * dt;
+      if (step >= dist - 0.05) {
+        s = t;
+        v = 0;
+        wait = targetStopS != null ? 14 : 6;
+        if (targetStopS == null && (s >= sp.total - 5 || s <= 5)) dir = -dir;
+      } else {
+        s += step * dir;
+      }
+      place();
+    },
+  };
+}
+
+// ---- 19 地铁 1 号线（吉卜力地下拱顶瓷砖车站 + 暖灯隧道 + 3 节无缝联挂 1 号线列车） ---------------------------
+export function createMetroLine1(shared, assets) {
+  const group = new THREE.Group();
+  const CX = 160;
+  const CY = -54;
+  const CZ = 0;
+  const TUNNEL_LEN = 380;
+  const DEP_Z = -132;
+  const ARR_Z = 132;
+
+  const tileCream = paintMaterial(shared, { lit: [0.92, 0.89, 0.82], shade: [0.68, 0.65, 0.60], kind: 'flat' });
+  const tileViolet = paintMaterial(shared, { lit: [0.46, 0.30, 0.72], shade: [0.28, 0.18, 0.48], kind: 'flat' });
+  const tileDark = paintMaterial(shared, { lit: [0.24, 0.26, 0.32], shade: [0.14, 0.16, 0.22], kind: 'flat' });
+  const tileGold = paintMaterial(shared, { lit: [0.92, 0.74, 0.28], shade: [0.68, 0.52, 0.18], kind: 'flat' });
+  const lampGlow = new THREE.MeshBasicMaterial({ color: 0xfff0c8 });
+
+  const addM = (geo, mat, x, y, z, rx = 0, ry = 0) => {
+    const m = new THREE.Mesh(geo, mat);
+    m.position.set(CX + x, CY + y, CZ + z);
+    m.rotation.set(rx, ry, 0);
+    m.frustumCulled = false;
+    group.add(m);
+    return m;
+  };
+  addM(box(14, 0.4, TUNNEL_LEN), tileDark, 0, -0.2, 0);
+  for (const rx of [-0.74, 0.74]) addM(box(0.14, 0.16, TUNNEL_LEN), tileGold, rx, 0.08, 0);
+  for (const sx of [-1, 1]) {
+    addM(box(0.5, 6.2, TUNNEL_LEN), tileCream, sx * 5.6, 3.1, 0);
+    addM(box(0.58, 0.55, TUNNEL_LEN), tileViolet, sx * 5.56, 2.3, 0);
+  }
+  addM(box(12.2, 0.5, TUNNEL_LEN), tileCream, 0, 6.2, 0);
+  for (let z = -170; z <= 170; z += 14) {
+    for (const sx of [-1, 1]) {
+      addM(box(0.45, 6.0, 0.48), tileDark, sx * 5.2, 3.0, z);
+      addM(box(0.16, 0.28, 1.4), lampGlow, sx * 5.22, 3.85, z);
+    }
+    addM(box(10.8, 0.36, 0.46), tileDark, 0, 5.85, z);
+    addM(box(1.4, 0.14, 0.9), lampGlow, 0, 5.62, z);
+  }
+  for (const pz of [DEP_Z, ARR_Z]) {
+    addM(box(3.6, 0.95, 58), tileCream, -3.55, 0.47, pz);
+    addM(box(0.28, 0.05, 58), tileGold, -1.85, 0.96, pz);
+    addM(box(0.18, 0.65, 52), tileViolet, -5.25, 2.95, pz);
+  }
+
+  const trainGroup = new THREE.Group();
+  const GAP = 14.0;
+  const cars = [];
+  const allDoors = [];
+  for (const [idx, kind] of ['Metro1_Head', 'Metro1_Mid', 'Metro1_Tail'].entries()) {
+    const car = new THREE.Group();
+    const built = assets?.hasTransit ? assets.createMetroCar(kind) : null;
+    if (built) {
+      car.add(built.group);
+      allDoors.push(...built.doors);
+    } else {
+      const m = new THREE.Mesh(box(2.8, 3.1, 13.4), tileViolet);
+      m.position.y = 1.8;
+      car.add(m);
+    }
+    car.position.set(0, 0.12, (1 - idx) * GAP);
+    trainGroup.add(car);
+    cars.push(car);
+  }
+  trainGroup.position.set(CX, CY, CZ + DEP_Z);
+  group.add(trainGroup);
+  group.visible = false;
+
+  let phase = 'idle';
+  let zPos = DEP_Z;
+  let speed = 0;
+  let timer = 0;
+  let doorOpen = 1;
+
+  const setDoors = (dt, shouldOpen) => {
+    const want = shouldOpen ? 1 : 0;
+    doorOpen += (want - doorOpen) * Math.min(1, dt * 4.8);
+    for (const d of allDoors) {
+      d.mesh.position.z = d.baseZ + 1.55 * doorOpen;
+      d.mesh.position.x = d.baseX + d.side * 0.09 * doorOpen;
+    }
+  };
+
+  return {
+    group,
+    cars,
+    get phase() { return phase; },
+    get doorOpen() { return doorOpen; },
+    startTrip() {
+      group.visible = true;
+      phase = 'boarding';
+      zPos = DEP_Z;
+      speed = 0;
+      timer = 0;
+      doorOpen = 1;
+      trainGroup.position.set(CX, CY, CZ + zPos);
+      setDoors(0.016, true);
+    },
+    endTrip() {
+      phase = 'idle';
+      group.visible = false;
+    },
+    fastForward() {
+      if (phase === 'boarding' || phase === 'running') {
+        phase = 'running';
+        zPos = Math.max(zPos, ARR_Z - 34);
+        speed = Math.min(speed || 18, 18);
+        trainGroup.position.z = CZ + zPos;
+      }
+    },
+    seatWorld(outPos = new THREE.Vector3(), outYaw = { value: 0 }) {
+      const car = cars[1];
+      car.updateMatrixWorld(true);
+      // 坐在梅子紫纵排软座上，背靠靠背稳稳落座
+      outPos.set(-1.04, 0.94, 2.2).applyMatrix4(car.matrixWorld);
+      outYaw.value = Math.PI / 2;
+      return outPos;
+    },
+    cabinView(outCamPos = new THREE.Vector3(), outLookAt = new THREE.Vector3(), lookYaw = 0, lookPitch = 0) {
+      const car = cars[1];
+      car.updateMatrixWorld(true);
+      const ly = Math.max(-1.05, Math.min(1.05, lookYaw));
+      const lp = Math.max(-0.28, Math.min(0.28, lookPitch));
+      // 退至对侧长椅前（距小鱼 ~3.3m），完整拍下小鱼全身、摇曳吊环与窗外暖灯隧道！
+      const ox = 0.98;
+      const oy = 1.60;
+      const oz = -0.45;
+      outCamPos.set(ox, oy, oz).applyMatrix4(car.matrixWorld);
+      const baseAngle = Math.atan2(-2.05, 2.65);
+      const ang = baseAngle + ly;
+      const pitch = -0.09 + lp;
+      const dist = 6.5;
+      outLookAt.set(ox + Math.sin(ang) * Math.cos(pitch) * dist, oy + Math.sin(pitch) * dist, oz + Math.cos(ang) * Math.cos(pitch) * dist).applyMatrix4(car.matrixWorld);
+      return true;
+    },
+    update(dt) {
+      if (phase === 'idle') return;
+      dt = Math.min(dt, 0.1);
+      if (phase === 'boarding') {
+        timer += dt;
+        setDoors(dt, timer < 0.75);
+        if (timer > 1.35) {
+          phase = 'running';
+          timer = 0;
+        }
+      } else if (phase === 'running') {
+        setDoors(dt, false);
+        const rem = ARR_Z - zPos;
+        const maxV = 36;
+        const accel = 7.5;
+        speed = Math.max(1.5, Math.min(speed + accel * dt, maxV, Math.sqrt(2 * accel * Math.max(0, rem))));
+        const step = speed * dt;
+        if (step >= rem - 0.05) {
+          zPos = ARR_Z;
+          speed = 0;
+          phase = 'arrived';
+          timer = 0;
+        } else {
+          zPos += step;
+        }
+        trainGroup.position.z = CZ + zPos;
+      } else if (phase === 'arrived') {
+        timer += dt;
+        setDoors(dt, true);
+      }
     },
   };
 }

@@ -225,8 +225,8 @@ export function createWhaleAnimator(model, gltfClips = []) {
         evalGait(phase, { leg: 28, knee: 40, arm: 40, elbow: 22, shoulderTwist: 12, lean: 7, bob: 0.032, tail: 16, hair: 8, highStep: 14 });
         break;
       case 'stairs': {
-        // 上楼梯：明显高抬腿迈步 + 躯干前倾 + 协调大摆臂
-        evalGait(phase, { leg: 34, knee: 54, arm: 46, elbow: 26, shoulderTwist: 14, lean: 14, bob: 0.045, tail: 16, hair: 10, highStep: 24 });
+        // 上楼梯：明显高抬腿迈步 + 躯干前倾 + 协调大摆臂（持续连贯不僵硬）
+        evalGait(phase * 1.15, { leg: 46, knee: 72, arm: 56, elbow: 32, shoulderTwist: 16, lean: 18, bob: 0.075, tail: 20, hair: 14, highStep: 36 });
         break;
       }
 
